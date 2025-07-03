@@ -1,29 +1,23 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { AdminsService } from '../admins/admins.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/signup.dto';
 import { ResendOtpDto, VerifyOtpDto } from 'src/auth/dto/otp.dto';
 import { LoginDto } from './dto/login.dto';
-import { Role } from 'src/users/enums/role.enum';
 import { jwtConstants } from './constants';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: Role;
-}
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly users: UsersService,
+    private readonly admins: AdminsService,
     private readonly jwt: JwtService,
   ) {}
 
@@ -34,28 +28,18 @@ export class AuthService {
     return await this.users.createUser(dto);
   }
 
-  async verifyOtp(dto: VerifyOtpDto) {
-    return this.users.verifyOtp(dto);
+  async verifyEmail(dto: VerifyOtpDto) {
+    return this.users.verifyEmail(dto);
   }
 
   async resendOtp(dto: ResendOtpDto) {
     return this.users.resendOtp(dto);
   }
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.users.findByEmail(email);
-    if (user && user.password === pass) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
-  }
-
-  async login(dto: LoginDto) {
+  async loginUser(dto: LoginDto) {
     const user = await this.users.findByEmail(dto.email);
     if (!user || !(await user.validatePassword(dto.password))) {
-      throw new UnauthorizedException('Bad credentials');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.isVerified) {
@@ -63,22 +47,41 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
-    return this.makeJwt(payload);
+    return {
+      streple_auth_token: this.jwt.sign(payload),
+      token_type: 'Bearer',
+      expires_in: jwtConstants.expiresIn,
+    };
+  }
+
+  async loginAdmin(dto: LoginDto) {
+    const admin = await this.admins.findByEmail(dto.email);
+    if (!admin || !(await admin.validatePassword(dto.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload = {
+      sub: admin.id,
+      email: admin.email,
+      role: 'admin',
+      fullName: admin.fullName,
+    };
+    return {
+      streple_auth_token: this.jwt.sign(payload),
+      token_type: 'Bearer',
+      expires_in: jwtConstants.expiresIn,
+    };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
     return await this.users.forgotPassword(dto);
   }
 
-  async resetPassword(dto: ResetPasswordDto) {
-    return await this.users.resetPassword(dto);
+  async verifyOtp(dto: VerifyOtpDto) {
+    return this.users.verifyOtp(dto);
   }
 
-  private makeJwt(payload: JwtPayload) {
-    return {
-      streple_auth_token: this.jwt.sign(payload),
-      token_type: 'Bearer',
-      expires_in: jwtConstants.expiresIn,
-    };
+  async resetPassword(dto: ResetPasswordDto) {
+    return await this.users.resetPassword(dto);
   }
 }

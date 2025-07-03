@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { AdminsModule } from 'src/admins/admins.module';
 import { UsersModule } from '../users/users.module';
 import { CopyTradingModule } from 'src/copy-trading/copy-trading.module';
 import { PassportModule } from '@nestjs/passport';
@@ -11,8 +12,9 @@ import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
-    CopyTradingModule,
+    AdminsModule,
     UsersModule,
+    CopyTradingModule,
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,

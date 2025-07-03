@@ -4,11 +4,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { jwtConstants } from './constants';
 import { UsersService } from '../users/users.service';
+import { AdminsService } from 'src/admins/admins.service';
 
 interface JwtPayload {
   sub: string; // user id
   iat: number; // issued‑at
   exp: number; // expiration
+  role: 'user' | 'admin'; // role must be included in the JWT
 }
 
 interface UserFromJwt {
@@ -19,9 +21,11 @@ interface UserFromJwt {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly users: UsersService) {
+  constructor(
+    private readonly users: UsersService,
+    private readonly admins: AdminsService,
+  ) {
     super({
-      // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       jwtFromRequest: ExtractJwt.fromExtractors([
         // 1. Try Authorization Bearer token first
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -37,8 +41,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<UserFromJwt> {
-    const user = await this.users.findById(payload.sub);
-    if (!user) throw new UnauthorizedException();
-    return { id: user.id, email: user.email, role: user.role };
+    let userOrAdmin: any;
+
+    if (payload.role === 'admin') {
+      userOrAdmin = await this.admins.findById(payload.sub);
+    } else if (payload.role === 'user') {
+      userOrAdmin = await this.users.findById(payload.sub);
+    } else {
+      throw new UnauthorizedException('Invalid role in token');
+    }
+
+    if (!userOrAdmin) throw new UnauthorizedException();
+
+    return {
+      id: userOrAdmin.id,
+      email: userOrAdmin.email,
+      role: userOrAdmin.role ?? payload.role,
+    };
   }
 }

@@ -39,11 +39,11 @@ export class AuthController {
     return this.auth.register(dto);
   }
 
-  @Post('verify-otp')
+  @Post('verify-email')
   @ApiOperation({ summary: 'Verify email to complete registration' })
   @ApiResponse({ status: 200, description: 'Returns a success message' })
-  verify(@Body() dto: VerifyOtpDto) {
-    return this.auth.verifyOtp(dto);
+  verifyEmail(@Body() dto: VerifyOtpDto) {
+    return this.auth.verifyEmail(dto);
   }
 
   @Post('resend-otp')
@@ -57,11 +57,18 @@ export class AuthController {
     return this.auth.resendOtp(dto);
   }
 
-  @Post('login')
-  @ApiOperation({ summary: 'Login with email and password' })
+  @Post('login/user')
+  @ApiOperation({ summary: 'User Login with email and password' })
   @ApiResponse({ status: 200, description: 'Returns a JWT token' })
-  login(@Body() dto: LoginDto) {
-    return this.auth.login(dto);
+  loginUser(@Body() dto: LoginDto) {
+    return this.auth.loginUser(dto);
+  }
+
+  @Post('login/admin')
+  @ApiOperation({ summary: 'Admin Login with email and password' })
+  @ApiResponse({ status: 200, description: 'Returns a JWT token' })
+  loginAdmin(@Body() dto: LoginDto) {
+    return this.auth.loginAdmin(dto);
   }
 
   @Get('google')
@@ -102,6 +109,13 @@ export class AuthController {
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.auth.forgotPassword(dto);
+  }
+
+  @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify otp to complete password reset' })
+  @ApiResponse({ status: 200, description: 'Returns a success message' })
+  verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.auth.verifyOtp(dto);
   }
 
   // verify otp and enter new password

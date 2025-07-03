@@ -47,7 +47,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       `${profile.name?.givenName ?? ''} ${profile.name?.familyName ?? ''}`.trim();
     const avatarUrl = profile.photos?.[0]?.value ?? undefined;
 
-    // TODO
+    // TODO use this or remove
     const response = await fetch(
       'https://www.googleapis.com/oauth2/v2/userinfo',
       {
@@ -57,7 +57,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       },
     );
     const googleUser = await response.json(); // fullName = googleUser.name
-    // TODO
+    // TODO remove console logs
     console.log(`googleUser: ${JSON.stringify(googleUser)}`);
 
     if (!email) {

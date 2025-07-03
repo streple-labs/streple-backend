@@ -4,18 +4,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import ormConfig from './config/ormconfig';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminsModule } from './admins/admins.module';
 import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
 import { CopyTradingModule } from './copy-trading/copy-trading.module';
+import { AuthModule } from './auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({ useFactory: ormConfig }),
+    AdminsModule,
     UsersModule,
-    AuthModule,
     CopyTradingModule,
+    AuthModule,
     ThrottlerModule.forRoot({
       throttlers: [
         {

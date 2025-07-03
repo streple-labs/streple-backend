@@ -1,6 +1,8 @@
 // otp.dto.ts
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+export type OtpPurpose = 'verify' | 'reset';
 
 export class VerifyOtpDto {
   @ApiProperty({ example: 'alice@streple.com' })
@@ -17,4 +19,8 @@ export class ResendOtpDto {
   @ApiProperty({ example: 'alice@streple.com' })
   @IsEmail()
   email: string;
+
+  @ApiProperty({ example: 'verify', enum: ['verify', 'reset'] })
+  @IsIn(['verify', 'reset'])
+  purpose: OtpPurpose;
 }

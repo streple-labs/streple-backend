@@ -1,4 +1,5 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { Admin } from 'src/admins/admin.entity';
 import { User } from '../users/user.entity';
 import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
 import { CopyTrade } from '../copy-trading/entities/copy-trade.entity';
@@ -12,7 +13,7 @@ export default (): TypeOrmModuleOptions => ({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [User, CopyWallet, CopyTrade, ProSignal],
+  entities: [Admin, User, CopyWallet, CopyTrade, ProSignal],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
   },

@@ -33,6 +33,9 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   otpExpiresAt: Date | null;
 
+  @Column({ default: false })
+  otpVerified: boolean;
+
   /* role toggle */
   @Column({ type: 'enum', enum: Role, default: Role.FOLLOWER })
   role: Role;

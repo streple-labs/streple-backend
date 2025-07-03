@@ -28,6 +28,9 @@ export class UsersService {
 
   /* ---------------- registration / lookup ------------------ */
   async createUser(dto: SignupDto) {
+    const userExists = await this.findByEmail(dto.email);
+    if (userExists) throw new BadRequestException('User already exists');
+
     const user = this.repo.create(dto);
     user.password = await bcrypt.hash(dto.password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -41,6 +44,9 @@ export class UsersService {
   }
 
   async createUserWithGoogle(dto: SignupDto): Promise<User> {
+    const userExists = await this.findByEmail(dto.email);
+    if (userExists) throw new BadRequestException('User already exists');
+
     const user = this.repo.create(dto);
     user.password = await bcrypt.hash(dto.password, 10);
     user.isVerified = true;
@@ -57,10 +63,11 @@ export class UsersService {
     return user;
   }
 
-  async verifyOtp(dto: VerifyOtpDto) {
+  async verifyEmail(dto: VerifyOtpDto) {
     const user = await this.findByEmail(dto.email);
     if (!user) throw new NotFoundException('User not found');
-    if (user.isVerified) throw new BadRequestException('Already verified');
+    if (user.isVerified)
+      throw new BadRequestException('Email already verified');
     if (!user.otp || dto.otp !== user.otp)
       throw new BadRequestException('Invalid OTP');
     if (!user.otpExpiresAt || user.otpExpiresAt < new Date())
@@ -83,26 +90,27 @@ export class UsersService {
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.repo.save(user);
 
-    await this.mailerService.sendOtpEmail(user.email, newOtp, 'verify');
+    await this.mailerService.sendOtpEmail(user.email, newOtp, dto.purpose);
     return { message: 'OTP resent', email: user.email };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.findByEmail(dto.email);
-    if (!user) throw new NotFoundException('Email not found');
+    if (!user) throw new NotFoundException('User not found');
 
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otp = newOtp;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.repo.save(user);
 
-    await this.mailerService.sendOtpEmail(user.email, newOtp, 'reset');
+    await this.mailerService.sendOtpEmail(user.email, otp, 'reset');
     return { message: 'OTP sent to your email', email: user.email };
   }
 
-  async resetPassword(dto: ResetPasswordDto) {
+  async verifyOtp(dto: VerifyOtpDto) {
     const user = await this.findByEmail(dto.email);
-    if (!user) throw new NotFoundException('Email not found');
+    if (!user) throw new NotFoundException('User not found');
+    if (user.otpVerified) throw new BadRequestException('OTP already verified');
     if (!user.otp || dto.otp !== user.otp)
       throw new BadRequestException('Invalid OTP');
     if (!user.otpExpiresAt || user.otpExpiresAt < new Date())
@@ -110,6 +118,15 @@ export class UsersService {
 
     user.otp = null;
     user.otpExpiresAt = null;
+    await this.repo.save(user);
+
+    return { message: 'OTP verified successfully' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.findByEmail(dto.email);
+    if (!user) throw new NotFoundException('User not found');
+
     user.password = await bcrypt.hash(dto.newPassword, 10);
     await this.repo.save(user);
 
