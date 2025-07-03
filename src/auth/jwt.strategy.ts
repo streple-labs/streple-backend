@@ -5,6 +5,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { jwtConstants } from './constants';
 import { UsersService } from '../users/users.service';
 import { AdminsService } from 'src/admins/admins.service';
+import { Role } from 'src/users/enums/role.enum';
 
 interface JwtPayload {
   sub: string; // user id
@@ -45,7 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (payload.role === 'admin') {
       userOrAdmin = await this.admins.findById(payload.sub);
-    } else if (payload.role === 'user') {
+    } else if (Object.values(Role).includes(payload.role as Role)) {
       userOrAdmin = await this.users.findById(payload.sub);
     } else {
       throw new UnauthorizedException('Invalid role in token');

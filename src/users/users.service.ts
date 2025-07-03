@@ -28,9 +28,6 @@ export class UsersService {
 
   /* ---------------- registration / lookup ------------------ */
   async createUser(dto: SignupDto) {
-    const userExists = await this.findByEmail(dto.email);
-    if (userExists) throw new BadRequestException('User already exists');
-
     const user = this.repo.create(dto);
     user.password = await bcrypt.hash(dto.password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -44,9 +41,6 @@ export class UsersService {
   }
 
   async createUserWithGoogle(dto: SignupDto): Promise<User> {
-    const userExists = await this.findByEmail(dto.email);
-    if (userExists) throw new BadRequestException('User already exists');
-
     const user = this.repo.create(dto);
     user.password = await bcrypt.hash(dto.password, 10);
     user.isVerified = true;
