@@ -171,3 +171,8 @@ docker compose down          # stops and removes the container
 docker compose down -v       # also removes the stored volume (DB wiped)
 
 ```
+
+
+## DEPLOY
+
+Add or remove Asterisks (*) Here: `*********`
