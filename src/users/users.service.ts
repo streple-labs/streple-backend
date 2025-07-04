@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -78,10 +79,12 @@ export class UsersService {
   async resendOtp(dto: ResendOtpDto) {
     const user = await this.findByEmail(dto.email);
     if (!user) throw new NotFoundException('User not found');
+    if (user.otpVerified) throw new BadRequestException('OTP already verified');
 
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = newOtp;
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpVerified = false;
     await this.repo.save(user);
 
     await this.mailerService.sendOtpEmail(user.email, newOtp, dto.purpose);
@@ -95,6 +98,7 @@ export class UsersService {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpVerified = false;
     await this.repo.save(user);
 
     await this.mailerService.sendOtpEmail(user.email, otp, 'reset');
@@ -112,6 +116,7 @@ export class UsersService {
 
     user.otp = null;
     user.otpExpiresAt = null;
+    user.otpVerified = true;
     await this.repo.save(user);
 
     return { message: 'OTP verified successfully' };
@@ -120,6 +125,7 @@ export class UsersService {
   async resetPassword(dto: ResetPasswordDto) {
     const user = await this.findByEmail(dto.email);
     if (!user) throw new NotFoundException('User not found');
+    if (!user.otpVerified) throw new UnauthorizedException('OTP not verified');
 
     user.password = await bcrypt.hash(dto.newPassword, 10);
     await this.repo.save(user);
