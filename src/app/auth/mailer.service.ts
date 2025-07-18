@@ -4,12 +4,12 @@ import * as nodemailer from 'nodemailer';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-if (!process.env.GMAIL_USER) {
-  throw new Error('Missing GMAIL_USER in environment variables');
+if (!process.env.MAIL_USER) {
+  throw new Error('Missing MAIL_USER in environment variables');
 }
 
-if (!process.env.GMAIL_PASS) {
-  throw new Error('Missing GMAIL_PASS in environment variables');
+if (!process.env.MAIL_PASS) {
+  throw new Error('Missing MAIL_PASS in environment variables');
 }
 
 type OtpPurpose = 'verify' | 'reset';
@@ -19,8 +19,8 @@ export class MailerService {
   private transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.GMAIL_USER as string,
-      pass: process.env.GMAIL_PASS as string,
+      user: process.env.MAIL_USER as string,
+      pass: process.env.MAIL_PASS as string,
     },
   });
 
@@ -56,7 +56,7 @@ export class MailerService {
 
     try {
       await this.transporter.sendMail({
-        from: `"Streple" <${process.env.GMAIL_USER}>`,
+        from: `"Streple" <${process.env.MAIL_USER}>`,
         to,
         subject,
         text,

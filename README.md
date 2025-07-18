@@ -175,4 +175,4 @@ docker compose down -v       # also removes the stored volume (DB wiped)
 
 ## DEPLOY
 
-Add or remove Asterisks (*) Here: `*********`
+Add or remove Asterisks (*) Here: `**********`
