@@ -1,14 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import ormConfig from './config/ormconfig';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AdminsModule } from './admins/admins.module';
-import { UsersModule } from './users/users.module';
-import { CopyTradingModule } from './copy-trading/copy-trading.module';
-import { AuthModule } from './auth/auth.module';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { AdminsModule } from './app/admins/admins.module';
+import { AuthModule } from './app/auth/auth.module';
+import { CopyTradingModule } from './app/copy-trading/copy-trading.module';
+import { EmailCenterModule } from './app/email-center/email-center.module';
+import { LearninghubModule } from './app/learninghub/learninghub.module';
+import { UsersModule } from './app/users/users.module';
+import ormConfig from './config/ormconfig';
+import { GlobalModule } from './global/global.module';
+import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
 
 @Module({
   imports: [
@@ -26,6 +30,10 @@ import { ThrottlerModule } from '@nestjs/throttler';
         },
       ],
     }),
+    LearninghubModule,
+    EmailCenterModule,
+    GlobalModule,
+    BlogManagerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

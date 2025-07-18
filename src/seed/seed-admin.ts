@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Admin } from '../admins/admin.entity';
+import { Admin } from '../app/admins/admin.entity';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 dotenv.config();
