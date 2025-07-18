@@ -1,3 +1,5 @@
+import { template } from '../services';
+
 export interface findMany {
   page?: number;
   limit?: number;
@@ -32,4 +34,11 @@ export interface transform {
 
 export type paramSearch = {
   id: string;
+};
+
+export type EmailJob = {
+  users: { email: string; fullName: string }[];
+  template: template;
+  subject: string;
+  context: Record<string, any>;
 };

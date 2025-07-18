@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import PgBoss, { Job, WorkHandler } from 'pg-boss';
+import PgBoss, { WorkHandler, WorkOptions } from 'pg-boss';
 import { MailService, template } from 'src/global/services';
+import { QUEUE_NAME } from './email-center.service';
 
 interface EmailJobData {
   user: { email: string; name?: string };
@@ -17,37 +18,58 @@ export class EmailWorker implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    this.logger.log('📩 EmailWorker initialized');
-    const handler: WorkHandler<EmailJobData> = async (
-      job: Job<EmailJobData> | Job<EmailJobData>[],
-    ) => {
-      // Handle both single job and batch processing
-      const jobs = Array.isArray(job) ? job : [job];
-      console.log(jobs);
-      for (const singleJob of jobs) {
-        const { user, subject, body } = singleJob.data;
+    this.logger.log('📩 Initializing EmailWorker');
 
-        try {
-          await this.mailService.sendMail(
-            user.email,
-            template.broadcast,
-            subject,
-            {
-              body,
-              fullName: user.name,
-            },
-          );
-          this.logger.log(`✅ Email sent to: ${user.email}`);
-        } catch (err) {
-          this.logger.error(
-            `❌ Failed to send email to: ${user.email}`,
-            err.stack,
-          );
-          throw err;
-        }
+    try {
+      // Verify subscription
+      const queues = await this.boss.getQueues();
+      const queueNames = queues.map((q) => q.name);
+      this.logger.log('Available queues:', queueNames);
+
+      if (!queueNames.includes(QUEUE_NAME)) {
+        this.logger.warn('send-email queue not found, creating subscription');
       }
-    };
 
-    await this.boss.work<EmailJobData>('send-email', handler);
+      const handler: WorkHandler<EmailJobData> = async (jobOrJobs) => {
+        const jobs = Array.isArray(jobOrJobs) ? jobOrJobs : [jobOrJobs];
+
+        for (const job of jobs) {
+          try {
+            this.logger.log(`Processing job ${job.id}`);
+            const { user, subject, body } = job.data;
+
+            await this.mailService.sendMail(
+              user.email,
+              template.broadcast,
+              subject,
+              { body, fullName: user.name },
+            );
+
+            this.logger.log(`✅ Email sent to ${user.email}`);
+          } catch (error) {
+            this.logger.error(
+              `❌ Failed to process job ${job.id}:`,
+              error.stack,
+            );
+            throw error;
+          }
+        }
+      };
+
+      await this.boss.work<EmailJobData>(
+        QUEUE_NAME,
+        {
+          teamSize: 2,
+          teamConcurrency: 2,
+          batchSize: 1,
+        } as WorkOptions,
+        handler,
+      );
+
+      this.logger.log('👂 Worker subscribed to send-email queue');
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize worker:', error);
+      throw error;
+    }
   }
 }

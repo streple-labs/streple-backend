@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
-import { MailService } from './services';
-
+import { Global, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { EmailJobWorker, MailService, SchedulerService } from './services';
+@Global()
 @Module({
-  imports: [],
-  providers: [MailService],
-  exports: [MailService],
+  imports: [ConfigModule],
+  providers: [MailService, EmailJobWorker, SchedulerService],
+  exports: [MailService, EmailJobWorker],
 })
 export class GlobalModule {}

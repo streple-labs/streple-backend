@@ -13,12 +13,20 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateEmailCenter implements createEmail {
   @IsBoolean()
-  @Transform(({ value }) => (value === 'true' ? true : false))
+  @Transform(({ value }: { value: string | boolean }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
   @ApiProperty({ type: Boolean })
   schedule: boolean;
 
   @IsBoolean()
-  @Transform(({ value }) => (value === 'true' ? true : false))
+  @Transform(({ value }: { value: string | boolean }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
   @ApiProperty({ type: Boolean })
   draft: boolean;
 

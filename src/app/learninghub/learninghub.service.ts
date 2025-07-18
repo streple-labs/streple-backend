@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   createLearning,
   findManyLearning,
@@ -21,9 +21,9 @@ export class LearningHubService {
     @InjectRepository(LearningHub)
     private readonly learning: Repository<LearningHub>,
   ) {}
-  create(create: createLearning) {
-    console.log(create);
-    return;
+  create(create: createLearning): Promise<LearningHub> {
+    const save_course = this.learning.create(create);
+    return this.learning.save(save_course);
   }
 
   findAll(query: findManyLearning): Promise<DocumentResult<LearningHub>> {
@@ -53,14 +53,22 @@ export class LearningHubService {
     });
   }
 
-  update(param: paramSearch, update: updatedLearning) {
-    console.log({ param, update });
-    return;
+  async update(
+    param: paramSearch,
+    update: updatedLearning,
+  ): Promise<LearningHub> {
+    const findCourse = await this.learning.findOne({ where: { id: param.id } });
+
+    if (!findCourse) {
+      throw new ForbiddenException('Course not found');
+    }
+
+    await this.learning.update(param.id, update);
+    return findCourse;
   }
 
   remove(param: paramSearch) {
-    console.log(param);
-    return;
+    return this.learning.delete(param.id);
   }
 
   private filter(query: findManyLearning) {
