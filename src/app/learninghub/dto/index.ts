@@ -14,6 +14,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
 } from 'class-validator';
 import { FindMany, FindOne, transform } from 'src/global/common';
@@ -39,11 +40,13 @@ export class CreateLearning implements createLearning {
   @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
+  @IsUrl()
   document: string;
 
   @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
+  @IsUrl()
   thumbnail: string;
 
   @ApiProperty({ type: String, enum: Object.values(Level) })

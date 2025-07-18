@@ -12,6 +12,7 @@ import { LearninghubModule } from './app/learninghub/learninghub.module';
 import { UsersModule } from './app/users/users.module';
 import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
+import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
 
 @Module({
   imports: [
@@ -29,15 +30,10 @@ import { GlobalModule } from './global/global.module';
         },
       ],
     }),
-    // BullModule.forRoot({
-    //   redis: {
-    //     host: 'localhost',
-    //     port: 6379,
-    //   },
-    // }),
     LearninghubModule,
     EmailCenterModule,
     GlobalModule,
+    BlogManagerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

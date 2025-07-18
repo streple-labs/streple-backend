@@ -1,4 +1,14 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Document, DocumentResult, paramSearch } from 'src/global/common';
+import {
+  buildFindManyQuery,
+  FindManyWrapper,
+  FindOneWrapper,
+} from 'src/global/helpers';
+import { Repository } from 'typeorm';
+import { User } from '../users/user.entity';
+import { EmailCenter } from './entities/email-center.entity';
 import {
   createEmail,
   EmailRecipient,
@@ -7,28 +17,15 @@ import {
   findOneEmail,
   updateEmail,
 } from './interface';
-import { InjectRepository } from '@nestjs/typeorm';
-import { EmailCenter } from './entities/email-center.entity';
-import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import PgBoss from 'pg-boss';
-import {
-  buildFindManyQuery,
-  FindManyWrapper,
-  FindOneWrapper,
-} from 'src/global/helpers';
-import { Document, DocumentResult, paramSearch } from 'src/global/common';
-
+import { EmailJobWorker, template } from 'src/global/services';
+export const QUEUE_NAME = 'send-email';
 @Injectable()
 export class EmailCenterService {
   constructor(
     @InjectRepository(EmailCenter)
     private readonly emailCenter: Repository<EmailCenter>,
     @InjectRepository(User) private readonly users: Repository<User>,
-    @InjectQueue('email') private readonly emailQueue: Queue,
-    @Inject('PG_BOSS') private readonly boss: PgBoss,
+    private readonly emailJobWorker: EmailJobWorker,
   ) {}
 
   async create(create: createEmail) {
@@ -48,11 +45,15 @@ export class EmailCenterService {
         ...data,
         status: EmailStatus.scheduled,
       });
-      await this.scheduleEmail(
-        recipients,
-        data.subject,
-        data.message,
-        data.scheduleDate,
+      const delay = data.scheduleDate.getTime() - Date.now();
+      this.emailJobWorker.scheduleDelayedEmail(
+        {
+          users: recipients,
+          template: template.broadcast,
+          subject: data.subject,
+          context: { body: data.message },
+        },
+        delay,
       );
 
       return this.emailCenter.save(save_schedule);
@@ -63,7 +64,12 @@ export class EmailCenterService {
       status: EmailStatus.sent,
     });
 
-    await this.scheduleEmail(recipients, data.subject, data.message);
+    this.emailJobWorker.scheduleEmail({
+      users: recipients,
+      template: template.broadcast,
+      subject: data.subject,
+      context: { body: data.message },
+    });
     return this.emailCenter.save(save_sent);
   }
 
@@ -113,30 +119,42 @@ export class EmailCenterService {
   }
 
   private async recipients(recipient: EmailRecipient, selected: string[]) {
-    const receiver: { email: string; name: string }[] = [];
+    const receiver: { email: string; fullName: string }[] = [];
 
     if (recipient === EmailRecipient.copiers) {
       const Copiers = await this.users.find({});
       console.log({ Copiers });
-      receiver.push({ email: 'olaniyanmutiu96@gmail.com', name: 'Olaniyan' });
+      receiver.push({
+        email: 'olaniyanmutiu96@gmail.com',
+        fullName: 'Olaniyan',
+      });
     }
 
     if (recipient === EmailRecipient.pro) {
       const Pro = await this.users.find({});
       console.log({ Pro });
-      receiver.push({ email: 'olaniyanmutiu96@gmail.com', name: 'Olaniyan' });
+      receiver.push({
+        email: 'olaniyanmutiu96@gmail.com',
+        fullName: 'Olaniyan',
+      });
     }
 
     if (recipient === EmailRecipient.users) {
       const AllUser = await this.users.find({});
       console.log({ AllUser });
-      receiver.push({ email: 'olaniyanmutiu96@gmail.com', name: 'Olaniyan' });
+      receiver.push({
+        email: 'olaniyanmutiu96@gmail.com',
+        fullName: 'Olaniyan',
+      });
     }
 
-    if (selected.length > 0) {
+    if (selected?.length > 0) {
       const Copiers = await this.users.find({});
       console.log({ Copiers });
-      receiver.push({ email: 'exmple@gmail.com', name: 'Example' });
+      receiver.push({
+        email: 'olaniyanmutiu96@gmail.com',
+        fullName: 'Example',
+      });
     }
 
     return receiver;
@@ -168,32 +186,5 @@ export class EmailCenterService {
     }
 
     return { page, limit, sort, include, search, filters };
-  }
-
-  private async scheduleEmail(
-    users: { email: string; name?: string }[],
-    subject: string,
-    body: string,
-    sendAt?: Date,
-  ) {
-    console.log({ users, subject, body, sendAt });
-    for (const user of users) {
-      const result = await this.boss.publish(
-        'send-email',
-        {
-          user,
-          subject,
-          body,
-        },
-        {
-          startAfter: sendAt ?? undefined,
-          retryLimit: 3,
-          retryDelay: 5000,
-        },
-      );
-
-      console.log('📤 Publishing email job for', user.email);
-      console.log(result);
-    }
   }
 }

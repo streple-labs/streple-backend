@@ -55,3 +55,6 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 keeper
+streple_jobs.db
+streple_jobs.db-shm
+streple_jobs.db-wal
