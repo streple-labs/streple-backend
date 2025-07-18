@@ -1,14 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import {
-  better,
-  defineQueue,
-  defineWorker,
-  JobStatus,
-  Job as plainJob,
-} from 'plainjob';
-import { MailService, template } from '../mail';
+import { defineWorker, JobStatus, Job as plainJob } from 'plainjob';
 import { EmailJob } from 'src/global/common';
-import * as Database from 'better-sqlite3';
+import { MailService, template } from '../mail';
+import { JobQueueService } from './job.queue.service';
 
 export type Job = plainJob & {
   data: {
@@ -21,23 +15,8 @@ export type Job = plainJob & {
 
 @Injectable()
 export class EmailJobWorker {
+  private readonly jobQueueService = new JobQueueService();
   constructor(private readonly mailService: MailService) {}
-
-  private readonly connection = better(new Database('streple_jobs.db'));
-  private readonly jobQueue = defineQueue({
-    connection: this.connection,
-    timeout: 30 * 60 * 1000,
-    removeDoneJobsOlderThan: 7 * 24 * 60 * 60 * 1000,
-    removeFailedJobsOlderThan: 30 * 24 * 60 * 60 * 1000,
-    logger: {
-      info() {},
-      error(message) {
-        console.error(message);
-      },
-      warn() {},
-      debug() {},
-    },
-  });
 
   private readonly worker = defineWorker(
     'send-email',
@@ -45,7 +24,7 @@ export class EmailJobWorker {
       await this.sendEmail(job.data);
     },
     {
-      queue: this.jobQueue,
+      queue: this.jobQueueService.jobQueue,
       onCompleted: (job) => console.log(`✅ Job ${job.id} completed`),
       onFailed: (job, error) =>
         console.error(`❌ Job ${job.id} failed: ${error}`),
@@ -67,26 +46,28 @@ export class EmailJobWorker {
 
   async stop() {
     await this.worker.stop();
-    this.jobQueue.close();
+    this.jobQueueService.jobQueue.close();
   }
 
   scheduleEmail(data: EmailJob) {
-    this.jobQueue.add('send-email', data);
+    this.jobQueueService.jobQueue.add('send-email', data);
   }
 
   scheduleDelayedEmail(data: EmailJob, delayMs: number) {
-    this.jobQueue.add('send-email', data, { delay: delayMs });
+    this.jobQueueService.jobQueue.add('send-email', data, { delay: delayMs });
   }
 
   managingJob() {
     // Count pending jobs
-    const pendingCount = this.jobQueue.countJobs({ status: JobStatus.Pending });
+    const pendingCount = this.jobQueueService.jobQueue.countJobs({
+      status: JobStatus.Pending,
+    });
 
     // Get job types
-    const types = this.jobQueue.getJobTypes();
+    const types = this.jobQueueService.jobQueue.getJobTypes();
 
     // Get scheduled jobs
-    const scheduledJobs = this.jobQueue.getScheduledJobs();
+    const scheduledJobs = this.jobQueueService.jobQueue.getScheduledJobs();
 
     console.log({ pendingCount, types, scheduledJobs });
   }

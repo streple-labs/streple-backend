@@ -20,7 +20,7 @@ export function buildFindManyQuery<T extends ObjectLiteral>(
   search?: string,
   searchFields: string[] = [],
   relations: string[] = [],
-  sort: string[] = ['updatedAt:DESC'],
+  sort: string[] = ['updatedAt'], //'updatedAt:DESC'
 ): SelectQueryBuilder<T> {
   let paramCount = 0;
 

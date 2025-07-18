@@ -1,34 +1,43 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { BlogManagerService } from './blog-manager.service';
-import { CreateBlogManagerDto } from './dto/create-blog-manager.dto';
-import { UpdateBlogManagerDto } from './dto/update-blog-manager.dto';
+import { CreateBlog, FindManyBlog, FindOneBlog, UpdateBlog } from './dto';
+import { ParamSearch } from 'src/global/common';
 
 @Controller('blog-manager')
 export class BlogManagerController {
   constructor(private readonly blogManagerService: BlogManagerService) {}
 
   @Post()
-  create(@Body() createBlogManagerDto: CreateBlogManagerDto) {
-    return this.blogManagerService.create(createBlogManagerDto);
+  create(@Body() create: CreateBlog) {
+    return this.blogManagerService.create(create);
   }
 
   @Get()
-  findAll() {
-    return this.blogManagerService.findAll();
+  findAll(@Query() query: FindManyBlog) {
+    return this.blogManagerService.findAll(query);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.blogManagerService.findOne(+id);
+  @Get()
+  findOne(@Query() param: FindOneBlog) {
+    return this.blogManagerService.findOne(param);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBlogManagerDto: UpdateBlogManagerDto) {
-    return this.blogManagerService.update(+id, updateBlogManagerDto);
+  update(@Param() param: ParamSearch, @Body() update: UpdateBlog) {
+    return this.blogManagerService.update(param, update);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.blogManagerService.remove(+id);
+  remove(@Param() param: ParamSearch) {
+    return this.blogManagerService.remove(param);
   }
 }

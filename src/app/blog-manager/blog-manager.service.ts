@@ -1,26 +1,146 @@
-import { Injectable } from '@nestjs/common';
-import { CreateBlogManagerDto } from './dto/create-blog-manager.dto';
-import { UpdateBlogManagerDto } from './dto/update-blog-manager.dto';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Document, DocumentResult, paramSearch } from 'src/global/common';
+import {
+  blogStatus,
+  createBlog,
+  findManyBlog,
+  findOneBlog,
+  updatedBlog,
+} from './interface';
+import { InjectRepository } from '@nestjs/typeorm';
+import { BlogManager } from './entities/blog-manager.entity';
+import { Repository } from 'typeorm';
+import {
+  buildFindManyQuery,
+  FindManyWrapper,
+  FindOneWrapper,
+} from 'src/global/helpers';
 
 @Injectable()
 export class BlogManagerService {
-  create(createBlogManagerDto: CreateBlogManagerDto) {
-    return 'This action adds a new blogManager';
+  constructor(
+    @InjectRepository(BlogManager)
+    private readonly blog: Repository<BlogManager>,
+  ) {}
+
+  create(blog: createBlog) {
+    const { schedule, draft, ...data } = blog;
+    const slug = this.slug(data.title);
+    // TODO add user that create the blog id as creatorID
+    if (schedule) {
+      if (!data.scheduleDate) {
+        throw new ForbiddenException('Schedule data is invalid');
+      }
+
+      const save_schedule = this.blog.create({
+        ...data,
+        creatorId: null,
+        slug,
+        status: blogStatus.Schedule,
+      });
+
+      // schedule the blog
+      const delay = data.scheduleDate.getTime() - Date.now();
+      console.log(delay);
+      // TODO called the blog schedule service
+
+      return this.blog.save(save_schedule);
+    }
+
+    // TODO add the creator id when the user is available
+    const save_blog = this.blog.create({
+      ...data,
+      slug,
+      creatorId: null,
+      status: draft ? blogStatus.draft : blogStatus.publish,
+    });
+
+    return this.blog.save(save_blog);
   }
 
-  findAll() {
-    return `This action returns all blogManager`;
+  findAll(query: findManyBlog): Promise<DocumentResult<BlogManager>> {
+    const filters = this.filter(query);
+    const qb = this.blog.createQueryBuilder('blog');
+    buildFindManyQuery(
+      qb,
+      'blog',
+      filters,
+      query.search,
+      ['title', 'content', 'metatitle'],
+      query.include,
+      query.sort,
+    );
+
+    return FindManyWrapper(qb, query.page, query.limit);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} blogManager`;
+  async findOne(query: findOneBlog): Promise<Document<BlogManager>> {
+    const { include, sort, ...filters } = query;
+    const document = await FindOneWrapper<BlogManager>(this.blog, {
+      include,
+      sort,
+      filters,
+    });
+
+    if (document) {
+      await this.blog
+        .createQueryBuilder()
+        .update(BlogManager)
+        .set({ view: () => 'view + 1' })
+        .where(filters)
+        .execute();
+    }
+
+    return document;
   }
 
-  update(id: number, updateBlogManagerDto: UpdateBlogManagerDto) {
-    return `This action updates a #${id} blogManager`;
+  async update(param: paramSearch, update: updatedBlog) {
+    const blog = await this.blog.findOne({ where: { id: param.id } });
+
+    if (!blog) {
+      throw new ForbiddenException('Blog post not found');
+    }
+
+    if (blog?.status === blogStatus.draft && update.schedule) {
+      // schedule the date
+    }
+
+    // if()
+    // if blog status is schedule before and the status change the to published
+    // if blog status is draft and change to schedule set the schedule date
+    //
+    console.log({ param, update });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} blogManager`;
+  remove(param: paramSearch) {
+    console.log(param);
+  }
+
+  private filter(query: findManyBlog) {
+    let filters: Record<string, any> = {};
+
+    if (query.creatorId) {
+      filters = { creatorId: query.creatorId };
+    }
+    if (query.endAt && query.startFrom) {
+      filters = { createdAt: { $gte: query.startFrom, $lte: query.endAt } };
+    }
+
+    if (query.metatitle) {
+      filters = { metatitle: query.metatitle };
+    }
+
+    if (query.status) {
+      filters = { status: query.status };
+    }
+    if (query.tags) {
+      filters = { tags: { $in: query.tags } };
+    }
+
+    return filters;
+  }
+
+  private slug(name: string): string {
+    return name.replace(/\s+/g, '-').toLowerCase();
   }
 }
