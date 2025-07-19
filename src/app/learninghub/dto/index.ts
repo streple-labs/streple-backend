@@ -4,6 +4,7 @@ import {
   findManyLearning,
   findOneLearning,
   hubStatus,
+  hubType,
   Level,
   updatedLearning,
 } from '../interface';
@@ -60,6 +61,12 @@ export class CreateLearning implements createLearning {
   @IsString()
   @IsIn(Object.values(Level))
   level: Level;
+
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(Object.values(hubType))
+  @ApiProperty({ type: String, enum: Object.values(hubType) })
+  type: hubType;
 }
 
 export class UpdateLearning

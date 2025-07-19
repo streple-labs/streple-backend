@@ -9,6 +9,11 @@ export enum hubStatus {
   published = 'Published',
   draft = 'Draft',
 }
+
+export enum hubType {
+  pdf = 'pdf',
+  article = 'article',
+}
 export type ILearningHub = {
   id: string;
   title: string;
@@ -18,13 +23,15 @@ export type ILearningHub = {
   thumbnail: string;
   level: Level;
   status: hubStatus;
+  type: hubType;
+  creatorId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
 export type createLearning = Omit<
   ILearningHub,
-  'createdAt' | 'updatedAt' | 'id'
+  'createdAt' | 'updatedAt' | 'id' | 'creatorId'
 >;
 
 export type updatedLearning = Partial<createLearning>;
