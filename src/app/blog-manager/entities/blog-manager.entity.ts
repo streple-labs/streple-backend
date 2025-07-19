@@ -20,7 +20,7 @@ export class BlogManager implements IBlogManager {
   @Column({ type: 'text', nullable: false })
   content: string;
 
-  @Column({ type: 'json', array: true, default: [] })
+  @Column({ type: 'json' })
   tags: string[];
 
   @Column({ type: 'varchar', nullable: true })
@@ -47,7 +47,11 @@ export class BlogManager implements IBlogManager {
   @Column({ type: 'uuid', nullable: true })
   creatorId: string | null;
 
-  @Column({ type: 'enum', enum: blogStatus, default: blogStatus.draft })
+  @Column({
+    type: 'enum',
+    enum: ['Published', 'Draft', 'Scheduled'],
+    default: blogStatus.draft,
+  })
   status: blogStatus;
 
   @CreateDateColumn()

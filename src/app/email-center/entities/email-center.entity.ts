@@ -16,9 +16,8 @@ export class EmailCenter implements IEmailCenter {
   subject: string;
 
   @Column({
-    type: 'varchar',
-    enum: Object.values(EmailStatus),
-    nullable: false,
+    type: 'enum',
+    enum: ['Draft', 'Scheduled', 'Failed', 'Sent'],
   })
   status: EmailStatus;
 
@@ -26,9 +25,9 @@ export class EmailCenter implements IEmailCenter {
   message: string;
 
   @Column({
-    type: 'varchar',
+    type: 'enum',
+    enum: ['All users', 'Copiers', 'Protraders'],
     nullable: true,
-    enum: Object.values(EmailRecipient),
   })
   recipient: EmailRecipient;
 

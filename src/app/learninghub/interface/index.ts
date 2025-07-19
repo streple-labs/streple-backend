@@ -24,7 +24,7 @@ export type ILearningHub = {
 
 export type createLearning = Omit<
   ILearningHub,
-  'createdAt' | 'updatedAt' | 'status' | 'id'
+  'createdAt' | 'updatedAt' | 'id'
 >;
 
 export type updatedLearning = Partial<createLearning>;
