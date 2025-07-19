@@ -1,4 +1,13 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { Admin } from 'src/app/admins/admin.entity';
+import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
+import { CopyTrade } from 'src/app/copy-trading/entities/copy-trade.entity';
+import { CopyWallet } from 'src/app/copy-trading/entities/copy-wallet.entity';
+import { ProSignal } from 'src/app/copy-trading/entities/pro-signal.entity';
+import { Course } from 'src/app/course/course.entity';
+import { EmailCenter } from 'src/app/email-center/entities/email-center.entity';
+import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
+import { User } from 'src/app/users/user.entity';
 
 export default (): TypeOrmModuleOptions => ({
   type: (process.env.DB_TYPE as 'postgres' | 'mysql') || 'postgres',
@@ -8,7 +17,17 @@ export default (): TypeOrmModuleOptions => ({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [__dirname + '/**/*.entity{.ts,.js}'],
+  entities: [
+    Admin,
+    BlogManager,
+    CopyTrade,
+    CopyWallet,
+    ProSignal,
+    Course,
+    EmailCenter,
+    LearningHub,
+    User,
+  ],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
   },

@@ -1,5 +1,5 @@
 # Use exact Node version
-FROM node:23
+FROM node:22.15.0
 
 # Set working directory
 WORKDIR /app
