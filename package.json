@@ -115,6 +115,7 @@
     "testEnvironment": "node"
   },
   "engines": {
-    "node": "22"
+    "node": "23.x",
+    "npm": "11.x"
   }
 }
