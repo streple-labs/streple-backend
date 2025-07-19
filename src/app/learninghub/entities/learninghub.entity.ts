@@ -1,8 +1,10 @@
-import { hubStatus, ILearningHub, Level } from '../interface';
+import { User } from 'src/app/users/user.entity';
+import { hubStatus, hubType, ILearningHub, Level } from '../interface';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -30,8 +32,17 @@ export class LearningHub implements ILearningHub {
   @Column({ type: 'enum', enum: Level, default: Level.beginner })
   level: Level;
 
+  @Column({ type: 'enum', enum: hubType, default: hubType.article })
+  type: hubType;
+
   @Column({ type: 'enum', enum: hubStatus, default: hubStatus.draft })
   status: hubStatus;
+
+  @ManyToOne(() => User, (u) => u.id)
+  creator: User;
+
+  @Column({ type: 'uuid', nullable: true })
+  creatorId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
