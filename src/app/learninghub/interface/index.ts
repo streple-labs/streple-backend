@@ -43,6 +43,7 @@ export interface findManyLearning extends findMany {
   description?: string;
   startFrom?: Date; //filter which range
   endOn?: Date;
+  type?: hubType[];
 }
 
 export interface findOneLearning extends findOne {

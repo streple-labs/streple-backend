@@ -108,6 +108,13 @@ export class FindManyLearning extends FindMany implements findManyLearning {
   @ApiPropertyOptional({ type: [String] })
   description: string;
 
+  @IsString()
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  @IsIn(Object.values(hubType))
+  type: hubType[];
+
   @IsOptional()
   @IsDate()
   @Transform(({ value }: { value: string | number | Date }) => new Date(value))

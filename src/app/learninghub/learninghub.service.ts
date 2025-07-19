@@ -91,6 +91,10 @@ export class LearningHubService {
       filters = { status: rest.status };
     }
 
+    if (rest.type) {
+      filters = { type: rest.type };
+    }
+
     if (rest.startFrom && rest.endOn) {
       filters = { createdAt: { $gte: rest.startFrom, $lte: rest.endOn } };
     }
