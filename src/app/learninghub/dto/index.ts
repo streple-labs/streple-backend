@@ -21,6 +21,12 @@ import { FindMany, FindOne, transform } from 'src/global/common';
 import { Transform } from 'class-transformer';
 
 export class CreateLearning implements createLearning {
+  @ApiProperty({ type: String, enum: Object.values(hubStatus) })
+  @IsString()
+  @IsIn(Object.values(hubStatus))
+  @IsNotEmpty()
+  status: hubStatus;
+
   @ApiProperty({ type: String })
   @IsNotEmpty()
   @IsString()
