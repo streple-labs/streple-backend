@@ -79,8 +79,14 @@ export class CreateBlog implements createBlog {
 }
 
 export class UpdateBlog
-  extends OmitType(CreateBlog, ['schedule'])
-  implements updatedBlog {}
+  extends OmitType(CreateBlog, ['schedule', 'draft'])
+  implements updatedBlog
+{
+  @IsOptional()
+  @IsString()
+  @IsIn(Object.values(blogStatus))
+  status?: blogStatus;
+}
 
 export class FindManyBlog extends FindMany implements findManyBlog {
   @IsOptional()

@@ -1,4 +1,4 @@
-import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsDate, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import { FindMany, FindOne } from 'src/global/common';
@@ -7,10 +7,19 @@ import {
   EmailStatus,
   findManyEmail,
   findOneEmail,
+  updateEmail,
 } from '../interface';
 import { CreateEmailCenter } from './create.dto';
 
-export class UpdateEmailCenterDto extends PartialType(CreateEmailCenter) {}
+export class UpdateEmailCenterDto
+  extends PartialType(OmitType(CreateEmailCenter, ['draft', 'schedule']))
+  implements updateEmail
+{
+  @IsString()
+  @IsIn(Object.values(EmailStatus))
+  @IsOptional()
+  status?: EmailStatus;
+}
 
 export class FindManyEmail extends FindMany implements findManyEmail {
   @IsString({ each: true })

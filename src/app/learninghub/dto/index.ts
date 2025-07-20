@@ -108,7 +108,8 @@ export class FindManyLearning extends FindMany implements findManyLearning {
   @ApiPropertyOptional({ type: [String] })
   description: string;
 
-  @IsString()
+  @IsOptional()
+  @IsString({ each: true })
   @Transform(({ value }: transform) =>
     typeof value === 'string' ? [value] : value,
   )

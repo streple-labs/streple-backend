@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { defineWorker, Job as plainJob } from 'plainjob';
 import { JobQueueService } from './job.queue.service';
+import { BlogManagerService } from 'src/app/blog-manager/blog-manager.service';
+import { blogStatus } from 'src/app/blog-manager/interface';
 
 interface post {
   id: string;
@@ -16,6 +18,7 @@ const jobType = 'post-blog';
 @Injectable()
 export class BlogJobWorker {
   private readonly jobQueueService = new JobQueueService();
+  constructor(private readonly blogService: BlogManagerService) {}
 
   private readonly worker = defineWorker(
     jobType,
@@ -58,7 +61,7 @@ export class BlogJobWorker {
     try {
       blog = typeof data === 'string' ? await JSON.parse(data) : data;
 
-      console.log(blog);
+      await this.blogService.update(blog, { status: blogStatus.publish });
     } catch (error) {
       console.error('Error processing email job:', error);
       throw error;

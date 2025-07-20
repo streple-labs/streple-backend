@@ -1,11 +1,15 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Injectable } from '@nestjs/common';
 import { defineWorker, JobStatus, Job as plainJob } from 'plainjob';
 import { EmailJob } from 'src/global/common';
 import { MailService, template } from '../mail';
 import { JobQueueService } from './job.queue.service';
+import { EmailCenterService } from 'src/app/email-center/email-center.service';
+import { EmailStatus } from 'src/app/email-center/interface';
 
 export type Job = plainJob & {
   data: {
+    emailId: string;
     users: { email: string; fullName: string }[];
     template: template;
     subject: string;
@@ -16,7 +20,10 @@ export type Job = plainJob & {
 @Injectable()
 export class EmailJobWorker {
   private readonly jobQueueService = new JobQueueService();
-  constructor(private readonly mailService: MailService) {}
+  constructor(
+    private readonly mailService: MailService,
+    private readonly emailService: EmailCenterService,
+  ) {}
 
   private readonly worker = defineWorker(
     'send-email',
@@ -25,9 +32,25 @@ export class EmailJobWorker {
     },
     {
       queue: this.jobQueueService.jobQueue,
-      onCompleted: (job) => console.log(`✅ Job ${job.id} completed`),
-      onFailed: (job, error) =>
-        console.error(`❌ Job ${job.id} failed: ${error}`),
+      onCompleted: async (job: Job) => {
+        await this.emailService.update(
+          { id: job.data.emailId },
+          {
+            status: EmailStatus.sent,
+          },
+        );
+        console.log(`✅ Job ${job.id} completed`);
+      },
+      onFailed: async (job: Job, error) => {
+        await this.emailService.update(
+          { id: job.data.emailId },
+          {
+            status: EmailStatus.failed,
+            error,
+          },
+        );
+        console.error(`❌ Job ${job.id} failed: ${error}`);
+      },
       pollIntervall: 5000,
       logger: {
         info() {},
@@ -82,7 +105,6 @@ export class EmailJobWorker {
         throw new Error('Invalid email job: missing users array');
       }
 
-      console.log(email);
       for (const user of email.users) {
         await this.mailService.sendMail(
           user.email,

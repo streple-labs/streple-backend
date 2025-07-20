@@ -32,7 +32,9 @@ export interface createBlog
   schedule: boolean;
 }
 
-export type updatedBlog = Partial<createBlog>;
+export interface updatedBlog extends Partial<createBlog> {
+  status?: blogStatus;
+}
 
 export interface findManyBlog extends findMany {
   tags?: string[];
