@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Document, DocumentResult, paramSearch } from 'src/global/common';
 import {
@@ -18,13 +23,14 @@ import {
   updateEmail,
 } from './interface';
 import { EmailJobWorker, template } from 'src/global/services';
-export const QUEUE_NAME = 'send-email';
 @Injectable()
 export class EmailCenterService {
   constructor(
     @InjectRepository(EmailCenter)
     private readonly emailCenter: Repository<EmailCenter>,
     @InjectRepository(User) private readonly users: Repository<User>,
+
+    @Inject(forwardRef(() => EmailJobWorker))
     private readonly emailJobWorker: EmailJobWorker,
   ) {}
 
@@ -48,6 +54,7 @@ export class EmailCenterService {
       const delay = data.scheduleDate.getTime() - Date.now();
       this.emailJobWorker.scheduleDelayedEmail(
         {
+          emailId: save_schedule.id,
           users: recipients,
           template: template.broadcast,
           subject: data.subject,
@@ -65,6 +72,7 @@ export class EmailCenterService {
     });
 
     this.emailJobWorker.scheduleEmail({
+      emailId: save_sent.id,
       users: recipients,
       template: template.broadcast,
       subject: data.subject,
@@ -110,6 +118,39 @@ export class EmailCenterService {
       throw new ForbiddenException('Email not found');
     }
 
+    if (
+      update.status === EmailStatus.scheduled &&
+      findEmail.status !== EmailStatus.scheduled
+    ) {
+      if (!update.scheduleDate) {
+        throw new ForbiddenException('Schedule date is not defined');
+      }
+
+      const delay = update.scheduleDate.getTime() - Date.now();
+
+      if (delay <= 0) {
+        throw new ForbiddenException('Schedule date is in the past');
+      }
+      const recipients = await this.recipients(
+        update.recipient,
+        update.selected,
+      );
+
+      this.emailJobWorker.scheduleDelayedEmail(
+        {
+          emailId: findEmail.id,
+          users: recipients,
+          template: template.broadcast,
+          subject: update.subject ?? findEmail.subject,
+          context: { body: update.message ?? findEmail.message },
+        },
+        delay,
+      );
+
+      await this.emailCenter.update(param.id, update);
+      return findEmail;
+    }
+
     await this.emailCenter.update(param.id, update);
     return findEmail;
   }
@@ -118,7 +159,10 @@ export class EmailCenterService {
     return this.emailCenter.delete(param.id);
   }
 
-  private async recipients(recipient: EmailRecipient, selected: string[]) {
+  private async recipients(
+    recipient: EmailRecipient | undefined,
+    selected: string[] | undefined,
+  ) {
     const receiver: { email: string; fullName: string }[] = [];
 
     if (recipient === EmailRecipient.copiers) {
@@ -148,7 +192,7 @@ export class EmailCenterService {
       });
     }
 
-    if (selected?.length > 0) {
+    if (selected && selected?.length > 0) {
       const Copiers = await this.users.find({});
       console.log({ Copiers });
       receiver.push({

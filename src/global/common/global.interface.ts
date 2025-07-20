@@ -37,6 +37,7 @@ export type paramSearch = {
 };
 
 export type EmailJob = {
+  emailId: string;
   users: { email: string; fullName: string }[];
   template: template;
   subject: string;

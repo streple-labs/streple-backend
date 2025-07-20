@@ -18,6 +18,7 @@ export class EmailCenter implements IEmailCenter {
   @Column({
     type: 'enum',
     enum: ['Draft', 'Scheduled', 'Failed', 'Sent'],
+    default: EmailStatus.draft,
   })
   status: EmailStatus;
 
@@ -42,6 +43,9 @@ export class EmailCenter implements IEmailCenter {
 
   @Column({ type: 'decimal', nullable: false, default: 0 })
   clickRate: number;
+
+  @Column({ type: 'text', nullable: true })
+  error: string;
 
   @CreateDateColumn()
   createdAt: Date;

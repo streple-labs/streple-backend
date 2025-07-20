@@ -24,6 +24,7 @@ export interface IEmailCenter {
   scheduleDate: Date;
   openRate: number;
   clickRate: number;
+  error: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,7 +38,11 @@ export interface createEmail
   draft: boolean;
 }
 
-export type updateEmail = Partial<createEmail>;
+export interface updateEmail
+  extends Partial<Omit<createEmail, 'draft' | 'schedule'>> {
+  status?: EmailStatus;
+  error?: string;
+}
 
 export interface findOneEmail extends findOne {
   status?: EmailStatus;

@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { Document, DocumentResult, paramSearch } from 'src/global/common';
 import {
   blogStatus,
@@ -15,12 +20,16 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
+import { BlogJobWorker } from 'src/global/services';
 
 @Injectable()
 export class BlogManagerService {
   constructor(
     @InjectRepository(BlogManager)
     private readonly blog: Repository<BlogManager>,
+
+    @Inject(forwardRef(() => BlogJobWorker))
+    private readonly blogJobWorker: BlogJobWorker,
   ) {}
 
   create(blog: createBlog) {
@@ -41,9 +50,7 @@ export class BlogManagerService {
 
       // schedule the blog
       const delay = data.scheduleDate.getTime() - Date.now();
-      console.log(delay);
-      // TODO called the blog schedule service
-
+      this.blogJobWorker.scheduleDelayedEmail({ id: save_schedule.id }, delay);
       return this.blog.save(save_schedule);
     }
 
@@ -101,15 +108,36 @@ export class BlogManagerService {
       throw new ForbiddenException('Blog post not found');
     }
 
-    if (blog?.status === blogStatus.draft && update.schedule) {
+    // if blog status is draft and needs to change it to schedule
+    if (
+      blog?.status === blogStatus.draft &&
+      update.status === blogStatus.Schedule
+    ) {
+      if (!update.scheduleDate) {
+        throw new ForbiddenException('Schedule should be added');
+      }
       // schedule the date
+      const delay = update.scheduleDate.getTime() - Date.now();
+
+      if (delay <= 0) {
+        throw new ForbiddenException('Schedule date is in the past');
+      }
+
+      this.blogJobWorker.scheduleDelayedEmail({ id: blog.id }, delay);
+      await this.blog.update(param.id, update);
+      return blog;
     }
 
-    // if()
-    // if blog status is schedule before and the status change the to published
-    // if blog status is draft and change to schedule set the schedule date
-    //
-    console.log({ param, update });
+    // // if blog status is schedule and the updated status is still schedule
+    // if (
+    //   blog?.status === blogStatus.Schedule &&
+    //   update.status === blogStatus.Schedule
+    // ) {
+    //   return this.blog.update({ id: blog.id }, update);
+    // }
+    // when any of them is not responding
+    await this.blog.update({ id: blog.id }, update);
+    return blog;
   }
 
   remove(param: paramSearch) {
