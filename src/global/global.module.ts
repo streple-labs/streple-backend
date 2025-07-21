@@ -6,6 +6,7 @@ import {
   EmailJobWorker,
   MailService,
   SchedulerService,
+  UploadService,
 } from './services';
 import { EmailCenterModule } from 'src/app/email-center/email-center.module';
 @Global()
@@ -15,7 +16,13 @@ import { EmailCenterModule } from 'src/app/email-center/email-center.module';
     forwardRef(() => BlogManagerModule),
     forwardRef(() => EmailCenterModule),
   ],
-  providers: [MailService, EmailJobWorker, SchedulerService, BlogJobWorker],
-  exports: [MailService, EmailJobWorker, BlogJobWorker],
+  providers: [
+    MailService,
+    EmailJobWorker,
+    SchedulerService,
+    BlogJobWorker,
+    UploadService,
+  ],
+  exports: [MailService, EmailJobWorker, BlogJobWorker, UploadService],
 })
 export class GlobalModule {}

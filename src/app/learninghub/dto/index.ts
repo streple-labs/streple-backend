@@ -1,13 +1,5 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import {
-  createLearning,
-  findManyLearning,
-  findOneLearning,
-  hubStatus,
-  hubType,
-  Level,
-  updatedLearning,
-} from '../interface';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsDate,
   IsEnum,
@@ -19,7 +11,15 @@ import {
   MaxLength,
 } from 'class-validator';
 import { FindMany, FindOne, transform } from 'src/global/common';
-import { Transform } from 'class-transformer';
+import {
+  createLearning,
+  findManyLearning,
+  findOneLearning,
+  hubStatus,
+  hubType,
+  Level,
+  updatedLearning,
+} from '../interface';
 
 export class CreateLearning implements createLearning {
   @ApiProperty({ type: String, enum: Object.values(hubStatus) })
@@ -44,17 +44,11 @@ export class CreateLearning implements createLearning {
   @IsString()
   content: string;
 
-  @ApiPropertyOptional({ type: String })
-  @IsOptional()
-  @IsString()
-  @IsUrl()
-  document: string;
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  document?: string;
 
-  @ApiPropertyOptional({ type: String })
-  @IsOptional()
-  @IsString()
-  @IsUrl()
-  thumbnail: string;
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  thumbnail?: string;
 
   @ApiProperty({ type: String, enum: Object.values(Level) })
   @IsEnum(Level)
@@ -70,8 +64,19 @@ export class CreateLearning implements createLearning {
 }
 
 export class UpdateLearning
-  extends PartialType(CreateLearning)
-  implements updatedLearning {}
+  extends OmitType(CreateLearning, ['document', 'thumbnail'])
+  implements updatedLearning
+{
+  @IsOptional()
+  @IsUrl()
+  @ApiPropertyOptional({ type: String })
+  document?: string;
+
+  @IsOptional()
+  @IsUrl()
+  @ApiPropertyOptional({ type: String })
+  thumbnail?: string;
+}
 
 export class FindManyLearning extends FindMany implements findManyLearning {
   @IsString({ each: true })

@@ -1,28 +1,33 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
   Query,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
-import { LearningHubService } from './learninghub.service';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ParamSearch } from 'src/global/common';
 import {
   CreateLearning,
   FindManyLearning,
   FindOneLearning,
   UpdateLearning,
 } from './dto';
-import { ParamSearch } from 'src/global/common';
-import {
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { LearningHubService } from './learninghub.service';
 
 @Controller()
 @ApiTags('Learning Hub')
@@ -30,10 +35,38 @@ export class LearningHubController {
   constructor(private readonly learningService: LearningHubService) {}
 
   @Post('learning')
-  @ApiOperation({ summary: 'Create new learning resource' })
+  @ApiOperation({
+    summary: 'Create new learning resource',
+    description: 'Upload a learning resource with its document and thumbnail',
+  })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateLearning })
-  create(@Body() create: CreateLearning) {
-    return this.learningService.create(create);
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'document', maxCount: 1 },
+      { name: 'thumbnail', maxCount: 1 },
+    ]),
+  )
+  async create(
+    @Body() body: CreateLearning,
+    @UploadedFiles()
+    files: {
+      document?: Express.Multer.File[];
+      thumbnail?: Express.Multer.File[];
+    },
+  ) {
+    const document = files.document?.[0];
+    const thumbnail = files.thumbnail?.[0];
+
+    if (document) {
+      this.validateDocuments(document);
+    }
+
+    if (thumbnail) {
+      this.validateDocuments(thumbnail);
+    }
+
+    return this.learningService.create(body, document, thumbnail);
   }
 
   @Get('learnings')
@@ -63,5 +96,32 @@ export class LearningHubController {
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
   remove(@Param() param: ParamSearch) {
     return this.learningService.remove(param);
+  }
+
+  private validateDocuments(document: Express.Multer.File): void {
+    if (!document) return;
+
+    if (!document.buffer || document.size === 0) {
+      throw new ForbiddenException(`Document is empty`);
+    }
+
+    const validMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'application/pdf',
+      'application/msword', // .doc (Older Word)
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx (Modern Word)
+    ];
+
+    if (!validMimeTypes.includes(document.mimetype)) {
+      throw new ForbiddenException(
+        `Document has invalid file type. Only JPEG, PNG, DOCX, DOC, or PDF are allowed`,
+      );
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (document.size > maxSize) {
+      throw new ForbiddenException(`Document exceeds maximum size of 5MB`);
+    }
   }
 }
