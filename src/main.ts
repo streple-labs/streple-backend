@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 dotenv.config();
 import * as cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 
 if (!process.env.PORT) {
   throw new Error('Missing PORT in environment variables');
@@ -16,7 +17,9 @@ if (!process.env.CORS_ORIGINS) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
 
   app.use(cookieParser()); // Required for reading cookies
 

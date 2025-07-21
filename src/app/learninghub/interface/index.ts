@@ -19,8 +19,8 @@ export type ILearningHub = {
   title: string;
   description: string;
   content: string;
-  document: string;
-  thumbnail: string;
+  document?: string;
+  thumbnail?: string;
   level: Level;
   status: hubStatus;
   type: hubType;

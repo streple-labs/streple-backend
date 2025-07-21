@@ -1,12 +1,4 @@
-import { OmitType, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  blogStatus,
-  createBlog,
-  findManyBlog,
-  findOneBlog,
-  updatedBlog,
-} from '../interface';
-import { FindMany, FindOne, transform } from 'src/global/common';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsArray,
@@ -20,6 +12,14 @@ import {
   IsUrl,
   MaxLength,
 } from 'class-validator';
+import { FindMany, FindOne, transform } from 'src/global/common';
+import {
+  blogStatus,
+  createBlog,
+  findManyBlog,
+  findOneBlog,
+  updatedBlog,
+} from '../interface';
 
 export class CreateBlog implements createBlog {
   @ApiProperty({ type: Boolean, required: true })
@@ -56,10 +56,8 @@ export class CreateBlog implements createBlog {
   @IsString({ each: true })
   tags: string[];
 
-  @ApiPropertyOptional({ type: String, required: false, format: 'url' })
-  @IsString()
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
   @IsOptional()
-  @IsUrl()
   thumbnail: string;
 
   @ApiProperty({ type: String, required: true })
@@ -79,13 +77,19 @@ export class CreateBlog implements createBlog {
 }
 
 export class UpdateBlog
-  extends OmitType(CreateBlog, ['schedule', 'draft'])
+  extends OmitType(CreateBlog, ['schedule', 'draft', 'thumbnail'])
   implements updatedBlog
 {
   @IsOptional()
   @IsString()
   @IsIn(Object.values(blogStatus))
+  @ApiPropertyOptional({ type: String })
   status?: blogStatus;
+
+  @IsOptional()
+  @IsUrl()
+  @ApiPropertyOptional({ type: String })
+  thumbnail?: string;
 }
 
 export class FindManyBlog extends FindMany implements findManyBlog {

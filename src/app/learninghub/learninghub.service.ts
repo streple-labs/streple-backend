@@ -14,14 +14,29 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
-
+import { UploadService } from 'src/global/services';
 @Injectable()
 export class LearningHubService {
   constructor(
     @InjectRepository(LearningHub)
     private readonly learning: Repository<LearningHub>,
+    private readonly uploadFile: UploadService,
   ) {}
-  create(create: createLearning): Promise<LearningHub> {
+  async create(
+    create: createLearning,
+    document: Express.Multer.File | undefined,
+    thumbnail: Express.Multer.File | undefined,
+  ): Promise<LearningHub> {
+    if (document) {
+      const doc = await this.uploadFile.uploadDocument(document, 'documents');
+      create.document = doc;
+    }
+
+    if (thumbnail) {
+      const thumb = await this.uploadFile.uploadDocument(thumbnail);
+      create.thumbnail = thumb;
+    }
+
     const save_course = this.learning.create(create);
     return this.learning.save(save_course);
   }

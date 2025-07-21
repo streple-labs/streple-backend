@@ -20,7 +20,7 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
-import { BlogJobWorker } from 'src/global/services';
+import { BlogJobWorker, UploadService } from 'src/global/services';
 
 @Injectable()
 export class BlogManagerService {
@@ -30,10 +30,19 @@ export class BlogManagerService {
 
     @Inject(forwardRef(() => BlogJobWorker))
     private readonly blogJobWorker: BlogJobWorker,
+
+    @Inject(forwardRef(() => UploadService))
+    private readonly uploadFile: UploadService,
   ) {}
 
-  create(blog: createBlog) {
+  async create(blog: createBlog, file: Express.Multer.File) {
     const { schedule, draft, ...data } = blog;
+
+    if (file) {
+      const thumbnail = await this.uploadFile.uploadDocument(file);
+      data.thumbnail = thumbnail;
+    }
+
     const slug = this.slug(data.title);
     // TODO add user that create the blog id as creatorID
     if (schedule) {
