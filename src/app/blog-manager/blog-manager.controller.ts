@@ -10,6 +10,7 @@ import {
   Query,
   UploadedFile,
   UseInterceptors,
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -17,17 +18,20 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiParam,
-  ApiQuery,
+  ApiTags,
 } from '@nestjs/swagger';
 import { ParamSearch } from 'src/global/common';
 import { BlogManagerService } from './blog-manager.service';
 import { CreateBlog, FindManyBlog, FindOneBlog, UpdateBlog } from './dto';
 
-@Controller('blog-manager')
+@Controller({
+  version: VERSION_NEUTRAL,
+})
+@ApiTags('Blog Manager')
 export class BlogManagerController {
   constructor(private readonly blogManagerService: BlogManagerService) {}
 
-  @Post()
+  @Post('blog')
   @ApiBody({ type: CreateBlog })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('thumbnail'))
@@ -42,21 +46,19 @@ export class BlogManagerController {
     return this.blogManagerService.create(create, file);
   }
 
-  @Get()
+  @Get('blogs')
   @ApiOperation({ summary: 'Find many' })
-  @ApiQuery({ type: FindManyBlog })
   findAll(@Query() query: FindManyBlog) {
     return this.blogManagerService.findAll(query);
   }
 
-  @Get()
+  @Get('blog')
   @ApiOperation({ summary: 'Find one' })
-  @ApiQuery({ type: FindOneBlog })
   findOne(@Query() param: FindOneBlog) {
     return this.blogManagerService.findOne(param);
   }
 
-  @Patch(':id')
+  @Patch('blog/:id')
   @ApiBody({ type: UpdateBlog })
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'update blog' })
@@ -64,7 +66,7 @@ export class BlogManagerController {
     return this.blogManagerService.update(param, update);
   }
 
-  @Delete(':id')
+  @Delete('blog/:id')
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'Delete One Blog' })
   remove(@Param() param: ParamSearch) {

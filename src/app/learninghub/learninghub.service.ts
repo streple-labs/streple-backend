@@ -111,7 +111,12 @@ export class LearningHubService {
     }
 
     if (rest.startFrom && rest.endOn) {
-      filters = { createdAt: { $gte: rest.startFrom, $lte: rest.endOn } };
+      const startDate = new Date(rest.startFrom);
+      const endDate = new Date(rest.endOn);
+
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        filters = { createdAt: { $gte: startDate, $lte: endDate } };
+      }
     }
 
     return { page, sort, limit, include, search, filters };

@@ -98,7 +98,7 @@ export class FindManyLearning extends FindMany implements findManyLearning {
 
   @IsString({ each: true })
   @IsOptional()
-  @IsIn(Object.values(hubStatus))
+  // @IsEnum(hubStatus)
   @Transform(({ value }: transform) =>
     typeof value === 'string' ? [value] : value,
   )
@@ -138,20 +138,17 @@ export class FindOneLearning extends FindOne implements findOneLearning {
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ type: String })
-  @Transform(({ value }: { value: string }) => value.trim())
   title: string;
 
   @IsString()
   @IsIn(Object.values(Level))
   @ApiPropertyOptional({ type: String })
   @IsOptional()
-  @Transform(({ value }: { value: string }) => value.trim())
   level: Level;
 
   @IsString()
   @IsOptional()
   @IsIn(Object.values(hubStatus))
-  @Transform(({ value }: { value: string }) => value.trim())
   @ApiPropertyOptional({ type: String, enum: Object.values(hubStatus) })
   status: hubStatus;
 }

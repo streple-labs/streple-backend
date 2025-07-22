@@ -1,31 +1,28 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
   ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
   Query,
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
-import { EmailCenterService } from './email-center.service';
+import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ParamSearch } from 'src/global/common';
+import { CreateEmailCenter } from './dto';
 import {
   FindManyEmail,
   FindOneEmail,
   UpdateEmailCenterDto,
 } from './dto/email-center.dto';
-import { CreateEmailCenter } from './dto';
-import { ParamSearch } from 'src/global/common';
-import {
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { EmailCenterService } from './email-center.service';
 
-@Controller()
+@Controller({
+  version: VERSION_NEUTRAL,
+})
 @ApiTags('Email Center')
 export class EmailCenterController {
   constructor(private readonly emailCenterService: EmailCenterService) {}
@@ -44,14 +41,12 @@ export class EmailCenterController {
 
   @Get('emails')
   @ApiOperation({ summary: 'Find many emails filter with available field' })
-  @ApiQuery({ type: FindManyEmail })
   findAll(@Query() query: FindManyEmail) {
     return this.emailCenterService.findAll(query);
   }
 
   @Get('email')
   @ApiOperation({ summary: 'Find one email, filter with available field' })
-  @ApiQuery({ type: FindOneEmail })
   findOne(@Query() query: FindOneEmail) {
     return this.emailCenterService.findOne(query);
   }

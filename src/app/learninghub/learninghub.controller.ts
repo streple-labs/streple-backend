@@ -10,6 +10,7 @@ import {
   Query,
   UploadedFiles,
   UseInterceptors,
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -17,7 +18,6 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { ParamSearch } from 'src/global/common';
@@ -29,7 +29,9 @@ import {
 } from './dto';
 import { LearningHubService } from './learninghub.service';
 
-@Controller()
+@Controller({
+  version: VERSION_NEUTRAL,
+})
 @ApiTags('Learning Hub')
 export class LearningHubController {
   constructor(private readonly learningService: LearningHubService) {}
@@ -71,14 +73,12 @@ export class LearningHubController {
 
   @Get('learnings')
   @ApiOperation({ summary: 'Find many learning resources' })
-  @ApiQuery({ type: FindManyLearning })
   findAll(@Query() query: FindManyLearning) {
     return this.learningService.findAll(query);
   }
 
   @Get('learning')
   @ApiOperation({ summary: 'Find one learning resources' })
-  @ApiQuery({ type: FindOneLearning })
   findOne(@Query() query: FindOneLearning) {
     return this.learningService.findOne(query);
   }
