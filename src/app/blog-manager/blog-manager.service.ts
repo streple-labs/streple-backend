@@ -160,7 +160,12 @@ export class BlogManagerService {
       filters = { creatorId: query.creatorId };
     }
     if (query.endAt && query.startFrom) {
-      filters = { createdAt: { $gte: query.startFrom, $lte: query.endAt } };
+      const startDate = new Date(query.startFrom);
+      const endDate = new Date(query.endAt);
+
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        filters = { createdAt: { $gte: startDate, $lte: endDate } };
+      }
     }
 
     if (query.metatitle) {

@@ -23,7 +23,6 @@ export class UpdateEmailCenterDto
 
 export class FindManyEmail extends FindMany implements findManyEmail {
   @IsString({ each: true })
-  @IsIn(Object.values(EmailRecipient))
   @IsOptional()
   @ApiPropertyOptional({ type: [String], enum: Object.values(EmailStatus) })
   @Transform(({ value }: { value: string | string[] }) =>

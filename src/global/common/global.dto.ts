@@ -52,7 +52,6 @@ export class FindMany implements findMany {
 export class FindOne implements findOne {
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @IsUUID()
   @ApiPropertyOptional({
     type: String,
