@@ -33,8 +33,11 @@ export class EmailJobWorker {
     {
       queue: this.jobQueueService.jobQueue,
       onCompleted: async (job: Job) => {
+        const data: EmailJob =
+          typeof job.data === 'string' ? await JSON.parse(job.data) : job.data;
+        console.log(data.emailId);
         await this.emailService.update(
-          { id: job.data.emailId },
+          { id: data.emailId },
           {
             status: EmailStatus.sent,
           },
@@ -42,8 +45,10 @@ export class EmailJobWorker {
         console.log(`✅ Job ${job.id} completed`);
       },
       onFailed: async (job: Job, error) => {
+        const data: EmailJob =
+          typeof job.data === 'string' ? await JSON.parse(job.data) : job.data;
         await this.emailService.update(
-          { id: job.data.emailId },
+          { id: data.emailId },
           {
             status: EmailStatus.failed,
             error,

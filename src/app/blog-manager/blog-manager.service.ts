@@ -132,8 +132,8 @@ export class BlogManagerService {
         throw new ForbiddenException('Schedule date is in the past');
       }
 
-      this.blogJobWorker.scheduleDelayedEmail({ id: blog.id }, delay);
-      await this.blog.update(param.id, update);
+      this.blogJobWorker.scheduleDelayedEmail(param, delay);
+      await this.blog.update(param, update);
       return blog;
     }
 
@@ -145,12 +145,12 @@ export class BlogManagerService {
     //   return this.blog.update({ id: blog.id }, update);
     // }
     // when any of them is not responding
-    await this.blog.update({ id: blog.id }, update);
+    await this.blog.update(param, update);
     return blog;
   }
 
   remove(param: paramSearch) {
-    console.log(param);
+    return this.blog.delete(param.id);
   }
 
   private filter(query: findManyBlog) {

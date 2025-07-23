@@ -30,26 +30,6 @@ export class FindManyEmail extends FindMany implements findManyEmail {
   )
   status?: EmailStatus[];
 
-  @ApiPropertyOptional({ type: [Number] })
-  @IsOptional()
-  @IsNumber({}, { each: true })
-  @Transform(({ value }: { value: string | string[] }) =>
-    Array.isArray(value)
-      ? value.map((v) => parseFloat(v))
-      : [parseFloat(value)],
-  )
-  openRate?: number[];
-
-  @ApiPropertyOptional({ type: [Number] })
-  @IsOptional()
-  @IsNumber({}, { each: true })
-  @Transform(({ value }: { value: string | string[] }) =>
-    Array.isArray(value)
-      ? value.map((v) => parseFloat(v))
-      : [parseFloat(value)],
-  )
-  clickRate?: number[];
-
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsString({ each: true })

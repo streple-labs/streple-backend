@@ -1,4 +1,3 @@
-// app.module.ts or main scheduler manager
 import { OnModuleInit, OnModuleDestroy, Injectable } from '@nestjs/common';
 import { EmailJobWorker } from './email.job.service';
 import { BlogJobWorker } from './blog.job.service';

@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { FindMany, FindOne, transform } from 'src/global/common';
@@ -101,19 +102,18 @@ export class FindManyBlog extends FindMany implements findManyBlog {
   )
   tags?: string[];
 
-  @IsArray()
+  @IsUUID()
   @IsOptional()
+  @IsString({ each: true })
   @ApiPropertyOptional({ type: [String], required: false })
   @Transform(({ value }: transform) =>
     typeof value === 'string' ? [value] : value,
   )
-  @IsString({ each: true })
   creatorId?: string[];
 
   @IsOptional()
   @IsString({ each: true })
-  @IsIn(Object.values(blogStatus))
-  @IsEnum(blogStatus, { each: true })
+  @IsIn(Object.values(blogStatus), { each: true })
   @ApiPropertyOptional({ enum: blogStatus, isArray: true, required: false })
   @Transform(({ value }: transform) =>
     typeof value === 'string' ? [value] : value,

@@ -52,9 +52,11 @@ export class EmailCenterService {
         status: EmailStatus.scheduled,
       });
       const delay = data.scheduleDate.getTime() - Date.now();
+
+      const save_data = await this.emailCenter.save(save_schedule);
       this.emailJobWorker.scheduleDelayedEmail(
         {
-          emailId: save_schedule.id,
+          emailId: save_data.id,
           users: recipients,
           template: template.broadcast,
           subject: data.subject,
@@ -63,7 +65,7 @@ export class EmailCenterService {
         delay,
       );
 
-      return this.emailCenter.save(save_schedule);
+      return save_data;
     }
 
     const save_sent = this.emailCenter.create({
@@ -71,14 +73,16 @@ export class EmailCenterService {
       status: EmailStatus.sent,
     });
 
+    const save_data = await this.emailCenter.save(save_sent);
     this.emailJobWorker.scheduleEmail({
-      emailId: save_sent.id,
+      emailId: save_data.id,
       users: recipients,
       template: template.broadcast,
       subject: data.subject,
       context: { body: data.message },
     });
-    return this.emailCenter.save(save_sent);
+
+    return save_data;
   }
 
   findAll(query: findManyEmail): Promise<DocumentResult<EmailCenter>> {
@@ -147,11 +151,11 @@ export class EmailCenterService {
         delay,
       );
 
-      await this.emailCenter.update(param.id, update);
+      await this.emailCenter.update(param, update);
       return findEmail;
     }
 
-    await this.emailCenter.update(param.id, update);
+    await this.emailCenter.update(param, update);
     return findEmail;
   }
 

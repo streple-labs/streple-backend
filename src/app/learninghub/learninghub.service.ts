@@ -78,7 +78,7 @@ export class LearningHubService {
       throw new ForbiddenException('Course not found');
     }
 
-    await this.learning.update(param.id, update);
+    await this.learning.update(param, update);
     return findCourse;
   }
 
