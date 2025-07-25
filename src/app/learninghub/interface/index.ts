@@ -14,16 +14,27 @@ export enum hubType {
   pdf = 'pdf',
   article = 'article',
 }
+
+export interface question {
+  title: string;
+  option1: string;
+  option2: string;
+  option3: string;
+  answer: string;
+}
+
 export type ILearningHub = {
   id: string;
   title: string;
   description: string;
-  content: string;
+  content?: string;
+  contents?: string[];
   document?: string;
   thumbnail?: string;
   level: Level;
   status: hubStatus;
   type: hubType;
+  questions: question[];
   creatorId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -34,7 +45,9 @@ export type createLearning = Omit<
   'createdAt' | 'updatedAt' | 'id' | 'creatorId'
 >;
 
-export type updatedLearning = Partial<createLearning>;
+export type updatedLearning = Partial<
+  Omit<createLearning, 'document' | 'thumbnail'>
+>;
 
 export interface findManyLearning extends findMany {
   title?: string[];

@@ -4,7 +4,12 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import { Document, DocumentResult, paramSearch } from 'src/global/common';
+import {
+  AuthUser,
+  Document,
+  DocumentResult,
+  paramSearch,
+} from 'src/global/common';
 import {
   blogStatus,
   createBlog,
@@ -35,7 +40,7 @@ export class BlogManagerService {
     private readonly uploadFile: UploadService,
   ) {}
 
-  async create(blog: createBlog, file: Express.Multer.File) {
+  async create(blog: createBlog, file: Express.Multer.File, user: AuthUser) {
     const { schedule, draft, ...data } = blog;
 
     if (file) {
@@ -44,34 +49,31 @@ export class BlogManagerService {
     }
 
     const slug = this.slug(data.title);
-    // TODO add user that create the blog id as creatorID
+    const save_data = this.blog.create({
+      ...data,
+      creatorId: user.id,
+      slug,
+    });
+
     if (schedule) {
       if (!data.scheduleDate) {
         throw new ForbiddenException('Schedule data is invalid');
       }
 
-      const save_schedule = this.blog.create({
-        ...data,
-        creatorId: null,
-        slug,
-        status: blogStatus.Schedule,
-      });
-
       // schedule the blog
       const delay = data.scheduleDate.getTime() - Date.now();
-      this.blogJobWorker.scheduleDelayedEmail({ id: save_schedule.id }, delay);
-      return this.blog.save(save_schedule);
+      const blog = await this.blog.save({
+        ...save_data,
+        status: blogStatus.Schedule,
+      });
+      this.blogJobWorker.scheduleDelayedEmail({ id: blog.id }, delay);
+      return blog;
     }
 
-    // TODO add the creator id when the user is available
-    const save_blog = this.blog.create({
-      ...data,
-      slug,
-      creatorId: null,
+    return this.blog.save({
+      ...save_data,
       status: draft ? blogStatus.draft : blogStatus.publish,
     });
-
-    return this.blog.save(save_blog);
   }
 
   findAll(query: findManyBlog): Promise<DocumentResult<BlogManager>> {
@@ -110,11 +112,17 @@ export class BlogManagerService {
     return document;
   }
 
-  async update(param: paramSearch, update: updatedBlog) {
+  async update(param: paramSearch, update: updatedBlog, user?: AuthUser) {
     const blog = await this.blog.findOne({ where: { id: param.id } });
 
     if (!blog) {
       throw new ForbiddenException('Blog post not found');
+    }
+
+    if (user) {
+      if (blog.creatorId !== user.id) {
+        throw new ForbiddenException('You are not the creator of this blog');
+      }
     }
 
     // if blog status is draft and needs to change it to schedule
@@ -149,7 +157,17 @@ export class BlogManagerService {
     return blog;
   }
 
-  remove(param: paramSearch) {
+  async remove(param: paramSearch, user: AuthUser) {
+    const blog = await this.blog.findOne({ where: { id: param.id } });
+
+    if (!blog) {
+      throw new ForbiddenException('Blog post not found');
+    }
+
+    if (blog.creatorId !== user.id) {
+      throw new ForbiddenException('You are not the creator of this blog');
+    }
+
     return this.blog.delete(param.id);
   }
 

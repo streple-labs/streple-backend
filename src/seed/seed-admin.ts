@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
-import { Admin } from '../app/admins/admin.entity';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
+import { User } from '@app/users/user.entity';
 dotenv.config();
 
 if (!process.env.ADMIN_EMAIL) {
@@ -16,7 +16,7 @@ const dataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [Admin],
+  entities: [User],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
   },
@@ -25,7 +25,7 @@ const dataSource = new DataSource({
 
 async function seed() {
   await dataSource.initialize();
-  const repo = dataSource.getRepository(Admin);
+  const repo = dataSource.getRepository(User);
 
   const exists = await repo.findOneBy({
     email: process.env.ADMIN_EMAIL as string,

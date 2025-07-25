@@ -35,7 +35,6 @@ export class EmailJobWorker {
       onCompleted: async (job: Job) => {
         const data: EmailJob =
           typeof job.data === 'string' ? await JSON.parse(job.data) : job.data;
-        console.log(data.emailId);
         await this.emailService.update(
           { id: data.emailId },
           {

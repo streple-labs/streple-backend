@@ -1,30 +1,27 @@
+import { AuthUser } from '@app/common';
+import { SessionUser } from '@app/decorators';
 import {
+  Body,
   Controller,
   Get,
   Patch,
-  Body,
-  UseGuards,
-  Req,
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ToggleRoleDto } from './dto/toggle-role.dto';
-import { TopUpDto } from './dto/top-up.dto';
 import {
-  ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ToggleRoleDto } from './dto/toggle-role.dto';
+import { TopUpDto } from './dto/top-up.dto';
+import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
-@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
@@ -32,24 +29,24 @@ export class UsersController {
   @Get('me')
   @ApiOperation({ summary: 'Current user basic JWT payload' })
   @ApiResponse({ status: 200, description: 'Decoded JWT payload' })
-  me(@Req() req: Request) {
-    return req.user;
+  me(@SessionUser() user: AuthUser) {
+    return user;
   }
 
   /* -------- profile page ---------------------------------- */
   @Get('profile')
   @ApiOperation({ summary: 'Full profile' })
   @ApiResponse({ status: 200, description: 'Returns detailed user profile' })
-  profile(@Req() req: Request) {
-    return this.users.getProfile((req.user as any).id);
+  profile(@SessionUser() user: AuthUser) {
+    return this.users.getProfile(user.id);
   }
 
   /* -------- role switching -------------------------------- */
   @Patch('toggle-role')
   @ApiOperation({ summary: 'Switch between PRO_TRADER / FOLLOWER' })
   @ApiResponse({ status: 200, description: 'User role updated' })
-  toggle(@Req() req: Request, @Body() dto: ToggleRoleDto) {
-    return this.users.toggleRole((req.user as any).id, dto);
+  toggle(@SessionUser() user: AuthUser, @Body() dto: ToggleRoleDto) {
+    return this.users.toggleRole(user.id, dto);
   }
 
   /* -------- dashboard (overview) -------------------------- */
@@ -59,25 +56,25 @@ export class UsersController {
     status: 200,
     description: 'Returns user trading dashboard info',
   })
-  dashboard(@Req() req: Request) {
-    return this.users.getDashboard((req.user as any).id);
+  dashboard(@SessionUser() user: AuthUser) {
+    return this.users.getDashboard(user.id);
   }
 
   /* -------- funding account balance ----------------------- */
   @Get('demo-balance')
   @ApiOperation({ summary: 'Funding account balance' })
   @ApiResponse({ status: 200, description: 'Returns user funding balance' })
-  async demoFunding(@Req() req: Request) {
-    return this.users.getDemoFunding((req.user as any).id);
+  async demoFunding(@SessionUser() user: AuthUser) {
+    return this.users.getDemoFunding(user.id);
   }
 
   /* -------- top‑up funding balance (DEV / DEMO) ----------- */
   @Patch('demo-balance/top-up')
   @ApiOperation({ summary: 'Top-up funding balance (DEMO)' })
   @ApiResponse({ status: 200, description: 'Balance updated successfully' })
-  async topUp(@Req() req: Request, @Body() dto: TopUpDto) {
-    const user = await this.users.topUpDemoFunding((req.user as any).id, dto);
-    return { ok: true, balance: user.demoFundingBalance };
+  async topUp(@SessionUser() user: AuthUser, @Body() dto: TopUpDto) {
+    const response = await this.users.topUpDemoFunding(user.id, dto);
+    return { ok: true, balance: response.demoFundingBalance };
   }
 
   /* -------- list copy wallets (per‑pro trading balances) -- */
@@ -87,8 +84,8 @@ export class UsersController {
     status: 200,
     description: 'Returns wallet balances grouped by trader',
   })
-  wallets(@Req() req: Request) {
-    return this.users.getCopyWallets((req.user as any).id);
+  wallets(@SessionUser() user: AuthUser) {
+    return this.users.getCopyWallets(user.id);
   }
 
   @Post('change-password')
@@ -96,8 +93,11 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 400, description: 'Current password is incorrect' })
-  async changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
-    if (!req.user) throw new UnauthorizedException();
+  async changePassword(
+    @SessionUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    if (!user) throw new UnauthorizedException();
     return this.users.changePassword(dto);
   }
 }

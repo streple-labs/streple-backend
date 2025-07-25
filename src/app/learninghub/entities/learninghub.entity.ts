@@ -1,5 +1,11 @@
 import { User } from 'src/app/users/user.entity';
-import { hubStatus, hubType, ILearningHub, Level } from '../interface';
+import {
+  hubStatus,
+  hubType,
+  ILearningHub,
+  Level,
+  question,
+} from '../interface';
 import {
   Column,
   CreateDateColumn,
@@ -20,17 +26,17 @@ export class LearningHub implements ILearningHub {
   @Column()
   description: string;
 
-  @Column({ type: 'text', nullable: true })
-  content: string;
-
-  @Column({ nullable: true })
-  document: string;
+  @Column({ type: 'json', nullable: true })
+  contents: string[];
 
   @Column({ nullable: true })
   thumbnail: string;
 
   @Column({ type: 'enum', enum: Level, default: Level.beginner })
   level: Level;
+
+  @Column({ type: 'json', nullable: true })
+  questions: question[];
 
   @Column({ type: 'enum', enum: hubType, default: hubType.article })
   type: hubType;

@@ -7,9 +7,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/user.entity';
+import { ICopyWallet } from '../interface';
 
 @Entity()
-export class CopyWallet {
+export class CopyWallet implements ICopyWallet {
   @PrimaryGeneratedColumn('uuid') id: string;
 
   @ManyToOne(() => User, (u) => u.copyWallets) user: User;

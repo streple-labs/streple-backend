@@ -1,24 +1,25 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AdminsModule } from './app/admins/admins.module';
 import { AuthModule } from './app/auth/auth.module';
+import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
 import { CopyTradingModule } from './app/copy-trading/copy-trading.module';
 import { EmailCenterModule } from './app/email-center/email-center.module';
+import { GamifiedModule } from './app/gamified/gamified.module';
 import { LearninghubModule } from './app/learninghub/learninghub.module';
 import { UsersModule } from './app/users/users.module';
 import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
-import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
+import { JwtAuthGuard } from './global/guards';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({ useFactory: ormConfig }),
-    AdminsModule,
     UsersModule,
     CopyTradingModule,
     AuthModule,
@@ -34,8 +35,15 @@ import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
     EmailCenterModule,
     GlobalModule,
     BlogManagerModule,
+    GamifiedModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    AppService,
+  ],
 })
 export class AppModule {}

@@ -4,8 +4,8 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsStrongPassword,
   IsUrl,
-  MinLength,
 } from 'class-validator';
 
 export class SignupDto {
@@ -22,7 +22,13 @@ export class SignupDto {
   @ApiProperty({ example: 'P@ssw0rd' })
   @IsNotEmpty()
   @IsString()
-  @MinLength(8)
+  @IsStrongPassword({
+    minLength: 8,
+    minLowercase: 1,
+    minNumbers: 1,
+    minSymbols: 1,
+    minUppercase: 1,
+  })
   password: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })

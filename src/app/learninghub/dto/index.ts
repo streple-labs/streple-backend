@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsDate,
   IsEnum,
   IsIn,
@@ -9,6 +10,7 @@ import {
   IsString,
   IsUrl,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { FindMany, FindOne, transform } from 'src/global/common';
 import {
@@ -18,9 +20,31 @@ import {
   hubStatus,
   hubType,
   Level,
+  question,
   updatedLearning,
 } from '../interface';
 
+class Questions implements question {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsNotEmpty()
+  option1: string;
+
+  @IsString()
+  @IsNotEmpty()
+  option2: string;
+
+  @IsString()
+  @IsNotEmpty()
+  option3: string;
+
+  @IsString()
+  @IsNotEmpty()
+  answer: string;
+}
 export class CreateLearning implements createLearning {
   @ApiProperty({ type: String, enum: Object.values(hubStatus) })
   @IsString()
@@ -42,7 +66,7 @@ export class CreateLearning implements createLearning {
   @ApiPropertyOptional({ type: String })
   @IsOptional()
   @IsString()
-  content: string;
+  content?: string;
 
   @ApiPropertyOptional({ type: 'string', format: 'binary' })
   document?: string;
@@ -61,6 +85,13 @@ export class CreateLearning implements createLearning {
   @IsIn(Object.values(hubType))
   @ApiProperty({ type: String, enum: Object.values(hubType) })
   type: hubType;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Questions)
+  @ApiPropertyOptional({ type: [Questions] })
+  questions: question[];
 }
 
 export class UpdateLearning

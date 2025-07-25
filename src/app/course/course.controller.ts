@@ -14,14 +14,6 @@ import { CourseService } from './course.service';
 export class CourseController {
   constructor(private readonly service: CourseService) {}
 
-  //   @Get()
-  //   findAll(
-  //     @Query('search') search?: string,
-  //     @Query('status') status?: string,
-  //   ): Promise<Course[]> {
-  //     return this.service.findAll(search, status);
-  //   }
-
   @Get(':id')
   findOne(@Param('id') id: number): Promise<Course | null> {
     return this.service.findOne(id);

@@ -1,72 +1,62 @@
 // src/copy-trading/copy-trading.controller.ts
+import { AuthUser } from '@app/common';
+import { SessionUser } from '@app/decorators';
+import { Role } from '@app/users/interface';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Req,
-  Get,
-  Param,
-  Patch,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { CopyTradingService } from './copy-trading.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../../global/decorators/roles.decorator';
-import { Role } from '../users/enums/role.enum';
-import { SignalDto } from './dto/signal.dto';
-import { SubscribeDto } from './dto/subscribe.dto';
-import { ExecuteDto } from './dto/execute.dto';
-import {
-  ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
+import { Roles } from '../../global/decorators/roles.decorator';
+import { CopyTradingService } from './copy-trading.service';
+import { ExecuteDto } from './dto/execute.dto';
+import { SignalDto } from './dto/signal.dto';
+import { SubscribeDto } from './dto/subscribe.dto';
 
 @ApiTags('CopyTrading')
 @ApiBearerAuth()
 @Controller('copy')
-@UseGuards(JwtAuthGuard)
 export class CopyTradingController {
   constructor(private readonly svc: CopyTradingService) {}
 
   /* --- PRO: publish signal --------------------------------- */
-  @Roles(Role.PRO_TRADER)
+  @Roles(Role.pro)
   @Post('signals')
   @ApiOperation({ summary: 'Pro trader publishes signal' })
   @ApiResponse({ status: 201, description: 'Signal published successfully' })
-  publish(@Req() req: Request, @Body() dto: SignalDto) {
-    return this.svc.publishSignal((req.user as any).id, dto);
+  publish(@SessionUser() user: AuthUser, @Body() dto: SignalDto) {
+    return this.svc.publishSignal(user.id, dto);
   }
 
   /* --- FOLLOWER: subscribe & allocate ---------------------- */
-  @Roles(Role.FOLLOWER)
+  @Roles(Role.follower)
   @Post('subscribe')
   @ApiOperation({ summary: 'Follower allocates funds to pro' })
   @ApiResponse({
     status: 201,
     description: 'Subscription created successfully',
   })
-  subscribe(@Req() req: Request, @Body() dto: SubscribeDto) {
-    return this.svc.subscribe((req.user as any).id, dto);
+  subscribe(@SessionUser() user: AuthUser, @Body() dto: SubscribeDto) {
+    return this.svc.subscribe(user.id, dto);
   }
 
   /* --- FOLLOWER: execute a signal -------------------------- */
-  @Roles(Role.FOLLOWER)
+  @Roles(Role.follower)
   @Post('execute')
   @ApiOperation({ summary: 'Follower executes a signal' })
   @ApiResponse({ status: 201, description: 'Trade executed successfully' })
-  execute(@Req() req: Request, @Body() dto: ExecuteDto) {
-    return this.svc.executeSignal((req.user as any).id, dto.signalId);
+  execute(@SessionUser() user: AuthUser, @Body() dto: ExecuteDto) {
+    return this.svc.executeSignal(user.id, dto.signalId);
   }
 
   /* --- FOLLOWER: view wallets & trades --------------------- */
   @Get('wallets')
   @ApiOperation({ summary: 'Follower copy wallets' })
   @ApiResponse({ status: 200, description: 'Returns copy wallet per trader' })
-  wallets(@Req() req: Request) {
-    return this.svc.getFollowerWallets((req.user as any).id);
+  wallets(@SessionUser() user: AuthUser) {
+    return this.svc.getFollowerWallets(user.id);
   }
 
   @Get('history')
@@ -75,8 +65,8 @@ export class CopyTradingController {
     status: 200,
     description: 'Returns trade history with details',
   })
-  history(@Req() req: Request) {
-    return this.svc.getFollowerTrades((req.user as any).id);
+  history(@SessionUser() user: AuthUser) {
+    return this.svc.getFollowerTrades(user.id);
   }
 
   /* --- ADMIN or CRON: close trade (simplified) ------------- */

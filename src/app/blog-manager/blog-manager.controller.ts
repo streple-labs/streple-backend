@@ -14,20 +14,23 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { ParamSearch } from 'src/global/common';
+import { AuthUser, ParamSearch } from 'src/global/common';
 import { BlogManagerService } from './blog-manager.service';
 import { CreateBlog, FindManyBlog, FindOneBlog, UpdateBlog } from './dto';
+import { SessionUser } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
 })
 @ApiTags('Blog Manager')
+@ApiBearerAuth()
 export class BlogManagerController {
   constructor(private readonly blogManagerService: BlogManagerService) {}
 
@@ -39,11 +42,12 @@ export class BlogManagerController {
     @UploadedFile()
     file: Express.Multer.File,
     @Body() create: CreateBlog,
+    @SessionUser() user: AuthUser,
   ) {
     if (file) {
       this.validateDocuments(file);
     }
-    return this.blogManagerService.create(create, file);
+    return this.blogManagerService.create(create, file, user);
   }
 
   @Get('blogs')
@@ -62,15 +66,19 @@ export class BlogManagerController {
   @ApiBody({ type: UpdateBlog })
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'update blog' })
-  update(@Param() param: ParamSearch, @Body() update: UpdateBlog) {
-    return this.blogManagerService.update(param, update);
+  update(
+    @Param() param: ParamSearch,
+    @Body() update: UpdateBlog,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.blogManagerService.update(param, update, user);
   }
 
   @Delete('blog/:id')
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'Delete One Blog' })
-  remove(@Param() param: ParamSearch) {
-    return this.blogManagerService.remove(param);
+  remove(@Param() param: ParamSearch, @SessionUser() user: AuthUser) {
+    return this.blogManagerService.remove(param, user);
   }
 
   private validateDocuments(document: Express.Multer.File): void {

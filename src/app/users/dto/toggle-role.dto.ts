@@ -1,9 +1,9 @@
 // toggle-role.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
-import { Role } from '../enums/role.enum';
+import { Role } from '../interface';
 export class ToggleRoleDto {
-  @ApiProperty({ enum: Role, example: Role.PRO_TRADER })
+  @ApiProperty({ enum: Role, example: Role.pro })
   @IsEnum(Role)
   role: Role;
 }

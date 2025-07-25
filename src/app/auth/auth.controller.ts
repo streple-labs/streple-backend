@@ -18,6 +18,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Public } from '@app/decorators';
 
 if (!process.env.FRONTEND_BASE_URL) {
   throw new Error('Missing FRONTEND_BASE_URL in environment variables');
@@ -25,6 +26,7 @@ if (!process.env.FRONTEND_BASE_URL) {
 
 @ApiTags('Auth')
 @Controller('auth')
+@Public()
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
@@ -57,19 +59,19 @@ export class AuthController {
     return this.auth.resendOtp(dto);
   }
 
-  @Post('login/user')
+  @Post('login')
   @ApiOperation({ summary: 'User Login with email and password' })
   @ApiResponse({ status: 200, description: 'Returns a JWT token' })
   loginUser(@Body() dto: LoginDto) {
     return this.auth.loginUser(dto);
   }
 
-  @Post('login/admin')
-  @ApiOperation({ summary: 'Admin Login with email and password' })
-  @ApiResponse({ status: 200, description: 'Returns a JWT token' })
-  loginAdmin(@Body() dto: LoginDto) {
-    return this.auth.loginAdmin(dto);
-  }
+  // @Post('login/admin')
+  // @ApiOperation({ summary: 'Admin Login with email and password' })
+  // @ApiResponse({ status: 200, description: 'Returns a JWT token' })
+  // loginAdmin(@Body() dto: LoginDto) {
+  //   return this.auth.loginAdmin(dto);
+  // }
 
   @Get('google')
   @ApiOperation({ summary: 'Redirect to Google OAuth' })

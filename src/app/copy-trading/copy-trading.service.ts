@@ -13,7 +13,7 @@ import { ProSignal } from './entities/pro-signal.entity';
 import { User } from '../users/user.entity';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { SignalDto } from './dto/signal.dto';
-import { Role } from '../users/enums/role.enum';
+import { Role } from '@app/users/interface';
 
 @Injectable()
 export class CopyTradingService {
@@ -27,7 +27,7 @@ export class CopyTradingService {
   /* PRO publishes signal */
   async publishSignal(proId: string, dto: SignalDto) {
     const pro = await this.users.findOne({
-      where: { id: proId, role: Role.PRO_TRADER },
+      where: { id: proId, role: Role.pro },
     });
     if (!pro) throw new ForbiddenException('Not a pro trader');
 
@@ -93,6 +93,7 @@ export class CopyTradingService {
 
   /* Settles a trade (auto or manual) */
   async closeTrade(tradeId: string, exitPrice: number) {
+    console.log(exitPrice);
     const trade = await this.trades.findOne({
       where: { id: tradeId },
       relations: ['wallet', 'wallet.user'],

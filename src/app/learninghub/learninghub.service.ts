@@ -5,7 +5,12 @@ import {
   findOneLearning,
   updatedLearning,
 } from './interface';
-import { Document, DocumentResult, paramSearch } from 'src/global/common';
+import {
+  AuthUser,
+  Document,
+  DocumentResult,
+  paramSearch,
+} from 'src/global/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LearningHub } from './entities/learninghub.entity';
 import { Repository } from 'typeorm';
@@ -14,22 +19,27 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
-import { UploadService } from 'src/global/services';
+import { FileProcessorService, UploadService } from 'src/global/services';
 @Injectable()
 export class LearningHubService {
   constructor(
     @InjectRepository(LearningHub)
     private readonly learning: Repository<LearningHub>,
     private readonly uploadFile: UploadService,
+    private readonly fileProcessor: FileProcessorService,
   ) {}
   async create(
     create: createLearning,
     document: Express.Multer.File | undefined,
     thumbnail: Express.Multer.File | undefined,
+    user: AuthUser,
   ): Promise<LearningHub> {
     if (document) {
-      const doc = await this.uploadFile.uploadDocument(document, 'documents');
-      create.document = doc;
+      const doc = await this.fileProcessor.processCourseDocument(
+        document.buffer,
+        document.originalname,
+      );
+      create.contents = doc;
     }
 
     if (thumbnail) {
@@ -37,7 +47,12 @@ export class LearningHubService {
       create.thumbnail = thumb;
     }
 
-    const save_course = this.learning.create(create);
+    if (create.content && create.content.trim()) {
+      const result = this.fileProcessor.processCourseContent(create.content);
+      create.contents = result;
+    }
+
+    const save_course = this.learning.create({ ...create, creatorId: user.id });
     return this.learning.save(save_course);
   }
 
@@ -71,18 +86,37 @@ export class LearningHubService {
   async update(
     param: paramSearch,
     update: updatedLearning,
+    user: AuthUser,
   ): Promise<LearningHub> {
+    const { content, ...rest } = update;
     const findCourse = await this.learning.findOne({ where: { id: param.id } });
 
     if (!findCourse) {
       throw new ForbiddenException('Course not found');
     }
 
-    await this.learning.update(param, update);
+    if (findCourse.creatorId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (content && content.trim()) {
+      const result = this.fileProcessor.processCourseContent(content);
+      rest.contents = result;
+    }
+
+    await this.learning.update(param, rest);
     return findCourse;
   }
 
-  remove(param: paramSearch) {
+  async remove(param: paramSearch, user: AuthUser) {
+    const learning = await this.learning.findOne({ where: param });
+    if (!learning) {
+      throw new ForbiddenException('Courses not found');
+    }
+
+    if (learning.creatorId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
     return this.learning.delete(param.id);
   }
 

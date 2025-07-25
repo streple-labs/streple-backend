@@ -10,7 +10,13 @@ import {
   Query,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ParamSearch } from 'src/global/common';
 import { CreateEmailCenter } from './dto';
 import {
@@ -24,6 +30,7 @@ import { EmailCenterService } from './email-center.service';
   version: VERSION_NEUTRAL,
 })
 @ApiTags('Email Center')
+@ApiBearerAuth()
 export class EmailCenterController {
   constructor(private readonly emailCenterService: EmailCenterService) {}
 

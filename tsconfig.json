@@ -16,6 +16,9 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@app/*": ["./src/app/*", "src/global/services/config/*", "src/global/*"]
+    }
   }
 }

@@ -1,5 +1,5 @@
+import { GameProgress, GamingOnboarding } from '@app/gamified/entities';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { Admin } from 'src/app/admins/admin.entity';
 import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
 import { CopyTrade } from 'src/app/copy-trading/entities/copy-trade.entity';
 import { CopyWallet } from 'src/app/copy-trading/entities/copy-wallet.entity';
@@ -18,7 +18,6 @@ export default (): TypeOrmModuleOptions => ({
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   entities: [
-    Admin,
     BlogManager,
     CopyTrade,
     CopyWallet,
@@ -27,6 +26,8 @@ export default (): TypeOrmModuleOptions => ({
     EmailCenter,
     LearningHub,
     User,
+    GameProgress,
+    GamingOnboarding,
   ],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)

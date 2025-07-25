@@ -17,6 +17,7 @@ import { MailerService } from 'src/app/auth/mailer.service';
 import { ForgotPasswordDto } from 'src/app/auth/dto/forgot-password.dto';
 import { ResetPasswordDto } from 'src/app/auth/dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { Role } from './interface';
 
 @Injectable()
 export class UsersService {
@@ -46,6 +47,22 @@ export class UsersService {
     user.password = await bcrypt.hash(dto.password, 10);
     user.isVerified = true;
     return this.repo.save(user);
+  }
+
+  async createAdmin(dto: SignupDto) {
+    const adminExists = await this.findByEmail(dto.email);
+    if (adminExists) throw new BadRequestException('Admin already exists');
+
+    const admin = this.repo.create({
+      ...dto,
+      isVerified: true,
+      otpVerified: true,
+      role: Role.admin,
+    });
+    admin.password = await bcrypt.hash(dto.password, 10);
+
+    await this.repo.save(admin);
+    return { message: 'Admin account created successfully' };
   }
 
   async findByEmail(email: string) {

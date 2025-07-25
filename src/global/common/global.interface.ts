@@ -1,3 +1,4 @@
+import { Role } from '@app/users/interface';
 import { template } from '../services';
 
 export interface findMany {
@@ -42,4 +43,10 @@ export type EmailJob = {
   template: template;
   subject: string;
   context: Record<string, any>;
+};
+
+export type AuthUser = {
+  email: string;
+  role: Role;
+  id: string;
 };

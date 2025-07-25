@@ -6,12 +6,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Role } from './enums/role.enum';
 import * as bcrypt from 'bcrypt';
 import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
+import { IUser, Role } from './interface';
 
 @Entity()
-export class User {
+export class User implements IUser {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -28,16 +28,16 @@ export class User {
   isVerified: boolean;
 
   @Column({ type: 'varchar', nullable: true })
-  otp: string | null;
+  otp?: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  otpExpiresAt: Date | null;
+  otpExpiresAt?: Date | null;
 
   @Column({ default: false })
   otpVerified: boolean;
 
   /* role toggle */
-  @Column({ type: 'enum', enum: Role, default: Role.FOLLOWER })
+  @Column({ type: 'enum', enum: Role, default: Role.follower })
   role: Role;
 
   /* profile bits */
@@ -51,7 +51,7 @@ export class User {
   stats: Record<string, unknown>;
 
   @Column({ type: 'json', nullable: true })
-  performanceHistory: Array<{ date: string; value: number }>;
+  performanceHistory: Array<{ date: Date; value: number }>;
 
   @Column({ default: 0 })
   followerCount: number;

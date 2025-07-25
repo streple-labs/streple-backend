@@ -4,7 +4,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { AdminsService } from '../admins/admins.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dto/signup.dto';
 import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
@@ -17,7 +16,6 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 export class AuthService {
   constructor(
     private readonly users: UsersService,
-    private readonly admins: AdminsService,
     private readonly jwt: JwtService,
   ) {}
 
@@ -54,24 +52,24 @@ export class AuthService {
     };
   }
 
-  async loginAdmin(dto: LoginDto) {
-    const admin = await this.admins.findByEmail(dto.email);
-    if (!admin || !(await admin.validatePassword(dto.password))) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+  // async loginAdmin(dto: LoginDto) {
+  //   const admin = await this.admins.findByEmail(dto.email);
+  //   if (!admin || !(await admin.validatePassword(dto.password))) {
+  //     throw new UnauthorizedException('Invalid credentials');
+  //   }
 
-    const payload = {
-      sub: admin.id,
-      email: admin.email,
-      role: 'admin',
-      fullName: admin.fullName,
-    };
-    return {
-      streple_auth_token: this.jwt.sign(payload),
-      token_type: 'Bearer',
-      expires_in: jwtConstants.expiresIn,
-    };
-  }
+  //   const payload = {
+  //     sub: admin.id,
+  //     email: admin.email,
+  //     role: 'admin',
+  //     fullName: admin.fullName,
+  //   };
+  //   return {
+  //     streple_auth_token: this.jwt.sign(payload),
+  //     token_type: 'Bearer',
+  //     expires_in: jwtConstants.expiresIn,
+  //   };
+  // }
 
   async forgotPassword(dto: ForgotPasswordDto) {
     return await this.users.forgotPassword(dto);

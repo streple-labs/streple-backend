@@ -14,13 +14,14 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { ParamSearch } from 'src/global/common';
+import { AuthUser, ParamSearch } from 'src/global/common';
 import {
   CreateLearning,
   FindManyLearning,
@@ -28,11 +29,13 @@ import {
   UpdateLearning,
 } from './dto';
 import { LearningHubService } from './learninghub.service';
+import { SessionUser } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
 })
 @ApiTags('Learning Hub')
+@ApiBearerAuth()
 export class LearningHubController {
   constructor(private readonly learningService: LearningHubService) {}
 
@@ -56,6 +59,7 @@ export class LearningHubController {
       document?: Express.Multer.File[];
       thumbnail?: Express.Multer.File[];
     },
+    @SessionUser() user: AuthUser,
   ) {
     const document = files.document?.[0];
     const thumbnail = files.thumbnail?.[0];
@@ -68,7 +72,7 @@ export class LearningHubController {
       this.validateDocuments(thumbnail);
     }
 
-    return this.learningService.create(body, document, thumbnail);
+    return this.learningService.create(body, document, thumbnail, user);
   }
 
   @Get('learnings')
@@ -87,15 +91,19 @@ export class LearningHubController {
   @ApiOperation({ summary: 'Edit learning resource' })
   @ApiBody({ type: UpdateLearning })
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
-  update(@Param() param: ParamSearch, @Body() updateLearning: UpdateLearning) {
-    return this.learningService.update(param, updateLearning);
+  update(
+    @Param() param: ParamSearch,
+    @Body() updateLearning: UpdateLearning,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.learningService.update(param, updateLearning, user);
   }
 
   @Delete('learning/:id')
   @ApiOperation({ summary: 'Delete learning resources' })
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
-  remove(@Param() param: ParamSearch) {
-    return this.learningService.remove(param);
+  remove(@Param() param: ParamSearch, @SessionUser() user: AuthUser) {
+    return this.learningService.remove(param, user);
   }
 
   private validateDocuments(document: Express.Multer.File): void {

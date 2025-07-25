@@ -4,7 +4,10 @@ import { BlogManagerModule } from 'src/app/blog-manager/blog-manager.module';
 import {
   BlogJobWorker,
   EmailJobWorker,
+  FileProcessorService,
+  HtmlChunkerService,
   MailService,
+  SanitizeService,
   SchedulerService,
   UploadService,
 } from './services';
@@ -22,7 +25,18 @@ import { EmailCenterModule } from 'src/app/email-center/email-center.module';
     SchedulerService,
     BlogJobWorker,
     UploadService,
+    SanitizeService,
+    FileProcessorService,
+    HtmlChunkerService,
   ],
-  exports: [MailService, EmailJobWorker, BlogJobWorker, UploadService],
+  exports: [
+    MailService,
+    EmailJobWorker,
+    BlogJobWorker,
+    UploadService,
+    SanitizeService,
+    FileProcessorService,
+    HtmlChunkerService,
+  ],
 })
 export class GlobalModule {}

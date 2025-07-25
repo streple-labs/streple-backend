@@ -11,7 +11,7 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import { EmailCenter } from './entities/email-center.entity';
 import {
@@ -23,6 +23,8 @@ import {
   updateEmail,
 } from './interface';
 import { EmailJobWorker, template } from 'src/global/services';
+import { Role } from '@app/users/interface';
+import { validate as isUuid } from 'uuid';
 @Injectable()
 export class EmailCenterService {
   constructor(
@@ -95,7 +97,7 @@ export class EmailCenterService {
       'emailCenter',
       filters,
       search,
-      ['subject', 'status'],
+      ['subject'],
       include,
       sort,
     );
@@ -170,39 +172,61 @@ export class EmailCenterService {
     const receiver: { email: string; fullName: string }[] = [];
 
     if (recipient === EmailRecipient.copiers) {
-      const Copiers = await this.users.find({});
-      console.log({ Copiers });
-      receiver.push({
-        email: 'olaniyanmutiu96@gmail.com',
-        fullName: 'Olaniyan',
-      });
+      const Copiers = await this.users.find({ where: { role: Role.follower } });
+      if (Copiers.length > 0) {
+        Copiers.map((value) =>
+          receiver.push({
+            email: value.email,
+            fullName: value.fullName,
+          }),
+        );
+      }
     }
 
     if (recipient === EmailRecipient.pro) {
-      const Pro = await this.users.find({});
-      console.log({ Pro });
-      receiver.push({
-        email: 'olaniyanmutiu96@gmail.com',
-        fullName: 'Olaniyan',
-      });
+      const Pro = await this.users.find({ where: { role: Role.pro } });
+      if (Pro.length > 0) {
+        Pro.map((value) =>
+          receiver.push({
+            email: value.email,
+            fullName: value.fullName,
+          }),
+        );
+      }
     }
 
     if (recipient === EmailRecipient.users) {
-      const AllUser = await this.users.find({});
-      console.log({ AllUser });
-      receiver.push({
-        email: 'olaniyanmutiu96@gmail.com',
-        fullName: 'Olaniyan',
+      const users = await this.users.find({
+        where: { role: Not(Role.admin) },
       });
+      if (users.length > 0) {
+        users.map((value) =>
+          receiver.push({
+            email: value.email,
+            fullName: value.fullName,
+          }),
+        );
+      }
     }
 
     if (selected && selected?.length > 0) {
-      const Copiers = await this.users.find({});
-      console.log({ Copiers });
-      receiver.push({
-        email: 'olaniyanmutiu96@gmail.com',
-        fullName: 'Example',
+      if (!selected.every((value) => isUuid(value))) {
+        throw new ForbiddenException('One or more IDs are not valid ID');
+      }
+      const users = await this.users.find({
+        where: {
+          id: In(selected),
+        },
       });
+
+      if (users.length > 0) {
+        users.map((value) =>
+          receiver.push({
+            email: value.email,
+            fullName: value.fullName,
+          }),
+        );
+      }
     }
 
     return receiver;
