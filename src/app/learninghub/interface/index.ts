@@ -57,6 +57,7 @@ export interface findManyLearning extends findMany {
   startFrom?: Date; //filter which range
   endOn?: Date;
   type?: hubType[];
+  creatorId?: string[];
 }
 
 export interface findOneLearning extends findOne {

@@ -24,7 +24,7 @@ import {
 import { AuthUser, ParamSearch } from 'src/global/common';
 import { BlogManagerService } from './blog-manager.service';
 import { CreateBlog, FindManyBlog, FindOneBlog, UpdateBlog } from './dto';
-import { SessionUser } from '@app/decorators';
+import { Public, SessionUser } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
@@ -50,12 +50,14 @@ export class BlogManagerController {
     return this.blogManagerService.create(create, file, user);
   }
 
+  @Public()
   @Get('blogs')
   @ApiOperation({ summary: 'Find many' })
   findAll(@Query() query: FindManyBlog) {
     return this.blogManagerService.findAll(query);
   }
 
+  @Public()
   @Get('blog')
   @ApiOperation({ summary: 'Find one' })
   findOne(@Query() param: FindOneBlog) {

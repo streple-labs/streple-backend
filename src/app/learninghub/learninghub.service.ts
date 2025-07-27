@@ -144,6 +144,10 @@ export class LearningHubService {
       filters = { type: rest.type };
     }
 
+    if (rest.creatorId) {
+      filters = { creatorId: rest.creatorId };
+    }
+
     if (rest.startFrom && rest.endOn) {
       const startDate = new Date(rest.startFrom);
       const endDate = new Date(rest.endOn);
