@@ -1,7 +1,8 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
-import { User } from '@app/users/user.entity';
+import { User } from '../app/users/user.entity';
+import { CopyWallet } from '../app/copy-trading/entities/copy-wallet.entity';
 dotenv.config();
 
 if (!process.env.ADMIN_EMAIL) {
@@ -16,7 +17,7 @@ const dataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [User],
+  entities: [User, CopyWallet],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
   },
