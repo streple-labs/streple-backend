@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 import { User } from '../app/users/user.entity';
 import { CopyWallet } from '../app/copy-trading/entities/copy-wallet.entity';
+import { Role } from '../app/users/interface';
 dotenv.config();
 
 if (!process.env.ADMIN_EMAIL) {
@@ -39,11 +40,15 @@ async function seed() {
   const admin = repo.create({
     fullName: process.env.ADMIN_FULL_NAME as string,
     email: process.env.ADMIN_EMAIL as string,
+    // Make sure its is a strong password { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 }
     password: await bcrypt.hash(process.env.ADMIN_PASSWORD as string, 10),
+    isVerified: true,
+    otpVerified: true,
+    role: Role.admin,
   });
 
   await repo.save(admin);
-  console.log('✅ Admin created');
+  console.log('✅ Admin account created successfully');
   process.exit();
 }
 
