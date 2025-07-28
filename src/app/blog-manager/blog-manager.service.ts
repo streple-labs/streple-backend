@@ -24,6 +24,7 @@ import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
+  Slug,
 } from 'src/global/helpers';
 import { BlogJobWorker, UploadService } from 'src/global/services';
 
@@ -49,7 +50,7 @@ export class BlogManagerService {
       data.thumbnail = thumbnail;
     }
 
-    const slug = this.slug(data.title);
+    const slug = Slug(data.title);
     const save_data = this.blog.create({
       ...data,
       creatorId: user.id,
@@ -85,7 +86,7 @@ export class BlogManagerService {
       'blog',
       filters,
       query.search,
-      ['title', 'content', 'metatitle'],
+      ['title', 'content'],
       query.include,
       query.sort,
     );
@@ -113,7 +114,12 @@ export class BlogManagerService {
     return document;
   }
 
-  async update(param: paramSearch, update: updatedBlog, user?: AuthUser) {
+  async update(
+    param: paramSearch,
+    update: updatedBlog,
+    user?: AuthUser,
+    file?: Express.Multer.File,
+  ): Promise<BlogManager> {
     const blog = await this.blog.findOne({ where: { id: param.id } });
 
     if (!blog) {
@@ -124,6 +130,15 @@ export class BlogManagerService {
       if (blog.creatorId !== user.id) {
         throw new ForbiddenException('You are not the creator of this blog');
       }
+    }
+
+    if (file) {
+      const thumbnail = await this.uploadFile.uploadDocument(file);
+      update.thumbnail = thumbnail;
+    }
+
+    if (update.title) {
+      update.slug = Slug(update.title);
     }
 
     // if blog status is draft and needs to change it to schedule
@@ -142,7 +157,7 @@ export class BlogManagerService {
       }
 
       this.blogJobWorker.scheduleDelayedEmail(param, delay);
-      await this.blog.update(param, update);
+      await this.blog.update(param, { ...update });
       return blog;
     }
 
@@ -154,7 +169,7 @@ export class BlogManagerService {
     //   return this.blog.update({ id: blog.id }, update);
     // }
     // when any of them is not responding
-    await this.blog.update(param, update);
+    await this.blog.update(param, { ...update });
     return blog;
   }
 
@@ -199,9 +214,5 @@ export class BlogManagerService {
     }
 
     return filters;
-  }
-
-  private slug(name: string): string {
-    return name.replace(/\s+/g, '-').toLowerCase();
   }
 }

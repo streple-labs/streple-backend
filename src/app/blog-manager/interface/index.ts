@@ -34,6 +34,7 @@ export interface createBlog
 
 export interface updatedBlog extends Partial<createBlog> {
   status?: blogStatus;
+  slug?: string;
 }
 
 export interface findManyBlog extends findMany {

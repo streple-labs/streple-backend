@@ -1,4 +1,9 @@
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsArray,
@@ -9,7 +14,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
 } from 'class-validator';
 import { FindMany, FindOne, transform } from 'src/global/common';
@@ -77,7 +81,7 @@ export class CreateBlog implements createBlog {
 }
 
 export class UpdateBlog
-  extends OmitType(CreateBlog, ['schedule', 'draft', 'thumbnail'])
+  extends PartialType(OmitType(CreateBlog, ['schedule', 'draft']))
   implements updatedBlog
 {
   @IsOptional()
@@ -85,11 +89,6 @@ export class UpdateBlog
   @IsIn(Object.values(blogStatus))
   @ApiPropertyOptional({ type: String })
   status?: blogStatus;
-
-  @IsOptional()
-  @IsUrl()
-  @ApiPropertyOptional({ type: String })
-  thumbnail?: string;
 }
 
 export class FindManyBlog extends FindMany implements findManyBlog {
@@ -117,14 +116,6 @@ export class FindManyBlog extends FindMany implements findManyBlog {
     typeof value === 'string' ? [value] : value,
   )
   status?: blogStatus[];
-
-  @IsOptional()
-  @IsString({ each: true })
-  @ApiPropertyOptional({ type: [String], required: false })
-  @Transform(({ value }: transform) =>
-    typeof value === 'string' ? [value] : value,
-  )
-  metatitle?: string[];
 
   @IsOptional()
   @IsDate()
@@ -155,11 +146,6 @@ export class FindOneBlog extends FindOne implements findOneBlog {
   @IsIn(Object.values(blogStatus))
   @ApiPropertyOptional({ enum: blogStatus, required: false })
   status?: blogStatus;
-
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional({ required: false })
-  metatitle?: string;
 
   @IsString()
   @IsOptional()

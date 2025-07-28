@@ -68,12 +68,18 @@ export class BlogManagerController {
   @ApiBody({ type: UpdateBlog })
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'update blog' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('thumbnail'))
   update(
     @Param() param: ParamSearch,
     @Body() update: UpdateBlog,
+    @UploadedFile() file: Express.Multer.File,
     @SessionUser() user: AuthUser,
   ) {
-    return this.blogManagerService.update(param, update, user);
+    if (file) {
+      this.validateDocuments(file);
+    }
+    return this.blogManagerService.update(param, update, user, file);
   }
 
   @Delete('blog/:id')

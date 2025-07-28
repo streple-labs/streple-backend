@@ -8,11 +8,15 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UploadedFiles,
   UseInterceptors,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -93,12 +97,18 @@ export class LearningHubController {
   @ApiOperation({ summary: 'Edit learning resource' })
   @ApiBody({ type: UpdateLearning })
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('thumbnail'))
   update(
     @Param() param: ParamSearch,
     @Body() updateLearning: UpdateLearning,
     @SessionUser() user: AuthUser,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.learningService.update(param, updateLearning, user);
+    if (file) {
+      this.validateDocuments(file);
+    }
+    return this.learningService.update(param, updateLearning, user, file);
   }
 
   @Delete('learning/:id')

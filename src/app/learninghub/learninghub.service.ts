@@ -18,6 +18,7 @@ import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
+  Slug,
 } from 'src/global/helpers';
 import { FileProcessorService, UploadService } from 'src/global/services';
 @Injectable()
@@ -52,7 +53,13 @@ export class LearningHubService {
       create.contents = result;
     }
 
-    const save_course = this.learning.create({ ...create, creatorId: user.id });
+    const slug = Slug(create.title);
+
+    const save_course = this.learning.create({
+      ...create,
+      creatorId: user.id,
+      slug,
+    });
     return this.learning.save(save_course);
   }
 
@@ -87,6 +94,7 @@ export class LearningHubService {
     param: paramSearch,
     update: updatedLearning,
     user: AuthUser,
+    file: Express.Multer.File,
   ): Promise<LearningHub> {
     const { content, ...rest } = update;
     const findCourse = await this.learning.findOne({ where: { id: param.id } });
@@ -99,12 +107,22 @@ export class LearningHubService {
       throw new ForbiddenException('Access denied');
     }
 
+    if (file) {
+      const thumb = await this.uploadFile.uploadDocument(file);
+      rest.thumbnail = thumb;
+    }
+
+    if (rest.title) {
+      const slug = Slug(rest.title);
+      rest.slug = slug;
+    }
+
     if (content && content.trim()) {
       const result = this.fileProcessor.processCourseContent(content);
       rest.contents = result;
     }
 
-    await this.learning.update(param, rest);
+    await this.learning.update(param, { ...rest });
     return findCourse;
   }
 

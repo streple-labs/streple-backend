@@ -41,6 +41,9 @@ export class LearningHub implements ILearningHub {
   @Column({ type: 'enum', enum: hubType, default: hubType.article })
   type: hubType;
 
+  @Column({ nullable: true })
+  slug: string;
+
   @Column({ type: 'enum', enum: hubStatus, default: hubStatus.draft })
   status: hubStatus;
 

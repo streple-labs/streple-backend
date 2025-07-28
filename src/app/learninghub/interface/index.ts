@@ -31,6 +31,7 @@ export type ILearningHub = {
   contents?: string[];
   document?: string;
   thumbnail?: string;
+  slug: string;
   level: Level;
   status: hubStatus;
   type: hubType;
@@ -42,12 +43,13 @@ export type ILearningHub = {
 
 export type createLearning = Omit<
   ILearningHub,
-  'createdAt' | 'updatedAt' | 'id' | 'creatorId'
+  'createdAt' | 'updatedAt' | 'id' | 'creatorId' | 'slug'
 >;
 
-export type updatedLearning = Partial<
-  Omit<createLearning, 'document' | 'thumbnail'>
->;
+export interface updatedLearning
+  extends Partial<Omit<createLearning, 'document'>> {
+  slug?: string;
+}
 
 export interface findManyLearning extends findMany {
   title?: string[];
@@ -64,4 +66,5 @@ export interface findOneLearning extends findOne {
   title?: string;
   level?: Level;
   status?: hubStatus;
+  slug?: string;
 }

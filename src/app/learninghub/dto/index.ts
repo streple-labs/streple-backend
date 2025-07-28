@@ -1,4 +1,9 @@
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -8,7 +13,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -95,19 +99,8 @@ export class CreateLearning implements createLearning {
 }
 
 export class UpdateLearning
-  extends OmitType(CreateLearning, ['document', 'thumbnail'])
-  implements updatedLearning
-{
-  @IsOptional()
-  @IsUrl()
-  @ApiPropertyOptional({ type: String })
-  document?: string;
-
-  @IsOptional()
-  @IsUrl()
-  @ApiPropertyOptional({ type: String })
-  thumbnail?: string;
-}
+  extends PartialType(OmitType(CreateLearning, ['document']))
+  implements updatedLearning {}
 
 export class FindManyLearning extends FindMany implements findManyLearning {
   @IsString({ each: true })
@@ -199,4 +192,9 @@ export class FindOneLearning extends FindOne implements findOneLearning {
   @IsIn(Object.values(hubStatus))
   @ApiPropertyOptional({ type: String, enum: Object.values(hubStatus) })
   status: hubStatus;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  slug?: string;
 }
