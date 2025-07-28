@@ -29,7 +29,7 @@ import {
   UpdateLearning,
 } from './dto';
 import { LearningHubService } from './learninghub.service';
-import { SessionUser } from '@app/decorators';
+import { Public, SessionUser } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
@@ -76,12 +76,14 @@ export class LearningHubController {
   }
 
   @Get('learnings')
+  @Public()
   @ApiOperation({ summary: 'Find many learning resources' })
   findAll(@Query() query: FindManyLearning) {
     return this.learningService.findAll(query);
   }
 
   @Get('learning')
+  @Public()
   @ApiOperation({ summary: 'Find one learning resources' })
   findOne(@Query() query: FindOneLearning) {
     return this.learningService.findOne(query);

@@ -13,6 +13,7 @@ const operatorMap: Record<string, string> = {
   $between: 'BETWEEN',
 };
 
+// const logger = new Logger('FindManyWrapper');
 export function buildFindManyQuery<T extends ObjectLiteral>(
   qb: SelectQueryBuilder<T>,
   alias: string,
@@ -120,6 +121,9 @@ export async function FindManyWrapper<T extends ObjectLiteral>(
   const totalPages = Math.ceil(totalCount / limit);
   const hasNextPage = currentPage < totalPages;
   const hasPrevPage = currentPage > 1;
+
+  // logger.debug('Generated SQL:', qb.getSql());
+  // logger.debug('Query Parameters:', JSON.stringify(qb.getQueryAndParameters()));
 
   return {
     data,

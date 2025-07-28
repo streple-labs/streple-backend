@@ -45,6 +45,7 @@ export class BlogManagerService {
 
     if (file) {
       const thumbnail = await this.uploadFile.uploadDocument(file);
+      console.log(thumbnail);
       data.thumbnail = thumbnail;
     }
 
@@ -105,7 +106,7 @@ export class BlogManagerService {
         .createQueryBuilder()
         .update(BlogManager)
         .set({ view: () => 'view + 1' })
-        .where(filters)
+        .where({ id: document?.data?.id })
         .execute();
     }
 
