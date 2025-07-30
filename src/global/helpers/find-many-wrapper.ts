@@ -76,7 +76,7 @@ export function buildFindManyQuery<T extends ObjectLiteral>(
     qb.andWhere(
       new Brackets((qb2) => {
         for (const field of searchFields) {
-          qb2.orWhere(`${alias}.${field} LIKE :search`, {
+          qb2.orWhere(`${alias}.${field} ILIKE :search`, {
             search: `%${search}%`,
           });
         }

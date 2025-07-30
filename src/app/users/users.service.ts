@@ -17,7 +17,13 @@ import { MailerService } from 'src/app/auth/mailer.service';
 import { ForgotPasswordDto } from 'src/app/auth/dto/forgot-password.dto';
 import { ResetPasswordDto } from 'src/app/auth/dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { Role } from './interface';
+import { findManyUser, findOneUser, Role } from './interface';
+import { Document, DocumentResult } from '@app/common';
+import {
+  buildFindManyQuery,
+  FindManyWrapper,
+  FindOneWrapper,
+} from '@app/helpers';
 
 @Injectable()
 export class UsersService {
@@ -63,6 +69,14 @@ export class UsersService {
 
     await this.repo.save(admin);
     return { message: 'Admin account created successfully' };
+  }
+
+  async login(email: string) {
+    return this.repo
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
   }
 
   async findByEmail(email: string) {
@@ -191,6 +205,34 @@ export class UsersService {
     return user;
   }
 
+  async findMany(query: findManyUser): Promise<DocumentResult<User>> {
+    const { page, sort, limit, include, search, ...filter } = query;
+    const where = this.filter(filter);
+    const qb = this.repo.createQueryBuilder('user');
+
+    buildFindManyQuery(
+      qb,
+      'user',
+      where,
+      search,
+      ['fullName', 'email'],
+      include,
+      sort,
+    );
+
+    return FindManyWrapper(qb, page, limit);
+  }
+
+  async findOne(query: findOneUser): Promise<Document<User>> {
+    const { include, sort, ...filters } = query;
+
+    return FindOneWrapper<User>(this.repo, {
+      include,
+      sort,
+      filters,
+    });
+  }
+
   /* ---------------- dashboard ------------------------------ */
   async getDashboard(id: string) {
     const user = await this.findById(id);
@@ -238,4 +280,22 @@ export class UsersService {
   }
 
   /* add convenience for stats updates, followers etc later */
+
+  private filter(query: findManyUser) {
+    let where: Record<string, any> = {};
+
+    if (query.email) {
+      where = { email: query.email };
+    }
+
+    if (query.fullName) {
+      where = { fullName: query.fullName };
+    }
+
+    if (query.isVerified) {
+      where = { isVerified: query.isVerified };
+    }
+
+    return where;
+  }
 }

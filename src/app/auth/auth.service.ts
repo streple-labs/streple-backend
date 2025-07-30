@@ -35,7 +35,7 @@ export class AuthService {
   }
 
   async loginUser(dto: LoginDto) {
-    const user = await this.users.findByEmail(dto.email);
+    const user = await this.users.login(dto.email);
     if (!user || !(await user.validatePassword(dto.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -45,10 +45,13 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, createdAt, updatedAt, ...sanitizedUser } = user;
     return {
       streple_auth_token: this.jwt.sign(payload),
       token_type: 'Bearer',
       expires_in: jwtConstants.expiresIn,
+      data: sanitizedUser,
     };
   }
 

@@ -1,3 +1,4 @@
+import { findMany, findOne } from '@app/common';
 import { ICopyWallet } from '@app/copy-trading/interface';
 
 export enum Role {
@@ -24,4 +25,15 @@ export interface IUser {
   copyWallets: ICopyWallet[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface findManyUser extends findMany {
+  fullName?: string[];
+  email?: string[];
+  isVerified?: boolean[];
+}
+
+export interface findOneUser extends findOne {
+  fullName?: string;
+  email?: string;
 }

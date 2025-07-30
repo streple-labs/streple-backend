@@ -6,6 +6,7 @@ import {
   Get,
   Patch,
   Post,
+  Query,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -16,7 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ToggleRoleDto } from './dto/toggle-role.dto';
-import { TopUpDto } from './dto/top-up.dto';
+import { FindManyUser, FindOneUser, TopUpDto } from './dto/top-up.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('Users')
@@ -58,6 +59,18 @@ export class UsersController {
   })
   dashboard(@SessionUser() user: AuthUser) {
     return this.users.getDashboard(user.id);
+  }
+
+  @Get('get-users')
+  @ApiOperation({ summary: 'Find Many User' })
+  async FindManyUser(@Query() query: FindManyUser) {
+    return this.users.findMany(query);
+  }
+
+  @Get('get-user')
+  @ApiOperation({ summary: 'Find One User' })
+  async FindOneUser(@Query() query: FindOneUser) {
+    return this.users.findOne(query);
   }
 
   /* -------- funding account balance ----------------------- */

@@ -1,9 +1,67 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, Min } from 'class-validator';
+import { FindMany, FindOne, transform } from '@app/common';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { findManyUser, findOneUser } from '../interface';
 
 export class TopUpDto {
   @ApiProperty({ example: 500, minimum: 1 })
   @IsNumber()
   @Min(1) // must be at least $1
+  @Transform(({ value }: { value: string }) => parseInt(value, 10))
   amount: number;
+}
+
+export class FindManyUser extends FindMany implements findManyUser {
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiProperty({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  fullName?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiProperty({ type: [String] })
+  @IsEmail({}, { each: true })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  email?: string[];
+
+  @IsOptional()
+  @IsBoolean({ each: true })
+  @ApiProperty({ type: [Boolean] })
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value.map((v) => v === 'true' || v === true);
+    }
+    if (value === 'true' || value === true) return [true];
+    if (value === 'false' || value === false) return [false];
+    return;
+  })
+  isVerified?: boolean[];
+}
+
+export class FindOneUser extends FindOne implements findOneUser {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  @Transform(({ value }: { value: string }) => (value ? value.trim() : null))
+  fullName?: string;
+
+  @IsString()
+  @IsEmail()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  @Transform(({ value }: { value: string }) => (value ? value.trim() : null))
+  email?: string;
 }
