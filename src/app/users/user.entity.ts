@@ -1,12 +1,12 @@
+import * as bcrypt from 'bcrypt';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  OneToMany,
   CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
 import { IUser, Role } from './interface';
 
@@ -46,6 +46,15 @@ export class User implements IUser {
 
   @Column({ nullable: true })
   avatarUrl?: string;
+
+  @Column({ nullable: true })
+  expectationFromStreple: string;
+
+  @Column({ nullable: true })
+  howFamiliarWithTrading: string;
+
+  @Column({ type: 'boolean', nullable: false, default: false })
+  hasAnswer: boolean;
 
   @Column({ type: 'json', nullable: true })
   stats: Record<string, unknown>;

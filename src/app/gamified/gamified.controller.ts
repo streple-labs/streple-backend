@@ -1,8 +1,20 @@
 import { AuthUser } from '@app/common';
 import { SessionUser } from '@app/decorators';
-import { Body, Controller, Post, VERSION_NEUTRAL } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  VERSION_NEUTRAL,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CreateGameProgress, GamifieldOnboard } from './dto/gamifield.dto';
+import {
+  CreateGameProgress,
+  FindManyGameProgress,
+  FindManyOnboardedUser,
+  GamifieldOnboard,
+} from './dto/gamifield.dto';
 import { GamifiedService } from './gamified.service';
 
 @Controller({
@@ -19,6 +31,18 @@ export class GamifiedController {
   @ApiBody({ type: GamifieldOnboard })
   create(@Body() create: GamifieldOnboard, @SessionUser() user: AuthUser) {
     return this.gamifiedService.create(create, user);
+  }
+
+  @Get('onboarded-users')
+  @ApiOperation({ summary: 'Get all onboarded user' })
+  findMany(@Query() query: FindManyOnboardedUser) {
+    return this.gamifiedService.findMany(query);
+  }
+
+  @Get('game-progresses')
+  @ApiOperation({ summary: 'get user game progress like Level and Phase' })
+  findManyProgress(@Query() query: FindManyGameProgress) {
+    return this.gamifiedService.findManyProgress(query);
   }
 
   @Post('tracker')

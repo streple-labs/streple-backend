@@ -11,13 +11,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ToggleRoleDto } from './dto/toggle-role.dto';
-import { FindManyUser, FindOneUser, TopUpDto } from './dto/top-up.dto';
+import {
+  FindManyUser,
+  FindOneUser,
+  TopUpDto,
+  UpdateProfile,
+} from './dto/top-up.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('Users')
@@ -112,5 +118,15 @@ export class UsersController {
   ) {
     if (!user) throw new UnauthorizedException();
     return this.users.changePassword(dto);
+  }
+
+  @Post('update-profile')
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiBody({ type: UpdateProfile })
+  async updateProfile(
+    @Body() data: UpdateProfile,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.users.updateProfile(data, user);
   }
 }

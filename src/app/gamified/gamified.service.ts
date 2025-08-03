@@ -1,9 +1,15 @@
-import { AuthUser } from '@app/common';
+import { AuthUser, DocumentResult } from '@app/common';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GameProgress, GamingOnboarding } from './entities';
-import { createProgress, gameOnboard } from './interface';
+import {
+  createProgress,
+  findManyGameProgress,
+  findManyOnboardedUser,
+  gameOnboard,
+} from './interface';
+import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
 
 @Injectable()
 export class GamifiedService {
@@ -30,5 +36,59 @@ export class GamifiedService {
       userId: user.id,
     });
     return await this.gameProgress.save(track);
+  }
+
+  findMany(
+    query: findManyOnboardedUser,
+  ): Promise<DocumentResult<GamingOnboarding>> {
+    const { page, sort, limit, include, search, ...filter } = query;
+    const where = this.filter(filter);
+    const qb = this.onboarding.createQueryBuilder('game_onboarding');
+
+    buildFindManyQuery(qb, 'game_onboarding', where, search, [], include, sort);
+    return FindManyWrapper(qb, page, limit);
+  }
+
+  findManyProgress(
+    query: findManyGameProgress,
+  ): Promise<DocumentResult<GameProgress>> {
+    const { page, sort, limit, include, search, ...filter } = query;
+    const where = this.progressFilter(filter);
+    const qb = this.gameProgress.createQueryBuilder('game_progress');
+
+    buildFindManyQuery(qb, 'game_progress', where, search, [], include, sort);
+    return FindManyWrapper(qb, page, limit);
+  }
+
+  private progressFilter(query: findManyGameProgress) {
+    let filters: Record<string, any> = {};
+
+    if (query.userId) {
+      filters = { userId: query.userId };
+    }
+
+    if (query.level) {
+      filters = { level: query.level };
+    }
+
+    if (query.phase) {
+      filters = { phase: query.phase };
+    }
+
+    return filters;
+  }
+
+  private filter(query: findManyOnboardedUser) {
+    let filters: Record<string, any> = {};
+
+    if (query.userId) {
+      filters = { userId: query.userId };
+    }
+
+    if (query.hasAnswer) {
+      filters = { hasAnswer: query.hasAnswer };
+    }
+
+    return filters;
   }
 }

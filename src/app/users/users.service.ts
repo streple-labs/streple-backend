@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,8 +18,14 @@ import { MailerService } from 'src/app/auth/mailer.service';
 import { ForgotPasswordDto } from 'src/app/auth/dto/forgot-password.dto';
 import { ResetPasswordDto } from 'src/app/auth/dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { findManyUser, findOneUser, Role } from './interface';
-import { Document, DocumentResult } from '@app/common';
+import {
+  findManyUser,
+  findOneUser,
+  IUser,
+  Role,
+  updateProfile,
+} from './interface';
+import { AuthUser, Document, DocumentResult } from '@app/common';
 import {
   buildFindManyQuery,
   FindManyWrapper,
@@ -231,6 +238,17 @@ export class UsersService {
       sort,
       filters,
     });
+  }
+
+  async updateProfile(data: updateProfile, user: AuthUser): Promise<IUser> {
+    const findUser = await this.repo.findOne({ where: { id: user.id } });
+    if (!findUser) {
+      throw new ForbiddenException('User not found');
+    }
+
+    await this.repo.update({ id: user.id }, { ...data });
+
+    return findUser;
   }
 
   /* ---------------- dashboard ------------------------------ */

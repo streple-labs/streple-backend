@@ -9,7 +9,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { findManyUser, findOneUser } from '../interface';
+import { findManyUser, findOneUser, updateProfile } from '../interface';
 
 export class TopUpDto {
   @ApiProperty({ example: 500, minimum: 1 })
@@ -64,4 +64,40 @@ export class FindOneUser extends FindOne implements findOneUser {
   @ApiPropertyOptional({ type: String })
   @Transform(({ value }: { value: string }) => (value ? value.trim() : null))
   email?: string;
+}
+
+export class UpdateProfile implements updateProfile {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  howFamiliarWithTrading: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  expectationFromStreple: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  fullName: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  bio?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  avatarUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Boolean })
+  @Transform(({ value }: { value: string | boolean }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+  })
+  hasAnswer: boolean;
 }

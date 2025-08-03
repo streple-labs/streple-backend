@@ -55,25 +55,6 @@ export class AuthService {
     };
   }
 
-  // async loginAdmin(dto: LoginDto) {
-  //   const admin = await this.admins.findByEmail(dto.email);
-  //   if (!admin || !(await admin.validatePassword(dto.password))) {
-  //     throw new UnauthorizedException('Invalid credentials');
-  //   }
-
-  //   const payload = {
-  //     sub: admin.id,
-  //     email: admin.email,
-  //     role: 'admin',
-  //     fullName: admin.fullName,
-  //   };
-  //   return {
-  //     streple_auth_token: this.jwt.sign(payload),
-  //     token_type: 'Bearer',
-  //     expires_in: jwtConstants.expiresIn,
-  //   };
-  // }
-
   async forgotPassword(dto: ForgotPasswordDto) {
     return await this.users.forgotPassword(dto);
   }

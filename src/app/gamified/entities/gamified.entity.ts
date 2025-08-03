@@ -29,6 +29,9 @@ export class GamingOnboarding implements gameOnboard {
   @Column()
   thirdQuestion: string;
 
+  @Column({ type: 'boolean', nullable: false, default: false })
+  hasAnswer: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

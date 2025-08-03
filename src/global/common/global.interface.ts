@@ -6,7 +6,6 @@ export interface findMany {
   limit?: number;
   sort?: string[];
   include?: string[];
-  filters?: Record<string, any>;
   search?: string;
 }
 

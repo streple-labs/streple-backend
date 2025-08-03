@@ -66,13 +66,6 @@ export class AuthController {
     return this.auth.loginUser(dto);
   }
 
-  // @Post('login/admin')
-  // @ApiOperation({ summary: 'Admin Login with email and password' })
-  // @ApiResponse({ status: 200, description: 'Returns a JWT token' })
-  // loginAdmin(@Body() dto: LoginDto) {
-  //   return this.auth.loginAdmin(dto);
-  // }
-
   @Get('google')
   @ApiOperation({ summary: 'Redirect to Google OAuth' })
   @ApiResponse({

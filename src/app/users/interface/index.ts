@@ -22,10 +22,24 @@ export interface IUser {
   performanceHistory: Array<{ date: Date; value: number }>;
   followerCount: number;
   demoFundingBalance: number;
+  howFamiliarWithTrading?: string;
+  expectationFromStreple?: string;
+  hasAnswer: boolean;
   copyWallets: ICopyWallet[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type updateProfile = Partial<
+  Omit<
+    IUser,
+    | 'stats'
+    | 'performanceHistory'
+    | 'followerCount'
+    | 'demoFundingBalance'
+    | 'copyWallets'
+  >
+>;
 
 export interface findManyUser extends findMany {
   fullName?: string[];

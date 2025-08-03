@@ -1,3 +1,5 @@
+import { findMany } from '@app/common';
+
 export enum Phase {
   first = 'Phase 1',
   second = 'Phase 2',
@@ -21,6 +23,17 @@ export interface gameProgress {
 
 export type createProgress = Pick<gameProgress, 'level' | 'phase' | 'score'>;
 
+export interface findManyOnboardedUser extends findMany {
+  userId?: string[];
+  hasAnswer?: boolean;
+}
+
+export interface findManyGameProgress extends findMany {
+  userId?: string[];
+  phase?: Phase[];
+  level?: Level[];
+}
+
 export interface IBadge {
   id: string;
   phase: Phase;
@@ -42,6 +55,7 @@ export interface gameOnboard {
   firstQuestion: string;
   secondQuestion: string;
   thirdQuestion: string;
+  hasAnswer: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

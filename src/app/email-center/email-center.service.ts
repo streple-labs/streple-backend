@@ -67,7 +67,7 @@ export class EmailCenterService {
         delay,
       );
 
-      return save_data;
+      return { ...save_data, sendTo: recipients.length };
     }
 
     const save_sent = this.emailCenter.create({
@@ -84,7 +84,7 @@ export class EmailCenterService {
       context: { body: data.message },
     });
 
-    return save_data;
+    return { ...save_data, sendTo: recipients.length };
   }
 
   findAll(query: findManyEmail): Promise<DocumentResult<EmailCenter>> {
