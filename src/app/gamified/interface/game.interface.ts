@@ -3,6 +3,7 @@ import { findMany } from '@app/common';
 export enum Phase {
   first = 'Phase 1',
   second = 'Phase 2',
+  third = 'Phase 3',
 }
 
 export enum Level {
@@ -16,6 +17,7 @@ export interface gameProgress {
   phase: Phase;
   level: Level;
   score: number;
+  earn: number;
   completedAt: Date;
   createdAt?: Date;
   updatedAt?: Date;

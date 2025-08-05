@@ -8,6 +8,8 @@ import {
   findManyGameProgress,
   findManyOnboardedUser,
   gameOnboard,
+  Level,
+  Phase,
 } from './interface';
 import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
 
@@ -21,8 +23,18 @@ export class GamifiedService {
   ) {}
 
   async create(create: gameOnboard, user: AuthUser): Promise<GamingOnboarding> {
-    const question = this.onboarding.create({ ...create, userId: user.id });
-    return await this.onboarding.save(question);
+    const question = this.onboarding.create({
+      ...create,
+      hasAnswer: true,
+      userId: user.id,
+    });
+    const data = await this.onboarding.save(question);
+    await this.trackUserProgress(
+      { phase: Phase.first, level: Level.first, score: 0 },
+      user,
+    );
+
+    return data;
   }
 
   async trackUserProgress(
@@ -30,12 +42,47 @@ export class GamifiedService {
     user: AuthUser,
   ): Promise<GameProgress> {
     const today = new Date();
+
+    const userProgress = await this.gameProgress.findOne({
+      where: { userId: user.id },
+      select: ['earn'],
+      order: { createdAt: 'DESC' },
+    });
+
     const track = this.gameProgress.create({
       ...create,
       completedAt: today,
       userId: user.id,
     });
+
+    const earningsMap: Record<string, Record<string, number>> = {
+      'Phase 1': {
+        'Level 3': 500,
+      },
+      'Phase 2': {
+        'Level 3': 2000,
+      },
+      'Phase 3': {
+        'Level 3': 4000,
+      },
+    };
+
+    const earnings = earningsMap[create.phase]?.[create.level];
+    if (earnings !== undefined) {
+      track.earn = parseInt(String(userProgress?.earn), 10) + earnings;
+    } else {
+      track.earn = parseInt(String(userProgress?.earn), 10);
+    }
+
     return await this.gameProgress.save(track);
+  }
+
+  async userProgress(user: AuthUser) {
+    const userProgress = await this.gameProgress.findOne({
+      where: { userId: user.id },
+      order: { createdAt: 'DESC' },
+    });
+    return userProgress;
   }
 
   findMany(

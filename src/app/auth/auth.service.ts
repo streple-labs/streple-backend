@@ -1,16 +1,17 @@
+import { Role } from '@app/users/interface';
 import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import { SignupDto } from './dto/signup.dto';
 import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
-import { LoginDto } from './dto/login.dto';
+import { UsersService } from '../users/users.service';
 import { jwtConstants } from './constants';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +35,7 @@ export class AuthService {
     return this.users.resendOtp(dto);
   }
 
-  async loginUser(dto: LoginDto) {
+  async userLogin(dto: LoginDto) {
     const user = await this.users.login(dto.email);
     if (!user || !(await user.validatePassword(dto.password))) {
       throw new UnauthorizedException('Invalid credentials');
@@ -44,6 +45,34 @@ export class AuthService {
       throw new UnauthorizedException('Email not verified');
     }
 
+    if (![Role.follower, Role.pro].includes(user.role)) {
+      throw new UnauthorizedException('access denied users only');
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, createdAt, updatedAt, ...sanitizedUser } = user;
+    return {
+      streple_auth_token: this.jwt.sign(payload),
+      token_type: 'Bearer',
+      expires_in: jwtConstants.expiresIn,
+      data: sanitizedUser,
+    };
+  }
+
+  async adminLogin(dto: LoginDto) {
+    const user = await this.users.login(dto.email);
+    if (!user || !(await user.validatePassword(dto.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isVerified) {
+      throw new UnauthorizedException('Email not verified');
+    }
+
+    if (![Role.admin, Role.publish, Role.superAdmin].includes(user.role)) {
+      throw new UnauthorizedException('Access denied');
+    }
     const payload = { sub: user.id, email: user.email, role: user.role };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, createdAt, updatedAt, ...sanitizedUser } = user;

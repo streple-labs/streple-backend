@@ -59,11 +59,18 @@ export class AuthController {
     return this.auth.resendOtp(dto);
   }
 
-  @Post('login')
+  @Post('login/user')
   @ApiOperation({ summary: 'User Login with email and password' })
   @ApiResponse({ status: 200, description: 'Returns a JWT token' })
   loginUser(@Body() dto: LoginDto) {
-    return this.auth.loginUser(dto);
+    return this.auth.userLogin(dto);
+  }
+
+  @Post('login/admin')
+  @ApiOperation({ summary: 'User Login with email and password' })
+  @ApiResponse({ status: 200, description: 'Returns a JWT token' })
+  AdminLogin(@Body() dto: LoginDto) {
+    return this.auth.adminLogin(dto);
   }
 
   @Get('google')

@@ -1,6 +1,7 @@
+import { FindMany, transform } from '@app/common';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -16,8 +17,6 @@ import {
   Level,
   Phase,
 } from '../interface';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FindMany, transform } from '@app/common';
 
 export class GamifieldOnboard implements gameOnboard {
   @IsString()
@@ -71,15 +70,6 @@ export class FindManyOnboardedUser
     typeof value === 'string' ? [value] : value,
   )
   userId?: string[];
-
-  @IsBoolean()
-  @IsOptional()
-  @ApiPropertyOptional({ type: Boolean })
-  @Transform(({ value }) => {
-    if (value === 'true' || value === true) return [true];
-    if (value === 'false' || value === false) return [false];
-  })
-  hasAnswer?: boolean;
 }
 
 export class FindManyGameProgress

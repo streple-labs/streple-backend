@@ -84,7 +84,27 @@ export class EmailCenterService {
       context: { body: data.message },
     });
 
-    return { ...save_data, sendTo: recipients.length };
+    const returnUsers: User[] = [];
+    if (create.selected && create.selected?.length > 0) {
+      if (!create.selected.every((value) => isUuid(value))) {
+        throw new ForbiddenException('One or more IDs are not valid ID');
+      }
+      const users = await this.users.find({
+        where: {
+          id: In(create.selected),
+        },
+      });
+
+      if (users.length > 0) {
+        users.map((value) => returnUsers.push(value));
+      }
+    }
+
+    return {
+      ...save_data,
+      sendTo: recipients.length,
+      selectedUser: returnUsers,
+    };
   }
 
   findAll(query: findManyEmail): Promise<DocumentResult<EmailCenter>> {

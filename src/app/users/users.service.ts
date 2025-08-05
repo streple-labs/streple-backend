@@ -1,44 +1,46 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  UnauthorizedException,
-  ForbiddenException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './user.entity';
-import { SignupDto } from '../auth/dto/signup.dto';
-import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
-import * as bcrypt from 'bcrypt';
-import { ToggleRoleDto } from './dto/toggle-role.dto';
-import { TopUpDto } from './dto/top-up.dto';
-import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
-import { MailerService } from 'src/app/auth/mailer.service';
-import { ForgotPasswordDto } from 'src/app/auth/dto/forgot-password.dto';
-import { ResetPasswordDto } from 'src/app/auth/dto/reset-password.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import {
-  findManyUser,
-  findOneUser,
-  IUser,
-  Role,
-  updateProfile,
-} from './interface';
 import { AuthUser, Document, DocumentResult } from '@app/common';
 import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
 } from '@app/helpers';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { ForgotPasswordDto } from 'src/app/auth/dto/forgot-password.dto';
+import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
+import { ResetPasswordDto } from 'src/app/auth/dto/reset-password.dto';
+import { MailerService } from 'src/app/auth/mailer.service';
+import { Repository } from 'typeorm';
+import { SignupDto } from '../auth/dto/signup.dto';
+import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ToggleRoleDto } from './dto/toggle-role.dto';
+import { TopUpDto } from './dto/top-up.dto';
+import {
+  createUser,
+  findManyUser,
+  findOneUser,
+  IUser,
+  updateProfile,
+} from './interface';
+import { User } from './user.entity';
+import { MailService, template } from '@app/services';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly repo: Repository<User>,
-    private readonly mailerService: MailerService,
     @InjectRepository(CopyWallet)
     private readonly wallets: Repository<CopyWallet>,
+    private readonly mailerService: MailerService,
+    private readonly mailer: MailService,
   ) {}
 
   /* ---------------- registration / lookup ------------------ */
@@ -62,19 +64,33 @@ export class UsersService {
     return this.repo.save(user);
   }
 
-  async createAdmin(dto: SignupDto) {
+  async createAdmin(dto: createUser) {
     const adminExists = await this.findByEmail(dto.email);
     if (adminExists) throw new BadRequestException('Admin already exists');
 
+    const username = dto.email.split('@')[0];
+    const pass = this.generatePassword(10);
+    const password = await bcrypt.hash(pass, 10);
     const admin = this.repo.create({
       ...dto,
       isVerified: true,
       otpVerified: true,
-      role: Role.admin,
+      password,
     });
-    admin.password = await bcrypt.hash(dto.password, 10);
 
     await this.repo.save(admin);
+    await this.mailer.sendMail(
+      dto.email,
+      template.admin,
+      `Welcome dear ${dto.role.toLowerCase()}`,
+      {
+        username,
+        email: dto.email,
+        password: pass,
+        login_url: '',
+        currentYear: new Date().getFullYear(),
+      },
+    );
     return { message: 'Admin account created successfully' };
   }
 
@@ -316,4 +332,34 @@ export class UsersService {
 
     return where;
   }
+
+  private generatePassword = (length: number = 10): string => {
+    const upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const symbols = '!@#$%^&*()_+~`|}{[]:;?><,./-=';
+
+    if (length < 8) {
+      throw new Error('Password length must be at least 8 characters long.');
+    }
+
+    const allChars = upperCase + lowerCase + numbers + symbols;
+    let password = '';
+
+    password += upperCase[Math.floor(Math.random() * upperCase.length)];
+    password += lowerCase[Math.floor(Math.random() * lowerCase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    for (let i = password.length; i < length; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    password = password
+      .split('')
+      .sort(() => 0.5 - Math.random())
+      .join('');
+
+    return password;
+  };
 }

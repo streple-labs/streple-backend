@@ -19,6 +19,7 @@ import {
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ToggleRoleDto } from './dto/toggle-role.dto';
 import {
+  CreateUser,
   FindManyUser,
   FindOneUser,
   TopUpDto,
@@ -54,6 +55,13 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User role updated' })
   toggle(@SessionUser() user: AuthUser, @Body() dto: ToggleRoleDto) {
     return this.users.toggleRole(user.id, dto);
+  }
+
+  @Post('create-admins')
+  @ApiBody({ type: CreateUser })
+  @ApiOperation({ summary: 'create new admins' })
+  CreateAdmin(@Body() body: CreateUser) {
+    return this.users.createAdmin(body);
   }
 
   /* -------- dashboard (overview) -------------------------- */

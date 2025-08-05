@@ -54,4 +54,10 @@ export class GamifiedController {
   ) {
     return this.gamifiedService.trackUserProgress(create, user);
   }
+
+  @Get('user-progress')
+  @ApiOperation({ summary: 'Last progress of the user' })
+  userProgress(@SessionUser() user: AuthUser) {
+    return this.gamifiedService.userProgress(user);
+  }
 }

@@ -44,7 +44,7 @@ async function seed() {
     password: await bcrypt.hash(process.env.ADMIN_PASSWORD as string, 10),
     isVerified: true,
     otpVerified: true,
-    role: Role.admin,
+    role: Role.superAdmin,
   });
 
   await repo.save(admin);

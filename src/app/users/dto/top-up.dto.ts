@@ -4,12 +4,20 @@ import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
+  IsIn,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   Min,
 } from 'class-validator';
-import { findManyUser, findOneUser, updateProfile } from '../interface';
+import {
+  createUser,
+  findManyUser,
+  findOneUser,
+  Role,
+  updateProfile,
+} from '../interface';
 
 export class TopUpDto {
   @ApiProperty({ example: 500, minimum: 1 })
@@ -100,4 +108,22 @@ export class UpdateProfile implements updateProfile {
     if (value === 'false' || value === false) return false;
   })
   hasAnswer: boolean;
+}
+
+export class CreateUser implements createUser {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  fullName: string;
+
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  email: string;
+
+  @IsString()
+  @ApiProperty({ type: String, enum: [Role.admin, Role.pro, Role.publish] })
+  @IsIn([Role.admin, Role.pro, Role.publish])
+  role: Role;
 }

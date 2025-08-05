@@ -1,0 +1,84 @@
+<html>
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <title>Welcome Email</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        padding: 10px 0;
+        font-size: 24px;
+        color: #333;
+      }
+      .content {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #555;
+      }
+      .footer {
+        text-align: center;
+        font-size: 14px;
+        color: #777;
+        margin-top: 20px;
+      }
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin: 20px 0;
+        font-size: 16px;
+        color: #fff;
+        background-color: #007bff;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+      .button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>Welcome on board!</div>
+      <div class='content'>
+        <p>Hello <strong>{{username}}</strong>,</p>
+        <p>
+          Your account has been successfully created. You can use the
+          credentials below to log in:
+        </p>
+        <p style='text-align: left'><strong>Email:</strong> {{email}}</p>
+        <p style='text-align: left'>
+          <strong>Temporary Password:</strong>
+          {{password}}
+        </p>
+        <p>
+          We recommend that you log in and change your password immediately for
+          security reasons.
+        </p>
+        <p style='text-align: center'>
+          <a href='{{login_url}}' class='button'>Login Now</a>
+        </p>
+        <p style='text-align: center; font-style: italic; font-size: 12px'>
+          If you have any questions, feel free to contact our support team.
+        </p>
+      </div>
+      <div class='footer'>
+        &copy;
+        {{currentYear}}
+        career portal. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>

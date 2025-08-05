@@ -4,6 +4,8 @@ import { ICopyWallet } from '@app/copy-trading/interface';
 export enum Role {
   pro = 'PRO_TRADER',
   follower = 'FOLLOWER',
+  superAdmin = 'SUPER_ADMIN',
+  publish = 'PUBLISHER',
   admin = 'ADMIN',
 }
 
@@ -51,3 +53,5 @@ export interface findOneUser extends findOne {
   fullName?: string;
   email?: string;
 }
+
+export type createUser = Pick<IUser, 'email' | 'fullName' | 'role'>;
