@@ -48,7 +48,7 @@ async function seed() {
   });
 
   await repo.save(admin);
-  console.log('✅ Admin account created successfully');
+  console.log('✅ Super Admin account created successfully');
   process.exit();
 }
 
