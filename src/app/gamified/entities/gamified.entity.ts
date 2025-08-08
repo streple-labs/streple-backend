@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { gameOnboard } from '../interface';
-import { User } from '@app/users/user.entity';
+import { User } from '@app/users/entity/user.entity';
 
 @Entity('gaming_onboarding')
 export class GamingOnboarding implements gameOnboard {

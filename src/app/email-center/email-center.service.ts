@@ -12,7 +12,7 @@ import {
   FindOneWrapper,
 } from 'src/global/helpers';
 import { In, Not, Repository } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../users/entity/user.entity';
 import { EmailCenter } from './entities/email-center.entity';
 import {
   createEmail,
@@ -23,7 +23,7 @@ import {
   updateEmail,
 } from './interface';
 import { EmailJobWorker, template } from 'src/global/services';
-import { Role } from '@app/users/interface';
+import { Role } from '@app/users/interface/user.interface';
 import { validate as isUuid } from 'uuid';
 @Injectable()
 export class EmailCenterService {

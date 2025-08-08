@@ -1,17 +1,235 @@
-<html lang='en'>
+<html>
   <head>
-    <meta charset='UTF-8' />
+    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Create broadcast</title>
+    <title>Welcome Email</title>
+    <!--[if !mso]><!-->
+    <style type='text/css'>
+      @media only screen and (max-width: 600px) {
+        .responsive-table {
+          width: 100% !important;
+        }
+        .responsive-column {
+          display: block !important;
+          width: 100% !important;
+        }
+        .content-container {
+          padding: 20px 15px !important;
+        }
+        .content-box {
+          padding: 25px 20px !important;
+        }
+      }
+    </style>
+    <!--<![endif]-->
   </head>
-  <body>
-    <div>
-      <p>Hello {{fullname}},</p>
-      <div>{{{body}}}</div>
-      <div class='footer'>
-        <p>Best Regards,</p>
-        <p>Streple Teams</p>
-      </div>
-    </div>
+  <body
+    style='
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    '
+  >
+    <!--[if (gte mso 9)|(IE)]>
+    <table width="600" align="center" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+    <![endif]-->
+    <table
+      align='center'
+      cellpadding='0'
+      cellspacing='0'
+      border='0'
+      width='100%'
+      style='max-width: 600px; background-color: #f4f4f4'
+    >
+      <!-- Header with Background Image and Overlapping Content -->
+      <tr>
+        <td
+          style="
+            background-image: url('https://streplestorage.s3.eu-north-1.amazonaws.com/images/Email+for+registerd+buyer.png');
+            background-repeat: no-repeat;
+            background-position: center top;
+            padding: 150px 0 0 0;
+            text-align: center;
+          "
+          background='https://streplestorage.s3.eu-north-1.amazonaws.com/images/Email+for+registerd+buyer.png'
+        >
+          <!--[if gte mso 9]>
+          <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:300px;">
+          <v:fill type="tile" src="https://streplestorage.s3.eu-north-1.amazonaws.com/images/Email+for+registerd+buyer.png" color="#f4f4f4" />
+          <v:textbox inset="0,200px,0,100px">
+          <![endif]-->
+
+          <div class='content-container' style='padding: 0 20px'>
+            <table
+              align='center'
+              cellpadding='0'
+              cellspacing='0'
+              border='0'
+              width='100%'
+              style='max-width: 500px'
+            >
+              <tr>
+                <td>
+                  <table
+                    cellpadding='0'
+                    cellspacing='0'
+                    border='0'
+                    width='100%'
+                    style='
+                      background-color: #ffffff;
+                      border-radius: 12px;
+                      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                    '
+                  >
+                    <tr>
+                      <td class='content-box' style='padding: 40px 30px'>
+                        <div>{{{body}}}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <!--[if gte mso 9]>
+          </v:textbox>
+          </v:rect>
+          <![endif]-->
+        </td>
+      </tr>
+
+      <!-- Social Media Icons -->
+      <tr>
+        <td style='padding: 30px 20px 20px; text-align: center'>
+          <table align='center' cellpadding='0' cellspacing='0' border='0'>
+            <tr>
+              <!-- X (Twitter) Icon -->
+              <td style='padding: 0 10px'>
+                <a
+                  href='https://x.com/yourhandle'
+                  target='_blank'
+                  style='display: block'
+                >
+                  <img
+                    src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/X_icon_2.svg/240px-X_icon_2.svg.png'
+                    alt='X (Twitter)'
+                    width='28'
+                    height='28'
+                    style='
+                      width: 28px;
+                      height: 28px;
+                      border: 0;
+                      display: block;
+                      border-radius: 4px;
+                    '
+                  />
+                </a>
+              </td>
+
+              <!-- Instagram Icon -->
+              <td style='padding: 0 10px'>
+                <a
+                  href='https://instagram.com/yourprofile'
+                  target='_blank'
+                  style='display: block'
+                >
+                  <img
+                    src='https://cdn-icons-png.flaticon.com/512/2111/2111463.png'
+                    alt='Instagram'
+                    width='28'
+                    height='28'
+                    style='
+                      width: 28px;
+                      height: 28px;
+                      border: 0;
+                      display: block;
+                      border-radius: 4px;
+                    '
+                  />
+                </a>
+              </td>
+
+              <!-- LinkedIn Icon -->
+              <td style='padding: 0 10px'>
+                <a
+                  href='https://linkedin.com/company/yourcompany'
+                  target='_blank'
+                  style='display: block'
+                >
+                  <img
+                    src='https://cdn-icons-png.flaticon.com/512/3536/3536505.png'
+                    alt='LinkedIn'
+                    width='28'
+                    height='28'
+                    style='
+                      width: 28px;
+                      height: 28px;
+                      border: 0;
+                      display: block;
+                      border-radius: 4px;
+                    '
+                  />
+                </a>
+              </td>
+
+              <!-- Telegram Icon -->
+              <td style='padding: 0 10px'>
+                <a
+                  href='https://t.me/yourchannel'
+                  target='_blank'
+                  style='display: block'
+                >
+                  <img
+                    src='https://cdn-icons-png.flaticon.com/512/2111/2111644.png'
+                    alt='Telegram'
+                    width='28'
+                    height='28'
+                    style='
+                      width: 28px;
+                      height: 28px;
+                      border: 0;
+                      display: block;
+                      border-radius: 4px;
+                    '
+                  />
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td
+          style='
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #eeeeee;
+            background-color: #ffffff;
+          '
+        >
+          <div>
+            <p style='margin: 0 0 5px 0; font-weight: bold'>Streple.com</p>
+            <p style='margin: 0; line-height: 1.4'>
+              491858 Peregrine Road, Hainault,
+              <br />
+              Ilford, Essex, United Kingdom
+            </p>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <!--[if (gte mso 9)|(IE)]>
+        </td>
+      </tr>
+    </table>
+    <![endif]-->
   </body>
 </html>

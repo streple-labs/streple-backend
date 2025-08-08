@@ -1,4 +1,4 @@
-import { User } from 'src/app/users/user.entity';
+import { User } from '@app/users/entity/user.entity';
 import { blogStatus, IBlogManager } from '../interface';
 import {
   Column,

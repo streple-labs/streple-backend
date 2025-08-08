@@ -1,7 +1,7 @@
 // src/copy-trading/copy-trading.controller.ts
 import { AuthUser } from '@app/common';
 import { SessionUser } from '@app/decorators';
-import { Role } from '@app/users/interface';
+import { Role } from '@app/users/interface/user.interface';
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,

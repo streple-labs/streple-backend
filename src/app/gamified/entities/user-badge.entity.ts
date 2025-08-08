@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Badge } from './badge.entity';
-import { User } from '@app/users/user.entity';
+import { User } from '@app/users/entity/user.entity';
 import { IUserBadge } from '../interface';
 
 @Entity('game_badges')

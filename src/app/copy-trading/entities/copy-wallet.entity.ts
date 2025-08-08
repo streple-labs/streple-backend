@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from '../../users/user.entity';
+import { User } from '../../users/entity/user.entity';
 import { ICopyWallet } from '../interface';
 
 @Entity()

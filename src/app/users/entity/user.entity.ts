@@ -7,8 +7,15 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
-import { IUser, Role } from './interface';
+import { CopyWallet } from '../../copy-trading/entities/copy-wallet.entity';
+import {
+  userType,
+  authType,
+  gender,
+  IUser,
+  Role,
+  userStatus,
+} from '../interface/user.interface';
 
 @Entity()
 export class User implements IUser {
@@ -73,6 +80,20 @@ export class User implements IUser {
   @OneToMany(() => CopyWallet, (w) => w.user, { cascade: true })
   copyWallets: CopyWallet[];
 
+  @Column({ type: 'enum', enum: authType, default: authType.email })
+  auth_type: authType;
+
+  @Column({ type: 'enum', enum: userType, default: userType.external })
+  type: userType;
+
+  @Column({ type: 'enum', enum: gender, nullable: true })
+  gender: gender;
+
+  @Column({ type: 'enum', enum: userStatus, default: userStatus.active })
+  status: userStatus;
+
+  @Column({ default: 1 })
+  roleLevel: number;
   /* timestamps */
   @CreateDateColumn()
   createdAt: Date;

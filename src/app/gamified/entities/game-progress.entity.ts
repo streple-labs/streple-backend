@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from '@app/users/user.entity';
+import { User } from '@app/users/entity/user.entity';
 import { gameProgress, Level, Phase } from '../interface';
 
 @Entity('game_progress')

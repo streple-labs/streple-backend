@@ -70,7 +70,11 @@ export class AuthService {
       throw new UnauthorizedException('Email not verified');
     }
 
-    if (![Role.admin, Role.publish, Role.superAdmin].includes(user.role)) {
+    if (
+      ![Role.admin, Role.publish, Role.superAdmin, Role.marketer].includes(
+        user.role,
+      )
+    ) {
       throw new UnauthorizedException('Access denied');
     }
     const payload = { sub: user.id, email: user.email, role: user.role };

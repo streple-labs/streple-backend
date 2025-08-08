@@ -1,4 +1,4 @@
-import { IUser } from '@app/users/interface';
+import { IUser } from '@app/users/interface/user.interface';
 
 export interface ICopyWallet {
   id: string;

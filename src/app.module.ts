@@ -14,7 +14,7 @@ import { LearninghubModule } from './app/learninghub/learninghub.module';
 import { UsersModule } from './app/users/users.module';
 import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
-import { JwtAuthGuard } from './global/guards';
+import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 
 @Module({
   imports: [
@@ -42,6 +42,10 @@ import { JwtAuthGuard } from './global/guards';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
     AppService,
   ],

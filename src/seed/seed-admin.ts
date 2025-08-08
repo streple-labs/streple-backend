@@ -1,9 +1,9 @@
-import { DataSource } from 'typeorm';
+import { CopyWallet } from '@app/copy-trading/entities/copy-wallet.entity';
+import { User } from '@app/users/entity';
+import { Role } from '@app/users/interface';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
-import { User } from '../app/users/user.entity';
-import { CopyWallet } from '../app/copy-trading/entities/copy-wallet.entity';
-import { Role } from '../app/users/interface';
+import { DataSource } from 'typeorm';
 dotenv.config();
 
 if (!process.env.ADMIN_EMAIL) {

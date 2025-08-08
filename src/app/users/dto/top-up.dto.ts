@@ -15,8 +15,8 @@ import {
   createUser,
   findManyUser,
   findOneUser,
-  Role,
   updateProfile,
+  Role,
 } from '../interface';
 
 export class TopUpDto {
@@ -123,7 +123,7 @@ export class CreateUser implements createUser {
   email: string;
 
   @IsString()
-  @ApiProperty({ type: String, enum: [Role.admin, Role.pro, Role.publish] })
-  @IsIn([Role.admin, Role.pro, Role.publish])
+  @ApiProperty({ type: String, enum: Object.values(Role) })
+  @IsIn(Object.values(Role))
   role: Role;
 }

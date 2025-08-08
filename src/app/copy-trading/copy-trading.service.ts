@@ -10,10 +10,10 @@ import { Repository } from 'typeorm';
 import { CopyWallet } from './entities/copy-wallet.entity';
 import { CopyTrade } from './entities/copy-trade.entity';
 import { ProSignal } from './entities/pro-signal.entity';
-import { User } from '../users/user.entity';
+import { User } from '../users/entity/user.entity';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { SignalDto } from './dto/signal.dto';
-import { Role } from '@app/users/interface';
+import { Role } from '@app/users/interface/user.interface';
 
 @Injectable()
 export class CopyTradingService {

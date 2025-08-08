@@ -24,13 +24,14 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ToggleRoleDto } from './dto/toggle-role.dto';
 import { TopUpDto } from './dto/top-up.dto';
 import {
+  authType,
   createUser,
   findManyUser,
   findOneUser,
   IUser,
   updateProfile,
-} from './interface';
-import { User } from './user.entity';
+} from './interface/user.interface';
+import { User } from './entity/user.entity';
 import { MailService, template } from '@app/services';
 
 @Injectable()
@@ -51,7 +52,7 @@ export class UsersService {
     user.otp = otp;
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-    await this.repo.save(user);
+    await this.repo.save({ ...user, auth_type: authType.email });
     await this.mailerService.sendOtpEmail(user.email, otp, 'verify');
 
     return { message: 'OTP sent to your email', email: user.email };
@@ -61,14 +62,13 @@ export class UsersService {
     const user = this.repo.create(dto);
     user.password = await bcrypt.hash(dto.password, 10);
     user.isVerified = true;
-    return this.repo.save(user);
+    return this.repo.save({ ...user, auth_type: authType.oath });
   }
 
   async createAdmin(dto: createUser) {
     const adminExists = await this.findByEmail(dto.email);
     if (adminExists) throw new BadRequestException('Admin already exists');
 
-    const username = dto.email.split('@')[0];
     const pass = this.generatePassword(10);
     const password = await bcrypt.hash(pass, 10);
     const admin = this.repo.create({
@@ -76,6 +76,7 @@ export class UsersService {
       isVerified: true,
       otpVerified: true,
       password,
+      auth_type: authType.email,
     });
 
     await this.repo.save(admin);
@@ -84,7 +85,7 @@ export class UsersService {
       template.admin,
       `Welcome dear ${dto.role.toLowerCase()}`,
       {
-        username,
+        username: dto.fullName,
         email: dto.email,
         password: pass,
         login_url: '',
