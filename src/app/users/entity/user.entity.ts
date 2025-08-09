@@ -3,6 +3,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -16,6 +18,7 @@ import {
   Role,
   userStatus,
 } from '../interface/user.interface';
+import { RoleModel } from './roles.entity';
 
 @Entity()
 export class User implements IUser {
@@ -100,6 +103,10 @@ export class User implements IUser {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ManyToOne(() => RoleModel, (role) => role.users, { eager: false })
+  @JoinColumn({ name: 'role_id' })
+  roles: RoleModel;
 
   /* helpers */
   async validatePassword(pw: string): Promise<boolean> {

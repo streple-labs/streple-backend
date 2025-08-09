@@ -8,7 +8,7 @@ import { Course } from 'src/app/course/course.entity';
 import { EmailCenter } from 'src/app/email-center/entities/email-center.entity';
 import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
 import { User } from '@app/users/entity/user.entity';
-import { Capabilities, RoleCapability, RoleModel } from '@app/users/entity';
+import { Privileges, RoleModel } from '@app/users/entity';
 
 export default (): TypeOrmModuleOptions => ({
   type: (process.env.DB_TYPE as 'postgres' | 'mysql') || 'postgres',
@@ -30,8 +30,7 @@ export default (): TypeOrmModuleOptions => ({
     GameProgress,
     GamingOnboarding,
     RoleModel,
-    RoleCapability,
-    Capabilities,
+    Privileges,
   ],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)

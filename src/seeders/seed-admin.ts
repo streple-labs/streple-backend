@@ -7,7 +7,7 @@ import { DataSource } from 'typeorm';
 dotenv.config();
 
 if (!process.env.ADMIN_EMAIL) {
-  throw new Error('Missing ADMIN_EMAIL in environment variables');
+  throw new Error();
 }
 
 const dataSource = new DataSource({

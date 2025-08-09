@@ -1,13 +1,10 @@
-import { Capabilities } from '@app/users/entity';
 import { forwardRef, Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DiscoveryModule } from '@nestjs/core';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlogManagerModule } from 'src/app/blog-manager/blog-manager.module';
 import { EmailCenterModule } from 'src/app/email-center/email-center.module';
 import {
   BlogJobWorker,
-  CapabilitiesSyncService,
   EmailJobWorker,
   FileProcessorService,
   HtmlChunkerService,
@@ -23,7 +20,7 @@ import {
     DiscoveryModule,
     forwardRef(() => BlogManagerModule),
     forwardRef(() => EmailCenterModule),
-    TypeOrmModule.forFeature([Capabilities]),
+    // TypeOrmModule.forFeature([Capabilities]),
   ],
   providers: [
     MailService,
@@ -34,7 +31,6 @@ import {
     SanitizeService,
     FileProcessorService,
     HtmlChunkerService,
-    CapabilitiesSyncService,
   ],
   exports: [
     MailService,
@@ -44,7 +40,6 @@ import {
     SanitizeService,
     FileProcessorService,
     HtmlChunkerService,
-    CapabilitiesSyncService,
   ],
 })
 export class GlobalModule {}

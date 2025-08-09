@@ -1,12 +1,12 @@
 import { IUser, userType } from './user.interface';
 
 export interface Roles {
-  id: string;
+  id?: string;
   name: string;
   description: string;
   type: userType;
-  users: IUser[];
-  capabilities: Capability[];
+  roleLevel: number;
+  privileges?: privileges[];
 }
 
 export interface Capability {
@@ -15,6 +15,13 @@ export interface Capability {
   key: string;
   description: string;
   roles: Roles[];
+}
+
+export interface privileges {
+  id: string;
+  role: Roles;
+  roleLevel: number;
+  privileges: string[];
 }
 
 export interface RoleCapabilities {

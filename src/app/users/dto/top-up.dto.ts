@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEmail,
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -17,6 +18,7 @@ import {
   findOneUser,
   updateProfile,
   Role,
+  userType,
 } from '../interface';
 
 export class TopUpDto {
@@ -126,4 +128,14 @@ export class CreateUser implements createUser {
   @ApiProperty({ type: String, enum: Object.values(Role) })
   @IsIn(Object.values(Role))
   role: Role;
+
+  @IsInt()
+  @ApiProperty({ type: Number })
+  @IsIn([2, 3])
+  @Transform(({ value }: { value: string }) => parseInt(value, 10))
+  roleLevel: number;
+
+  @IsOptional()
+  @IsIn(Object.values(userType))
+  type: userType = userType.internal;
 }

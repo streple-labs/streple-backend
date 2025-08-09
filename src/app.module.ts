@@ -15,6 +15,7 @@ import { UsersModule } from './app/users/users.module';
 import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
+import { SeederModule } from './seeders/seeder.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { JwtAuthGuard, PermissionsGuard } from './global/guards';
     GlobalModule,
     BlogManagerModule,
     GamifiedModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [

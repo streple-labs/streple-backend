@@ -81,4 +81,7 @@ export interface findOneUser extends findOne {
   email?: string;
 }
 
-export type createUser = Pick<IUser, 'email' | 'fullName' | 'role'>;
+export type createUser = Pick<
+  IUser,
+  'email' | 'fullName' | 'role' | 'roleLevel' | 'type'
+>;
