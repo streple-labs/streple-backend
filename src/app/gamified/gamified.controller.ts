@@ -1,5 +1,5 @@
 import { AuthUser } from '@app/common';
-import { SessionUser } from '@app/decorators';
+import { Abilities, SessionUser } from '@app/decorators';
 import {
   Body,
   Controller,
@@ -27,6 +27,7 @@ export class GamifiedController {
   constructor(private readonly gamifiedService: GamifiedService) {}
 
   @Post('onboarding')
+  @Abilities('GAMIFIED_CREATE')
   @ApiOperation({ summary: 'Get user onboarding questions' })
   @ApiBody({ type: GamifieldOnboard })
   create(@Body() create: GamifieldOnboard, @SessionUser() user: AuthUser) {
@@ -34,18 +35,21 @@ export class GamifiedController {
   }
 
   @Get('onboarded-users')
+  @Abilities('GAMIFIED_CREATE')
   @ApiOperation({ summary: 'Get all onboarded user' })
   findMany(@Query() query: FindManyOnboardedUser) {
     return this.gamifiedService.findMany(query);
   }
 
   @Get('game-progresses')
+  @Abilities('GAMIFIED_READ')
   @ApiOperation({ summary: 'get user game progress like Level and Phase' })
   findManyProgress(@Query() query: FindManyGameProgress) {
     return this.gamifiedService.findManyProgress(query);
   }
 
   @Post('tracker')
+  @Abilities('GAMIFIED_UPDATE')
   @ApiOperation({ summary: 'Track user progess' })
   @ApiBody({ type: CreateGameProgress })
   trackerUserProgress(
@@ -56,6 +60,7 @@ export class GamifiedController {
   }
 
   @Get('user-progress')
+  @Abilities('GAMIFIED_READ')
   @ApiOperation({ summary: 'Last progress of the user' })
   userProgress(@SessionUser() user: AuthUser) {
     return this.gamifiedService.userProgress(user);

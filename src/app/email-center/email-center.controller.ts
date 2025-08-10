@@ -25,6 +25,7 @@ import {
   UpdateEmailCenterDto,
 } from './dto/email-center.dto';
 import { EmailCenterService } from './email-center.service';
+import { Abilities } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
@@ -35,6 +36,7 @@ export class EmailCenterController {
   constructor(private readonly emailCenterService: EmailCenterService) {}
 
   @Post('email')
+  @Abilities('EMAIL_SEND')
   @ApiOperation({ summary: 'Create new Email' })
   @ApiBody({ type: CreateEmailCenter })
   create(@Body() createEmailCenterDto: CreateEmailCenter) {
@@ -47,18 +49,21 @@ export class EmailCenterController {
   }
 
   @Get('emails')
+  @Abilities('EMAIL_READ')
   @ApiOperation({ summary: 'Find many emails filter with available field' })
   findAll(@Query() query: FindManyEmail) {
     return this.emailCenterService.findAll(query);
   }
 
   @Get('email')
+  @Abilities('EMAIL_READ')
   @ApiOperation({ summary: 'Find one email, filter with available field' })
   findOne(@Query() query: FindOneEmail) {
     return this.emailCenterService.findOne(query);
   }
 
   @Patch('email/:id')
+  @Abilities('EMAIL_UPDATE')
   @ApiBody({ type: UpdateEmailCenterDto })
   @ApiOperation({ summary: 'Edit email data' })
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
@@ -69,9 +74,10 @@ export class EmailCenterController {
     return this.emailCenterService.update(param, updateEmailCenterDto);
   }
 
+  @Delete('email/:id')
+  @Abilities('EMAIL_DELETE')
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
   @ApiOperation({ summary: 'Delete one email' })
-  @Delete('email/:id')
   remove(@Param() param: ParamSearch) {
     return this.emailCenterService.remove(param);
   }

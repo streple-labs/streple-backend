@@ -33,7 +33,7 @@ import {
   UpdateLearning,
 } from './dto';
 import { LearningHubService } from './learninghub.service';
-import { Public, SessionUser } from '@app/decorators';
+import { Abilities, Public, SessionUser } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
@@ -44,6 +44,7 @@ export class LearningHubController {
   constructor(private readonly learningService: LearningHubService) {}
 
   @Post('learning')
+  @Abilities('LEARNINGHUB_CREATE')
   @ApiOperation({
     summary: 'Create new learning resource',
     description: 'Upload a learning resource with its document and thumbnail',
@@ -94,6 +95,7 @@ export class LearningHubController {
   }
 
   @Patch('learning/:id')
+  @Abilities('LEARNINGHUB_UPDATE')
   @ApiOperation({ summary: 'Edit learning resource' })
   @ApiBody({ type: UpdateLearning })
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
@@ -112,6 +114,7 @@ export class LearningHubController {
   }
 
   @Delete('learning/:id')
+  @Abilities('LEARNINGHUB_DELETE')
   @ApiOperation({ summary: 'Delete learning resources' })
   @ApiParam({ type: ParamSearch, required: true, name: 'id' })
   remove(@Param() param: ParamSearch, @SessionUser() user: AuthUser) {

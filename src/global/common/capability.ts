@@ -1,7 +1,7 @@
 export const CAPABILITIES = [
   // blog:
   'BLOG_CREATE',
-  'BLOG_EDIT',
+  'BLOG_READ',
   'BLOG_UPDATE',
   'BLOG_DELETE',
 
@@ -28,4 +28,7 @@ export const CAPABILITIES = [
   'LEARNINGHUB_READ',
   'LEARNINGHUB_DELETE',
   'LEARNINGHUB_UPDATE',
+
+  // user
+  'MANAGE_USER',
 ];

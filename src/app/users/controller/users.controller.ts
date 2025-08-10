@@ -1,5 +1,5 @@
 import { AuthUser } from '@app/common';
-import { SessionUser } from '@app/decorators';
+import { Abilities, SessionUser } from '@app/decorators';
 import {
   Body,
   Controller,
@@ -26,6 +26,7 @@ import {
   UpdateProfile,
 } from '../dto/top-up.dto';
 import { UsersService } from '../service';
+import { Role } from '../interface';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -58,9 +59,13 @@ export class UsersController {
   }
 
   @Post('create-admins')
+  @Abilities('MANAGE_USER')
   @ApiBody({ type: CreateUser })
   @ApiOperation({ summary: 'create new admins' })
-  CreateAdmin(@Body() body: CreateUser) {
+  CreateAdmin(@Body() body: CreateUser, @SessionUser() user: AuthUser) {
+    if (user.role !== Role.superAdmin || user.roleLevel !== 4) {
+      throw new UnauthorizedException('Insufficient accessibility');
+    }
     return this.users.createAdmin(body);
   }
 
@@ -76,12 +81,14 @@ export class UsersController {
   }
 
   @Get('get-users')
+  @Abilities('MANAGE_USER')
   @ApiOperation({ summary: 'Find Many User' })
   async FindManyUser(@Query() query: FindManyUser) {
     return this.users.findMany(query);
   }
 
   @Get('get-user')
+  @Abilities('MANAGE_USER')
   @ApiOperation({ summary: 'Find One User' })
   async FindOneUser(@Query() query: FindOneUser) {
     return this.users.findOne(query);

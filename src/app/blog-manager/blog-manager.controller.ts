@@ -24,7 +24,7 @@ import {
 import { AuthUser, ParamSearch } from 'src/global/common';
 import { BlogManagerService } from './blog-manager.service';
 import { CreateBlog, FindManyBlog, FindOneBlog, UpdateBlog } from './dto';
-import { Public, SessionUser } from '@app/decorators';
+import { Abilities, Public, SessionUser } from '@app/decorators';
 
 @Controller({
   version: VERSION_NEUTRAL,
@@ -35,6 +35,7 @@ export class BlogManagerController {
   constructor(private readonly blogManagerService: BlogManagerService) {}
 
   @Post('blog')
+  @Abilities('BLOG_CREATE')
   @ApiBody({ type: CreateBlog })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('thumbnail'))
@@ -65,6 +66,7 @@ export class BlogManagerController {
   }
 
   @Patch('blog/:id')
+  @Abilities('BLOG_UPDATE')
   @ApiBody({ type: UpdateBlog })
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'update blog' })
@@ -83,6 +85,7 @@ export class BlogManagerController {
   }
 
   @Delete('blog/:id')
+  @Abilities('BLOG_DELETE')
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'Delete One Blog' })
   remove(@Param() param: ParamSearch, @SessionUser() user: AuthUser) {
