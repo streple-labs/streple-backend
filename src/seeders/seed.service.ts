@@ -217,6 +217,8 @@ export class SeederService {
             'COPYTRADE_CREATE',
             'COPYTRADE_UPDATE',
             'GAMIFIED_READ',
+            'GAMIFIED_CREATE',
+            'GAMIFIED_UPDATE',
           ];
 
           if (!priv) {
@@ -243,10 +245,12 @@ export class SeederService {
           });
 
           const wanted = [
+            'GAMIFIED_UPDATE',
             'COPYTRADE_READ',
             'COPYTRADE_CREATE',
             'COPYTRADE_UPDATE',
             'GAMIFIED_READ',
+            'GAMIFIED_CREATE',
           ];
 
           if (!priv) {
