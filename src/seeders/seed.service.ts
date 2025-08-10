@@ -1,6 +1,6 @@
 import { Privileges, RoleModel } from '@app/users/entity';
 import { Role, Roles, userType } from '@app/users/interface';
-import { UsersService } from '@app/users/users.service';
+import { UsersService } from '@app/users/service';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -162,7 +162,7 @@ export class SeederService {
 
     if (admin) {
       const isAdded = await this.privilegesRepo.findOne({
-        where: { role: admin },
+        where: { role: { id: admin.id } },
       });
       if (!isAdded) {
         const superAd = this.privilegesRepo.create({
@@ -183,10 +183,9 @@ export class SeederService {
 
     if (superAdmin) {
       const isAdded = await this.privilegesRepo.findOne({
-        where: { role: superAdmin },
+        where: { role: { id: superAdmin.id } },
       });
 
-      console.log(isAdded);
       if (!isAdded) {
         const superAd = this.privilegesRepo.create({
           role: superAdmin,
@@ -195,6 +194,76 @@ export class SeederService {
         });
 
         await this.privilegesRepo.save(superAd);
+      }
+    }
+  }
+
+  async seedUsers() {
+    const junior = await this.roleRepository.find({
+      where: { roleLevel: 1 },
+    });
+
+    if (junior) {
+      for (const user of junior) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (user.name === Role.follower) {
+          let priv = await this.privilegesRepo.findOne({
+            where: { role: { id: user.id } },
+            relations: ['role'],
+          });
+
+          const wanted = [
+            'COPYTRADE_READ',
+            'COPYTRADE_CREATE',
+            'COPYTRADE_UPDATE',
+            'GAMIFIED_READ',
+          ];
+
+          if (!priv) {
+            priv = this.privilegesRepo.create({
+              role: user,
+              privileges: wanted,
+              roleLevel: 1,
+            });
+          } else {
+            const merged = Array.from(
+              new Set([...(priv.privileges || []), ...wanted]),
+            );
+            priv.privileges = merged;
+            priv.roleLevel = 1;
+          }
+          await this.privilegesRepo.save(priv);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (user.name === Role.pro) {
+          let priv = await this.privilegesRepo.findOne({
+            where: { role: { id: user.id } },
+            relations: ['role'],
+          });
+
+          const wanted = [
+            'COPYTRADE_READ',
+            'COPYTRADE_CREATE',
+            'COPYTRADE_UPDATE',
+            'GAMIFIED_READ',
+          ];
+
+          if (!priv) {
+            priv = this.privilegesRepo.create({
+              role: user,
+              privileges: wanted,
+              roleLevel: 1,
+            });
+          } else {
+            const merged = Array.from(
+              new Set([...(priv.privileges || []), ...wanted]),
+            );
+            priv.privileges = merged;
+            priv.roleLevel = 1;
+          }
+          await this.privilegesRepo.save(priv);
+        }
       }
     }
   }
@@ -208,9 +277,12 @@ export class SeederService {
     await this.seedSuperAdminPermission();
     await this.seedJunior();
     await this.seedSenior();
+    await this.seedUsers();
     console.log('Default Permission seeded successfully');
 
     await this.seedSuperAdmin();
     console.log('Super Admin seeded successfully');
+
+    process.exit();
   }
 }

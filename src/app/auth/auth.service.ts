@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
-import { UsersService } from '../users/users.service';
 import { jwtConstants } from './constants';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
+import { UsersService } from '@app/users/service';
 
 @Injectable()
 export class AuthService {

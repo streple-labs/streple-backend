@@ -1,3 +1,4 @@
+import { CAPABILITY_KEY } from '@app/decorators';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
@@ -7,18 +8,21 @@ export class PermissionsGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const requiredCaps = this.reflector.get<string[]>(
-      'capabilities',
+      CAPABILITY_KEY,
       context.getHandler(),
     );
     if (!requiredCaps) return true; // No restriction
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
+    const priv = user?.roles?.privileges;
 
-    // Example: requiredCaps might be ['blog:BLOG_DELETE']
+    // console.log(priv[0].privileges, requiredCaps);
     return requiredCaps.every((reqCap) => {
-      const [module, cap] = reqCap.split(':');
-      return user.capabilities[module]?.includes(cap);
+      const access = priv[0].privileges;
+      if (access.includes('all')) return true; // If user has 'all' permission, allow
+      const isValid = priv[0].privileges?.includes(reqCap);
+      return isValid;
     });
   }
 }

@@ -104,7 +104,7 @@ export class User implements IUser {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => RoleModel, (role) => role.users, { eager: false })
+  @ManyToOne(() => RoleModel, (role) => role.users)
   @JoinColumn({ name: 'role_id' })
   roles: RoleModel;
 

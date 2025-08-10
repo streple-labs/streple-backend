@@ -1,3 +1,4 @@
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -31,6 +32,10 @@ import { SeederModule } from './seeders/seeder.module';
           limit: 3, // max 3 requests within the TTL (3 requests per minutes)
         },
       ],
+    }),
+    CacheModule.register({
+      ttl: 60 * 60, // cache for 1 hour
+      max: 1000, // store up to 1000 items
     }),
     LearninghubModule,
     EmailCenterModule,

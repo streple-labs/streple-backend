@@ -1,4 +1,4 @@
-import { IUser, userType } from './user.interface';
+import { IUser, Role, userType } from './user.interface';
 
 export interface Roles {
   id?: string;
@@ -7,14 +7,8 @@ export interface Roles {
   type: userType;
   roleLevel: number;
   privileges?: privileges[];
-}
-
-export interface Capability {
-  id: string;
-  module: string;
-  key: string;
-  description: string;
-  roles: Roles[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface privileges {
@@ -22,26 +16,14 @@ export interface privileges {
   role: Roles;
   roleLevel: number;
   privileges: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export interface RoleCapabilities {
-  id: string;
-  role: Roles;
-  capability: Capability;
+export interface assignPermission {
+  roleName: Role;
   roleLevel: number;
-}
-
-export interface Permission {
-  id: string;
-  route: string;
-  actions: string[];
-  description?: string;
-}
-
-export interface RolePermission {
-  id: string;
-  role_id: string;
-  permission_id: string;
+  permission: string[];
 }
 
 export interface UserRoles {

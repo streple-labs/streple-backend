@@ -59,6 +59,22 @@ export class FindManyUser extends FindMany implements findManyUser {
     return;
   })
   isVerified?: boolean[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiProperty({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  roleName?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiProperty({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  privilege?: string[];
 }
 
 export class FindOneUser extends FindOne implements findOneUser {

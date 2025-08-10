@@ -2,10 +2,10 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
-import { UsersService } from 'src/app/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import * as dotenv from 'dotenv';
+import { UsersService } from '@app/users/service';
 dotenv.config();
 
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -74,6 +74,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, otp, otpExpiresAt, ...sanitizedUser } = user;
 
     const streple_auth_token = this.jwt.sign({

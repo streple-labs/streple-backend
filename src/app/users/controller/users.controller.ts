@@ -16,16 +16,16 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { ToggleRoleDto } from './dto/toggle-role.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
+import { ToggleRoleDto } from '../dto/toggle-role.dto';
 import {
   CreateUser,
   FindManyUser,
   FindOneUser,
   TopUpDto,
   UpdateProfile,
-} from './dto/top-up.dto';
-import { UsersService } from './users.service';
+} from '../dto/top-up.dto';
+import { UsersService } from '../service';
 
 @ApiTags('Users')
 @ApiBearerAuth()

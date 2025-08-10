@@ -1,5 +1,6 @@
 import { findMany, findOne } from '@app/common';
 import { ICopyWallet } from '@app/copy-trading/interface';
+import { Roles } from './roles.interface';
 
 export enum Role {
   pro = 'PRO_TRADER',
@@ -39,7 +40,7 @@ export interface IUser {
   isVerified: boolean;
   otp?: string | null;
   otpExpiresAt?: Date | null;
-  role: Role;
+  role?: Role;
   bio?: string;
   auth_type: authType;
   type: userType;
@@ -55,6 +56,7 @@ export interface IUser {
   status: userStatus;
   gender: gender;
   roleLevel: number;
+  roles: Roles;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,6 +76,9 @@ export interface findManyUser extends findMany {
   fullName?: string[];
   email?: string[];
   isVerified?: boolean[];
+  roleName?: string[];
+  privilege?: string[];
+  type?: string[];
 }
 
 export interface findOneUser extends findOne {
@@ -81,7 +86,7 @@ export interface findOneUser extends findOne {
   email?: string;
 }
 
-export type createUser = Pick<
-  IUser,
-  'email' | 'fullName' | 'role' | 'roleLevel' | 'type'
->;
+export interface createUser
+  extends Pick<IUser, 'email' | 'fullName' | 'role' | 'roleLevel' | 'type'> {
+  roles?: Roles;
+}

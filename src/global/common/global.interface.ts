@@ -45,7 +45,8 @@ export type EmailJob = {
 };
 
 export type AuthUser = {
+  id: string;
   email: string;
   role: Role;
-  id: string;
+  roleLevel: number;
 };

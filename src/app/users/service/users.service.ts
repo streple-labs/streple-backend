@@ -1,9 +1,15 @@
+import { ForgotPasswordDto } from '@app/auth/dto/forgot-password.dto';
+import { ResendOtpDto, VerifyOtpDto } from '@app/auth/dto/otp.dto';
+import { ResetPasswordDto } from '@app/auth/dto/reset-password.dto';
+import { SignupDto } from '@app/auth/dto/signup.dto';
 import { AuthUser, Document, DocumentResult } from '@app/common';
+import { CopyWallet } from '@app/copy-trading/entities';
 import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
 } from '@app/helpers';
+import { MailService, template } from '@app/services';
 import {
   BadRequestException,
   ForbiddenException,
@@ -13,26 +19,21 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { ForgotPasswordDto } from 'src/app/auth/dto/forgot-password.dto';
-import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
-import { ResetPasswordDto } from 'src/app/auth/dto/reset-password.dto';
-import { MailerService } from 'src/app/auth/mailer.service';
 import { Repository } from 'typeorm';
-import { SignupDto } from '../auth/dto/signup.dto';
-import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { ToggleRoleDto } from './dto/toggle-role.dto';
-import { TopUpDto } from './dto/top-up.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
+import { toggle } from '../dto/toggle-role.dto';
+import { TopUpDto } from '../dto/top-up.dto';
+import { RoleModel, User } from '../entity';
 import {
   authType,
   createUser,
   findManyUser,
   findOneUser,
   IUser,
+  Role,
   updateProfile,
-} from './interface/user.interface';
-import { User } from './entity/user.entity';
-import { MailService, template } from '@app/services';
+  userType,
+} from '../interface';
 
 @Injectable()
 export class UsersService {
@@ -40,7 +41,8 @@ export class UsersService {
     @InjectRepository(User) private readonly repo: Repository<User>,
     @InjectRepository(CopyWallet)
     private readonly wallets: Repository<CopyWallet>,
-    private readonly mailerService: MailerService,
+    @InjectRepository(RoleModel)
+    private readonly roleModel: Repository<RoleModel>,
     private readonly mailer: MailService,
   ) {}
 
@@ -52,8 +54,24 @@ export class UsersService {
     user.otp = otp;
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-    await this.repo.save({ ...user, auth_type: authType.email });
-    await this.mailerService.sendOtpEmail(user.email, otp, 'verify');
+    const role = await this.roleModel.findOne({
+      where: { name: Role.follower },
+    });
+
+    if (role) user.roles = role;
+
+    await this.repo.save({
+      ...user,
+      auth_type: authType.email,
+      type: userType.external,
+      roleLevel: 1,
+    });
+    await this.mailer.sendMail(
+      user.email,
+      template.reg,
+      'Verify Your Email Address to Complete Registration',
+      { otp, username: user.fullName, currentYear: new Date().getFullYear() },
+    ); //Service.sendOtpEmail(user.email, otp, 'verify');
 
     return { message: 'OTP sent to your email', email: user.email };
   }
@@ -62,6 +80,12 @@ export class UsersService {
     const user = this.repo.create(dto);
     user.password = await bcrypt.hash(dto.password, 10);
     user.isVerified = true;
+    const role = await this.roleModel.findOne({
+      where: { name: Role.follower },
+    });
+
+    if (role) user.roles = role;
+
     return this.repo.save({ ...user, auth_type: authType.oath });
   }
 
@@ -71,6 +95,11 @@ export class UsersService {
 
     const pass = this.generatePassword(10);
     const password = await bcrypt.hash(pass, 10);
+    const role = await this.roleModel.findOne({ where: { name: dto.role } });
+    if (role) {
+      dto.roles = role;
+    }
+
     const admin = this.repo.create({
       ...dto,
       isVerified: true,
@@ -83,7 +112,7 @@ export class UsersService {
     await this.mailer.sendMail(
       dto.email,
       template.admin,
-      `Welcome dear ${dto.role.toLowerCase()}`,
+      `Welcome dear ${dto.role?.toLowerCase()}`,
       {
         username: dto.fullName,
         email: dto.email,
@@ -142,7 +171,16 @@ export class UsersService {
     user.otpVerified = false;
     await this.repo.save(user);
 
-    await this.mailerService.sendOtpEmail(user.email, newOtp, dto.purpose);
+    await this.mailer.sendMail(
+      user.email,
+      template.resend,
+      'Streple otp request',
+      {
+        otp: newOtp,
+        username: user.fullName,
+        currentYear: new Date().getFullYear(),
+      },
+    ); //Service.sendOtpEmail(user.email, newOtp, dto.purpose);
     return { message: 'OTP resent', email: user.email };
   }
 
@@ -156,7 +194,12 @@ export class UsersService {
     user.otpVerified = false;
     await this.repo.save(user);
 
-    await this.mailerService.sendOtpEmail(user.email, otp, 'reset');
+    await this.mailer.sendMail(
+      user.email,
+      template.reset,
+      'Password Reset Request',
+      { username: user.fullName, otp, currentYear: new Date().getFullYear() },
+    ); //Service.sendOtpEmail(user.email, otp, 'reset');
     return { message: 'OTP sent to your email', email: user.email };
   }
 
@@ -202,10 +245,24 @@ export class UsersService {
   }
 
   /* ---------------- role toggle ---------------------------- */
-  async toggleRole(id: string, dto: ToggleRoleDto) {
+  async toggleRole(id: string, dto: toggle) {
     const user = await this.findById(id);
+    if (!user) {
+      throw new ForbiddenException('user with this id not available');
+    }
+
+    const role = await this.roleModel.findOne({
+      where: { name: dto.role },
+    });
+
     user.role = dto.role;
-    return this.repo.save(user);
+    if (role) {
+      dto.roles = role;
+      user.roles = role;
+    }
+
+    await this.repo.update({ id: user.id }, { ...dto });
+    return user;
   }
 
   async getProfile(userId: string) {
@@ -317,18 +374,22 @@ export class UsersService {
   /* add convenience for stats updates, followers etc later */
 
   private filter(query: findManyUser) {
-    let where: Record<string, any> = {};
+    const where: Record<string, any> = {};
 
     if (query.email) {
-      where = { email: query.email };
+      where['email'] = query.email;
     }
 
     if (query.fullName) {
-      where = { fullName: query.fullName };
+      where['fullName'] = query.fullName;
     }
 
     if (query.isVerified) {
-      where = { isVerified: query.isVerified };
+      where['isVerified'] = query.isVerified;
+    }
+
+    if (query.type) {
+      where['type'] = query.type;
     }
 
     return where;
