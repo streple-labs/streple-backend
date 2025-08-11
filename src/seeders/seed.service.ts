@@ -1,3 +1,4 @@
+import { WaitList } from '@app/email-center/entities';
 import { Privileges, RoleModel } from '@app/users/entity';
 import { Role, Roles, userType } from '@app/users/interface';
 import { UsersService } from '@app/users/service';
@@ -13,6 +14,7 @@ export class SeederService {
     private readonly roleRepository: Repository<RoleModel>,
     @InjectRepository(Privileges)
     private readonly privilegesRepo: Repository<Privileges>,
+    @InjectRepository(WaitList) private readonly wait: Repository<WaitList>,
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
   ) {}
@@ -272,6 +274,155 @@ export class SeederService {
     }
   }
 
+  async seedWailList() {
+    const emails = [
+      'obasicovenant7@gmail.com',
+      'eric2umeh@yahoo.com',
+      'timothyanna25@gmail.com',
+      'clareteriki1@gmail.com',
+      'kibesuraiyatmohammed@gmail.com',
+      'mujeebatbalogun@gmail.com',
+      'idrisfaridah001@gmail.com',
+      'slimsufy2001@gmail.com',
+      'ahmednanahauwa55@gmail.com',
+      'sadiqbecca@gmail.com',
+      'heturafarms@gmail.com',
+      'ugbedejibrin2019@gmail.com',
+      'mosesokechukwu032@gmail.com',
+      'anthonyrichie.lala@gmail.com',
+      'chigozieuzoigwe813@gmail.com',
+      'francisfrenzy8@gmail.com',
+      'bigtoskydo@gmail.com',
+      'ansgarokoh@gmail.com',
+      'francisfrenzy8@gmail.com',
+      'abdullahiumarf608@gmail.com',
+      'dibuadiogo@gmail.com',
+      'obialoremmanuel5@gmail.com',
+      'dominicok07@gmail.com',
+      'calebiwunze20@gmail.com',
+      'isaachyelngtil@gmail.com',
+      'echetamaw@gmail.com',
+      'pezeakunne@gmail.com',
+      'melyndaegbeocha@gmail.com',
+      'chidiebere3322@gmail.com',
+      'franciscachinemelum1@gmail.com',
+      'divinetakim03@gmail.com',
+      'fannypeterside@gmail.com',
+      'charlesedochie53@gmail.com',
+      'mbadughachizoba119@gmail.com',
+      'ejimsamala002@gmail.com',
+      'obichukwuchidubem06@gmail.com',
+      'joshuauolewu@gmail.com',
+      'sandraemesiobi2@gmail.com',
+      'davidoffor100@gmail.com',
+      'petertony776@gmail.com',
+      'chinagoromfrancis012@gmail.com',
+      'uchendugodreigns@gmail.com',
+      'saharachibuzor@gmail.com',
+      'newmanwisdom32@gmail.com',
+      'nonyblaise36@gmail.com',
+      'chisomokoronkwo7@gmail.com',
+      'judennaemeka48@gmail.com',
+      'danielidahosa12@gmail.com',
+      'moviemadnesstiktok@gmail.com',
+      'princessgold903@gmail.com',
+      'judeabara@gmail.com',
+      'eguaojejr2014@gmail.com',
+      'alfredchinedu15@gmail.com',
+      'benjamin33755761@gmail.com',
+      'only1rhurhupanama@gmail.com',
+      'chimezieaniago001@gmail.com',
+      'kaluchiemezie@gmail.com',
+      'nallyofficail@gmail.com',
+      'gallantino3525@gmail.com',
+      'dukebasy20@gmail.com',
+      'emendo005@gmail.com',
+      'chigoziembah73@gmail.com',
+      'nally.arinze@gmail.com',
+      'peacenicholas5@gmail.com',
+      'mbaebuka955@gmail.com',
+      'benwcisse@gmail.com',
+      'davidadeyeni@gmail.com',
+      'christabelsarimah@gmail.com',
+      'kingsleyj836@gmail.com',
+      'arinzeedmund67@gmail.com',
+      'nmaviva94@gmail.com',
+      'marycynthialisa@gmail.com',
+      'oddjohn0987@gmail.com',
+      'edwinoluchi75@gmail.com',
+      'perpetuauzoma16@gmail.com',
+      'dominicfredrikk@gmail.com',
+      'glowreal75@gmail.com',
+      'emmanueltendekai150@gmail.com',
+      'o.a.umane@gmail.com',
+      'chidimmagabriel1995@gmail.com',
+      'dominicvalentino091@gmail.com',
+      'godwintrav@gmail.com',
+      'preshgoldzinnybeauty@gmail.com',
+      'computerscience2330@gmail.com',
+      'umar232a@gmail.com',
+      'Zakariya.malachi2@gmail.com',
+      'adamuaumar92@yahoo.com',
+      'ibrahimkibrahim194@gmail.com',
+      'njosephavong@gmail.com',
+      'obongudoh@gmail.com',
+      'okojohn@unical.edu.ng',
+      'kwopnangongchi@gmail.com',
+      'adebisifaridajoy@gmail.com',
+      'akinoriola07@gmail.com',
+      'abubakarbello1064@gmail.com',
+      'Miraclealabi1414@gmail.com',
+      'ioartanddesignproduction@gmail.com',
+      'mujahidsaminu993@gmail.com',
+      'jfunminiyi@gmail.com',
+      'khanerbaushe01@gmail.com',
+      'otenejonathan26@gmail.com',
+      'mitt1415@gmail.com',
+      'usmanmusaari@gmail.com',
+      'lawanmodu123@gmail.com',
+      'Nuruinusa72@gmail.com',
+      'nwachukwuwilliams008@gmail.com',
+      'gloryadekeye21@gmail.com',
+      'usamaabdullahi40@gmail.com',
+      'condemmail@gmail.com',
+      'Hannaholuwatobi8@gmail.com',
+      'funombell2018@gmail.com',
+      'basharbinusman1@gmail.com',
+      'omijiemichael435@gmail.com',
+      'lamismukhtar68@gmail.com',
+      'chalkypius@gmail.com',
+      'Mustaphajibreelharun@gmail.com',
+      'Muhammadsani85@gmail.com',
+      '3reasure117@gmail.com',
+      'samueletoma26@gmail.com',
+      'Jenniferibinola@gmail.com',
+      'samkengolden2003@gmail.com',
+      'fahatsalisu80@gmail.com',
+      'fatimatzahram95@gmail.com',
+      'P60512762@gmail.com',
+      'ba4187432@gmail.com',
+      'MDhanyine@gmail.com',
+      'Tiwa.ogundare@gmail.com',
+      'bsifedoyin@yahoo.com',
+      'momohsanimomohsani948@gmail.com',
+      'loritachidera831@gmail.com',
+      'jayjay4greatness2015@gmail.com',
+      'lancelotekong54@gmail.com',
+      'daisyvishnu8@gmail.com',
+      'soladimeji50@gmail.com',
+      'mahirahmadatif3@gmail.com',
+    ];
+
+    const data = emails.map((email) => ({ email }));
+    await this.wait
+      .createQueryBuilder()
+      .insert()
+      .into(WaitList) // your entity name
+      .values(data) // [{ email: '...' }, ...]
+      .orIgnore() // ON CONFLICT DO NOTHING
+      .execute();
+  }
+
   async seedAll() {
     console.log('Starting database seeding...');
 
@@ -283,6 +434,9 @@ export class SeederService {
     await this.seedSenior();
     await this.seedUsers();
     console.log('Default Permission seeded successfully');
+
+    await this.seedWailList();
+    console.log('wait list created successfully');
 
     await this.seedSuperAdmin();
     console.log('Super Admin seeded successfully');

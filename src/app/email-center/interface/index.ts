@@ -12,6 +12,15 @@ export enum EmailRecipient {
   users = 'All users',
   copiers = 'Copiers',
   pro = 'Protraders',
+  wait = 'WaitList',
+}
+
+export interface IWaitList {
+  id: string;
+  name?: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IEmailCenter {

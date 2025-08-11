@@ -4,12 +4,12 @@ import { MailService } from 'src/global/services';
 import { User } from '../users/entity/user.entity';
 import { EmailCenterController } from './email-center.controller';
 import { EmailCenterService } from './email-center.service';
-import { EmailCenter } from './entities/email-center.entity';
 import { GlobalModule } from 'src/global/global.module';
+import { EmailCenter, WaitList } from './entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailCenter, User]),
+    TypeOrmModule.forFeature([EmailCenter, User, WaitList]),
     forwardRef(() => GlobalModule),
   ],
   controllers: [EmailCenterController],

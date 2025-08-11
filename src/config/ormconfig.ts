@@ -5,7 +5,7 @@ import { CopyTrade } from 'src/app/copy-trading/entities/copy-trade.entity';
 import { CopyWallet } from 'src/app/copy-trading/entities/copy-wallet.entity';
 import { ProSignal } from 'src/app/copy-trading/entities/pro-signal.entity';
 import { Course } from 'src/app/course/course.entity';
-import { EmailCenter } from 'src/app/email-center/entities/email-center.entity';
+import { EmailCenter, WaitList } from 'src/app/email-center/entities';
 import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
 import { User } from '@app/users/entity/user.entity';
 import { Privileges, RoleModel } from '@app/users/entity';
@@ -29,6 +29,7 @@ export default (): TypeOrmModuleOptions => ({
     User,
     GameProgress,
     GamingOnboarding,
+    WaitList,
     RoleModel,
     Privileges,
   ],

@@ -1,3 +1,4 @@
+import { Role } from '@app/users/interface/user.interface';
 import {
   ForbiddenException,
   forwardRef,
@@ -11,9 +12,11 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
-import { In, Not, Repository } from 'typeorm';
+import { EmailJobWorker, template } from 'src/global/services';
+import { In, Repository } from 'typeorm';
+import { validate as isUuid } from 'uuid';
 import { User } from '../users/entity/user.entity';
-import { EmailCenter } from './entities/email-center.entity';
+import { EmailCenter, WaitList } from './entities';
 import {
   createEmail,
   EmailRecipient,
@@ -22,16 +25,13 @@ import {
   findOneEmail,
   updateEmail,
 } from './interface';
-import { EmailJobWorker, template } from 'src/global/services';
-import { Role } from '@app/users/interface/user.interface';
-import { validate as isUuid } from 'uuid';
 @Injectable()
 export class EmailCenterService {
   constructor(
     @InjectRepository(EmailCenter)
     private readonly emailCenter: Repository<EmailCenter>,
     @InjectRepository(User) private readonly users: Repository<User>,
-
+    @InjectRepository(WaitList) private readonly wistList: Repository<WaitList>,
     @Inject(forwardRef(() => EmailJobWorker))
     private readonly emailJobWorker: EmailJobWorker,
   ) {}
@@ -217,13 +217,25 @@ export class EmailCenterService {
 
     if (recipient === EmailRecipient.users) {
       const users = await this.users.find({
-        where: { role: Not(Role.admin) },
+        where: { role: In([Role.follower, Role.pro]) },
       });
       if (users.length > 0) {
         users.map((value) =>
           receiver.push({
             email: value.email,
             fullName: value.fullName,
+          }),
+        );
+      }
+    }
+
+    if (recipient === EmailRecipient.wait) {
+      const waiter = await this.wistList.find();
+      if (waiter.length > 0) {
+        waiter.map((value) =>
+          receiver.push({
+            email: value.email,
+            fullName: value.name || '',
           }),
         );
       }

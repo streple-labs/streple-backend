@@ -3,9 +3,13 @@ import { UsersModule } from '@app/users/users.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeederService } from './seed.service';
+import { WaitList } from '@app/email-center/entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RoleModel, Privileges]), UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([RoleModel, Privileges, WaitList]),
+    UsersModule,
+  ],
   providers: [SeederService],
   exports: [SeederService],
 })

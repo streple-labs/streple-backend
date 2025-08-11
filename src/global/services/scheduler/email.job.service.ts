@@ -103,19 +103,60 @@ export class EmailJobWorker {
     let email: EmailJob;
 
     try {
-      email = typeof data === 'string' ? await JSON.parse(data) : data;
+      email = typeof data === 'string' ? JSON.parse(data) : data;
 
       if (!email.users || !Array.isArray(email.users)) {
         throw new Error('Invalid email job: missing users array');
       }
 
-      for (const user of email.users) {
-        await this.mailService.sendMail(
-          user.email,
-          email.template,
-          email.subject,
-          { ...email.context, fullName: user.fullName },
+      const batchSize = 10;
+      const maxRetries = 3;
+
+      for (let i = 0; i < email.users.length; i += batchSize) {
+        const batch = email.users.slice(i, i + batchSize);
+
+        const results = await Promise.allSettled(
+          batch.map(async (user) => {
+            let attempt = 0;
+            while (attempt < maxRetries) {
+              try {
+                await this.mailService.sendMail(
+                  user.email,
+                  email.template,
+                  email.subject,
+                  { ...email.context, fullName: user.fullName },
+                );
+                return; // success
+              } catch (err) {
+                attempt++;
+                console.error(
+                  `Failed to send to ${user.email}, attempt ${attempt}:`,
+                  err,
+                );
+
+                if (attempt < maxRetries) {
+                  // Exponential backoff before retry
+                  await new Promise((res) => setTimeout(res, 1000 * attempt));
+                } else {
+                  throw err; // rethrow so Promise.allSettled marks it as rejected
+                }
+              }
+            }
+          }),
         );
+
+        // Gather failed sends for logging or further action
+        const failed = results
+          .map((r, idx) => (r.status === 'rejected' ? batch[idx] : null))
+          .filter(Boolean);
+
+        if (failed.length > 0) {
+          console.error(
+            `Batch ${i / batchSize + 1} failures:`,
+            failed.map((u) => u?.email),
+          );
+          // You could push these into a queue for later retry
+        }
       }
     } catch (error) {
       console.error('Error processing email job:', error);
