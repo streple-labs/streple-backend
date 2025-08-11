@@ -156,6 +156,14 @@ export class RoleService {
       });
     }
 
+    if (params.roleName) {
+      queryBuilder.andWhere('roles.name IN (:...roleNames)', {
+        roleNames: Array.isArray(params.roleName)
+          ? params.roleName
+          : [params.roleName],
+      });
+    }
+
     if (params.email) {
       queryBuilder.andWhere('user.email IN (:...email)', {
         email: Array.isArray(params.email) ? params.email : [params.email],

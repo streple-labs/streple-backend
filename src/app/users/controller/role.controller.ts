@@ -11,7 +11,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AssignRole } from '../dto/toggle-role.dto';
 import { FindManyUser, FindOneUser } from '../dto/top-up.dto';
-import { Role, userType } from '../interface';
+import { Role /*, userType */ } from '../interface';
 import { RoleService } from '../service';
 
 @ApiTags('Users')
@@ -27,9 +27,19 @@ export class RoleController {
     if (user.role !== Role.superAdmin || user.roleLevel !== 4) {
       throw new UnauthorizedException('access not found');
     }
+
+    const allowedRoles = [
+      Role.pro,
+      Role.superAdmin,
+      Role.publish,
+      Role.admin,
+      Role.marketer,
+    ];
+
     return this.roleService.getRoleWithDetails({
       ...query,
-      type: [userType.internal],
+      // type: [userType.internal],
+      roleName: allowedRoles,
       include: ['privileges', 'roles'],
     });
   }
