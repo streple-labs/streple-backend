@@ -56,8 +56,8 @@ export interface gameOnboard {
   userId?: string;
   firstQuestion: string;
   secondQuestion: string;
-  thirdQuestion: string;
-  hasAnswer: boolean;
+  thirdQuestion?: string;
+  hasAnswer?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

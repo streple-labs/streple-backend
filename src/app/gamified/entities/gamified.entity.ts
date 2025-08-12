@@ -26,10 +26,10 @@ export class GamingOnboarding implements gameOnboard {
   @Column()
   secondQuestion: string;
 
-  @Column()
+  @Column({ nullable: true })
   thirdQuestion: string;
 
-  @Column({ type: 'boolean', nullable: false, default: false })
+  @Column({ default: false })
   hasAnswer: boolean;
 
   @CreateDateColumn()

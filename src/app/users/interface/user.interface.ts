@@ -3,8 +3,8 @@ import { ICopyWallet } from '@app/copy-trading/interface';
 import { Roles } from './roles.interface';
 
 export enum Role {
-  pro = 'PRO_TRADER',
   follower = 'FOLLOWER',
+  pro = 'PRO_TRADER',
   superAdmin = 'SUPER_ADMIN',
   publish = 'PUBLISHER',
   admin = 'ADMIN',

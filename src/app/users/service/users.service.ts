@@ -106,6 +106,7 @@ export class UsersService {
       otpVerified: true,
       password,
       auth_type: authType.email,
+      type: userType.internal,
     });
 
     await this.repo.save(admin);

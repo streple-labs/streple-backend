@@ -36,7 +36,7 @@ export class SeederService {
       {
         name: Role.marketer,
         description: 'Communication',
-        type: userType.external,
+        type: userType.internal,
         roleLevel: 2,
       },
       {
@@ -104,10 +104,13 @@ export class SeederService {
             relations: ['role'],
           });
 
+          // 'EMAIL_SEND',
+          // 'EMAIL_READ',
+          // 'EMAIL_UPDATE',
           const wanted = [
-            'EMAIL_SEND',
-            'EMAIL_READ',
-            'EMAIL_UPDATE',
+            'LEARNINGHUB_CREATE',
+            'LEARNINGHUB_READ',
+            'LEARNINGHUB_UPDATE',
             'BLOG_CREATE',
             'BLOG_EDIT',
             'BLOG_UPDATE',
@@ -120,10 +123,10 @@ export class SeederService {
               roleLevel: 2,
             });
           } else {
-            const merged = Array.from(
-              new Set([...(priv.privileges || []), ...wanted]),
-            );
-            priv.privileges = merged;
+            // const merged = Array.from(
+            //   new Set([...(priv.privileges || []), ...wanted]),
+            // );
+            priv.privileges = wanted; //merged;
             priv.roleLevel = 2;
           }
           await this.privilegesRepo.save(priv);
@@ -136,7 +139,17 @@ export class SeederService {
             relations: ['role'],
           });
 
-          const wanted = ['EMAIL_SEND', 'EMAIL_READ', 'EMAIL_UPDATE'];
+          const wanted = [
+            'EMAIL_SEND',
+            'EMAIL_READ',
+            'EMAIL_UPDATE',
+            'LEARNINGHUB_CREATE',
+            'LEARNINGHUB_READ',
+            'LEARNINGHUB_UPDATE',
+            'BLOG_CREATE',
+            'BLOG_EDIT',
+            'BLOG_UPDATE',
+          ];
 
           if (!priv) {
             priv = this.privilegesRepo.create({
@@ -158,22 +171,95 @@ export class SeederService {
   }
 
   async seedSenior() {
-    const admin = await this.roleRepository.findOne({
+    const admin = await this.roleRepository.find({
       where: { roleLevel: 3 },
     });
 
     if (admin) {
-      const isAdded = await this.privilegesRepo.findOne({
-        where: { role: { id: admin.id } },
-      });
-      if (!isAdded) {
-        const superAd = this.privilegesRepo.create({
-          role: admin,
-          privileges: ['all'],
-          roleLevel: 3,
-        });
+      for (const user of admin) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (user.name === Role.admin) {
+          const isAdded = await this.privilegesRepo.findOne({
+            where: { role: { id: user.id } },
+            relations: ['role'],
+          });
+          if (!isAdded) {
+            const superAd = this.privilegesRepo.create({
+              role: user,
+              privileges: ['all'],
+              roleLevel: 3,
+            });
 
-        await this.privilegesRepo.save(superAd);
+            await this.privilegesRepo.save(superAd);
+          }
+        }
+
+        // // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        // if (user.name === Role.publish) {
+        //   let priv = await this.privilegesRepo.findOne({
+        //     where: { role: { id: user.id } },
+        //     relations: ['role'],
+        //   });
+
+        //   const wanted = [
+        //     'LEARNINGHUB_CREATE',
+        //     'LEARNINGHUB_READ',
+        //     'LEARNINGHUB_UPDATE',
+        //     'BLOG_CREATE',
+        //     'BLOG_EDIT',
+        //     'BLOG_UPDATE',
+        //   ];
+
+        //   if (!priv) {
+        //     priv = this.privilegesRepo.create({
+        //       role: user,
+        //       privileges: wanted,
+        //       roleLevel: 3,
+        //     });
+        //   } else {
+        //     const merged = Array.from(
+        //       new Set([...(priv.privileges || []), ...wanted]),
+        //     );
+        //     priv.privileges = merged;
+        //     priv.roleLevel = 3;
+        //   }
+        //   await this.privilegesRepo.save(priv);
+        // }
+
+        // // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        // if (user.name === Role.marketer) {
+        //   let priv = await this.privilegesRepo.findOne({
+        //     where: { role: { id: user.id } },
+        //     relations: ['role'],
+        //   });
+
+        //   const wanted = [
+        //     'EMAIL_SEND',
+        //     'EMAIL_READ',
+        //     'EMAIL_UPDATE',
+        //     'LEARNINGHUB_CREATE',
+        //     'LEARNINGHUB_READ',
+        //     'LEARNINGHUB_UPDATE',
+        //     'BLOG_CREATE',
+        //     'BLOG_EDIT',
+        //     'BLOG_UPDATE',
+        //   ];
+
+        //   if (!priv) {
+        //     priv = this.privilegesRepo.create({
+        //       role: user,
+        //       privileges: wanted,
+        //       roleLevel: 3,
+        //     });
+        //   } else {
+        //     const merged = Array.from(
+        //       new Set([...(priv.privileges || []), ...wanted]),
+        //     );
+        //     priv.privileges = merged;
+        //     priv.roleLevel = 3;
+        //   }
+        //   await this.privilegesRepo.save(priv);
+        // }
       }
     }
   }

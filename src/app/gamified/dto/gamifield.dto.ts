@@ -30,12 +30,9 @@ export class GamifieldOnboard implements gameOnboard {
   secondQuestion: string;
 
   @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ type: String, required: true })
-  thirdQuestion: string;
-
   @IsOptional()
-  hasAnswer: boolean = true;
+  @ApiPropertyOptional({ type: String, required: true })
+  thirdQuestion: string;
 }
 
 export class CreateGameProgress implements createProgress {

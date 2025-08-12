@@ -142,7 +142,7 @@ export class CreateUser implements createUser {
 
   @IsString()
   @ApiProperty({ type: String, enum: Object.values(Role) })
-  @IsIn(Object.values(Role))
+  @IsIn([Role.admin, Role.marketer, Role.pro, Role.publish])
   role: Role;
 
   @IsInt()
