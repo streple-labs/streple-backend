@@ -34,7 +34,7 @@ export class FileProcessorService {
   async extractTextFromPdf(fileBuffer: Buffer): Promise<string> {
     try {
       const data: pdf.Result = await pdf(fileBuffer);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
       return data.text;
     } catch (error: unknown) {
       // Proper error handling without unsafe returns
