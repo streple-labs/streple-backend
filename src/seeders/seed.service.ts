@@ -54,7 +54,7 @@ export class SeederService {
       {
         name: Role.pro,
         description: 'pro traders',
-        type: userType.external,
+        type: userType.internal,
         roleLevel: 1,
       },
     ];
