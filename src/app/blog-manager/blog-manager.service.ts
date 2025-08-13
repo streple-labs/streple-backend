@@ -78,6 +78,15 @@ export class BlogManagerService {
     });
   }
 
+  async uploadImage(file: Express.Multer.File): Promise<{ data: string }> {
+    if (!file) {
+      throw new ForbiddenException('File not provided');
+    }
+
+    const uri = await this.uploadFile.uploadDocument(file);
+    return { data: uri };
+  }
+
   findAll(query: findManyBlog): Promise<DocumentResult<BlogManager>> {
     const filters = this.filter(query);
     const qb = this.blog.createQueryBuilder('blog');
@@ -173,16 +182,16 @@ export class BlogManagerService {
     return blog;
   }
 
-  async remove(param: paramSearch, user: AuthUser) {
+  async remove(param: paramSearch) {
     const blog = await this.blog.findOne({ where: { id: param.id } });
 
     if (!blog) {
       throw new ForbiddenException('Blog post not found');
     }
 
-    if (blog.creatorId !== user.id) {
-      throw new ForbiddenException('You are not the creator of this blog');
-    }
+    // if (blog.creatorId !== user.id || [1, 2].includes(user.roleLevel)) {
+    //   throw new ForbiddenException('You are not the creator of this blog');
+    // }
 
     return this.blog.delete(param.id);
   }

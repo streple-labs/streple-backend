@@ -80,6 +80,10 @@ export class CreateBlog implements createBlog {
   scheduleDate: Date;
 }
 
+export class UploadImage {
+  @ApiProperty({ type: 'string', format: 'binary' })
+  image: string;
+}
 export class UpdateBlog
   extends PartialType(OmitType(CreateBlog, ['schedule', 'draft']))
   implements updatedBlog

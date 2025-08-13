@@ -23,7 +23,13 @@ import {
 } from '@nestjs/swagger';
 import { AuthUser, ParamSearch } from 'src/global/common';
 import { BlogManagerService } from './blog-manager.service';
-import { CreateBlog, FindManyBlog, FindOneBlog, UpdateBlog } from './dto';
+import {
+  CreateBlog,
+  FindManyBlog,
+  FindOneBlog,
+  UpdateBlog,
+  UploadImage,
+} from './dto';
 import { Abilities, Public, SessionUser } from '@app/decorators';
 
 @Controller({
@@ -49,6 +55,19 @@ export class BlogManagerController {
       this.validateDocuments(file);
     }
     return this.blogManagerService.create(create, file, user);
+  }
+
+  @Post('upload-image')
+  @Abilities('BLOG_CREATE')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiBody({ type: UploadImage })
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (file) {
+      this.validateDocuments(file);
+    }
+
+    return this.blogManagerService.uploadImage(file);
   }
 
   @Public()
@@ -88,8 +107,8 @@ export class BlogManagerController {
   @Abilities('BLOG_DELETE')
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'Delete One Blog' })
-  remove(@Param() param: ParamSearch, @SessionUser() user: AuthUser) {
-    return this.blogManagerService.remove(param, user);
+  remove(@Param() param: ParamSearch) {
+    return this.blogManagerService.remove(param);
   }
 
   private validateDocuments(document: Express.Multer.File): void {
@@ -103,7 +122,7 @@ export class BlogManagerController {
 
     if (!validMimeTypes.includes(document.mimetype)) {
       throw new ForbiddenException(
-        `Document has invalid file type. Only JPEG, PNG, DOCX, DOC, or PDF are allowed`,
+        `Document has invalid file type. Only JPEG OR PNG are allowed`,
       );
     }
 

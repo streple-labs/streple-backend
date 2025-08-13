@@ -45,7 +45,7 @@ export class AuthService {
       throw new UnauthorizedException('Email not verified');
     }
 
-    if (![Role.follower, Role.pro].includes(user.role)) {
+    if (![Role.follower].includes(user.role)) {
       throw new UnauthorizedException('access denied users only');
     }
 
@@ -71,9 +71,13 @@ export class AuthService {
     }
 
     if (
-      ![Role.admin, Role.publish, Role.superAdmin, Role.marketer].includes(
-        user.role,
-      )
+      ![
+        Role.admin,
+        Role.publish,
+        Role.superAdmin,
+        Role.marketer,
+        Role.pro,
+      ].includes(user.role)
     ) {
       throw new UnauthorizedException('Access denied');
     }
