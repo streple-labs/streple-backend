@@ -125,6 +125,7 @@ export class EmailJobWorker {
                   email.template,
                   email.subject,
                   { ...email.context, fullName: user.fullName },
+                  true,
                 );
                 return; // success
               } catch (err) {

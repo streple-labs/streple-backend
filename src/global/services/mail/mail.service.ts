@@ -7,16 +7,28 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MailService {
-  private readonly transporter: nodemailer.Transporter;
+  private readonly noreply: nodemailer.Transporter;
+  private readonly withreply: nodemailer.Transporter;
 
   constructor(private config: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.config.getOrThrow('MAIL_HOST'),
-      port: this.config.getOrThrow('MAIL_PORT'),
+    this.noreply = nodemailer.createTransport({
+      host: this.config.getOrThrow('NO_REPLY_MAIL_HOST'),
+      port: this.config.getOrThrow('NO_REPLY_MAIL_PORT'),
       secure: true,
       auth: {
-        user: this.config.getOrThrow('MAIL_USER'),
-        pass: this.config.getOrThrow('MAIL_PASS'),
+        user: this.config.getOrThrow('NO_REPLY_MAIL_USER'),
+        pass: this.config.getOrThrow('NO_REPLY_MAIL_PASS'),
+      },
+      pool: true,
+    });
+
+    this.withreply = nodemailer.createTransport({
+      host: this.config.getOrThrow('REPLY_MAIL_HOST'),
+      port: this.config.getOrThrow('REPLY_MAIL_PORT'),
+      secure: true,
+      auth: {
+        user: this.config.getOrThrow('REPLY_MAIL_USER'),
+        pass: this.config.getOrThrow('REPLY_MAIL_PASS'),
       },
       pool: true,
     });
@@ -27,6 +39,7 @@ export class MailService {
     templateName: string,
     subject: string,
     context: Record<string, any>,
+    withReply?: boolean,
   ) {
     try {
       const templateFile = path.resolve(
@@ -41,14 +54,16 @@ export class MailService {
 
       // Email details
       const mailDetails = {
-        from: `"Streple" <${this.config.getOrThrow('MAIL_USER')}>`,
+        from: `"Streple" <${this.config.getOrThrow(withReply ? 'REPLY_MAIL_USER' : 'NO_REPLY_MAIL_USER')}>`,
         to: email,
         subject: subject,
         html: html,
       };
 
       // Send email
-      const info = await this.transporter.sendMail(mailDetails);
+      const info = withReply
+        ? await this.withreply.sendMail(mailDetails)
+        : await this.noreply.sendMail(mailDetails);
       console.log('Email sent successfully:', info.response);
     } catch (error) {
       console.error('Error sending email:', error);
