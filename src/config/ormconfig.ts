@@ -36,6 +36,7 @@ export default (): TypeOrmModuleOptions => ({
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
   },
+  // ssl: false, // Use for http://localhost:4000 in testing
   synchronize: true, // TODO: ✅ auto‑sync for dev; switch off in prod! (make false)
   ...(process.env.DB_TYPE === 'mysql' && {
     charset: 'utf8mb4', // full Unicode incl. emoji
