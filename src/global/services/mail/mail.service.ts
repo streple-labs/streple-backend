@@ -12,8 +12,8 @@ export class MailService {
 
   constructor(private config: ConfigService) {
     this.noreply = nodemailer.createTransport({
-      host: this.config.getOrThrow('NO_REPLY_MAIL_HOST'),
-      port: this.config.getOrThrow('NO_REPLY_MAIL_PORT'),
+      host: this.config.getOrThrow('MAIL_HOST'),
+      port: this.config.getOrThrow('MAIL_PORT'),
       secure: true,
       auth: {
         user: this.config.getOrThrow('NO_REPLY_MAIL_USER'),
@@ -23,8 +23,8 @@ export class MailService {
     });
 
     this.withreply = nodemailer.createTransport({
-      host: this.config.getOrThrow('REPLY_MAIL_HOST'),
-      port: this.config.getOrThrow('REPLY_MAIL_PORT'),
+      host: this.config.getOrThrow('MAIL_HOST'),
+      port: this.config.getOrThrow('MAIL_PORT'),
       secure: true,
       auth: {
         user: this.config.getOrThrow('REPLY_MAIL_USER'),
