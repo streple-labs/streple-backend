@@ -2,7 +2,7 @@ import { AuthUser, DocumentResult } from '@app/common';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GameProgress, GamingOnboarding } from './entities';
+import { GameProgress, GamingOnboarding, UserBadge } from './entities';
 import {
   createProgress,
   findManyGameProgress,
@@ -20,6 +20,8 @@ export class GamifiedService {
     private readonly onboarding: Repository<GamingOnboarding>,
     @InjectRepository(GameProgress)
     private readonly gameProgress: Repository<GameProgress>,
+    @InjectRepository(UserBadge)
+    private readonly userBadge: Repository<UserBadge>,
   ) {}
 
   async create(create: gameOnboard, user: AuthUser): Promise<GamingOnboarding> {
@@ -84,6 +86,10 @@ export class GamifiedService {
     });
     return userProgress;
   }
+
+  // async earnBadges(data, user: AuthUser): Promise<UserBadge> {
+  //   return;
+  // }
 
   findMany(
     query: findManyOnboardedUser,

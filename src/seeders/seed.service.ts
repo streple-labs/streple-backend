@@ -1,4 +1,6 @@
 import { WaitList } from '@app/email-center/entities';
+import { Badge } from '@app/gamified/entities';
+import { IBadge, Phase } from '@app/gamified/interface';
 import { Privileges, RoleModel } from '@app/users/entity';
 import { Role, Roles, userType } from '@app/users/interface';
 import { UsersService } from '@app/users/service';
@@ -15,6 +17,7 @@ export class SeederService {
     @InjectRepository(Privileges)
     private readonly privilegesRepo: Repository<Privileges>,
     @InjectRepository(WaitList) private readonly wait: Repository<WaitList>,
+    @InjectRepository(Badge) private readonly badge: Repository<Badge>,
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
   ) {}
@@ -507,6 +510,28 @@ export class SeederService {
       .values(data) // [{ email: '...' }, ...]
       .orIgnore() // ON CONFLICT DO NOTHING
       .execute();
+  }
+
+  async seedBadge() {
+    const badges: IBadge[] = [
+      {
+        name: 'CRYPTO INITIATE',
+        image:
+          'https://streplestorage.s3.eu-north-1.amazonaws.com/images/streple+badge.png',
+        phase: Phase.first,
+      },
+    ];
+
+    for (const badge of badges) {
+      const exists = await this.badge.findOne({
+        where: { phase: badge.phase },
+      });
+
+      if (!exists) {
+        await this.badge.save(this.badge.create(badge));
+        console.log(`Created badge for: ${badge.phase}`);
+      }
+    }
   }
 
   async seedAll() {

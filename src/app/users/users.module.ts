@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entity/user.entity';
 import { CopyWallet } from '../copy-trading/entities/copy-wallet.entity';
 import { JwtStrategy } from 'src/global/strategies/jwt.strategy';
-import { MailerService } from 'src/app/auth/mailer.service';
 import { Privileges, RoleModel } from './entity';
 import { RoleService, UsersService } from './service';
 import { RoleController, UsersController } from './controller';
@@ -12,7 +11,7 @@ import { RoleController, UsersController } from './controller';
   imports: [
     TypeOrmModule.forFeature([User, CopyWallet, RoleModel, Privileges]),
   ],
-  providers: [UsersService, RoleService, JwtStrategy, MailerService],
+  providers: [UsersService, RoleService, JwtStrategy],
   controllers: [UsersController, RoleController],
   exports: [UsersService, JwtStrategy, RoleService],
 })

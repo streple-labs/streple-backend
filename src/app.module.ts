@@ -17,6 +17,7 @@ import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
+import { TradersModule } from './app/traders/traders.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SeederModule } from './seeders/seeder.module';
     BlogManagerModule,
     GamifiedModule,
     SeederModule,
+    TradersModule,
   ],
   controllers: [AppController],
   providers: [
