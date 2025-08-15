@@ -37,9 +37,10 @@ export interface findManyGameProgress extends findMany {
 }
 
 export interface IBadge {
-  id: string;
+  id?: string;
   phase: Phase;
-  name: string;
+  name?: string;
+  image: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

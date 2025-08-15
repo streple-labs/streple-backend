@@ -4,10 +4,11 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeederService } from './seed.service';
 import { WaitList } from '@app/email-center/entities';
+import { Badge } from '@app/gamified/entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([RoleModel, Privileges, WaitList]),
+    TypeOrmModule.forFeature([RoleModel, Privileges, WaitList, Badge]),
     UsersModule,
   ],
   providers: [SeederService],

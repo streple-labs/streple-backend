@@ -12,10 +12,13 @@ export class Badge implements IBadge {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
-  @Column({ type: 'enum', enum: Phase, nullable: false })
+  @Column()
+  image: string;
+
+  @Column({ type: 'enum', enum: Phase, nullable: false, unique: true })
   phase: Phase;
 
   @CreateDateColumn()
