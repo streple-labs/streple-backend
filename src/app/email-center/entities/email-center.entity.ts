@@ -27,7 +27,7 @@ export class EmailCenter implements IEmailCenter {
 
   @Column({
     type: 'enum',
-    enum: ['All users', 'Copiers', 'Protraders'],
+    enum: ['All users', 'Copiers', 'Protraders', 'WaitList'],
     nullable: true,
   })
   recipient: EmailRecipient;
