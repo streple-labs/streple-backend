@@ -552,6 +552,9 @@ export class SeederService {
     await this.seedSuperAdmin();
     console.log('Super Admin seeded successfully');
 
+    await this.seedBadge();
+    console.log('Seed badges successfully');
+
     process.exit();
   }
 }

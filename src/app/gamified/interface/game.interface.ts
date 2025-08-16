@@ -24,6 +24,9 @@ export interface gameProgress {
 }
 
 export type createProgress = Pick<gameProgress, 'level' | 'phase' | 'score'>;
+export interface progressResponse extends gameProgress {
+  badge?: badgesResponse | null;
+}
 
 export interface findManyOnboardedUser extends findMany {
   userId?: string[];
@@ -51,6 +54,15 @@ export interface IUserBadge {
   earnedAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface badgesResponse extends IUserBadge {
+  image: string;
+}
+
+export interface earnBadge {
+  phase: Phase;
+  level: Level;
 }
 
 export interface gameOnboard {

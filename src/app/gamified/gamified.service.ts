@@ -2,14 +2,17 @@ import { AuthUser, DocumentResult } from '@app/common';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GameProgress, GamingOnboarding, UserBadge } from './entities';
+import { Badge, GameProgress, GamingOnboarding, UserBadge } from './entities';
 import {
+  badgesResponse,
   createProgress,
+  earnBadge,
   findManyGameProgress,
   findManyOnboardedUser,
   gameOnboard,
   Level,
   Phase,
+  progressResponse,
 } from './interface';
 import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
 
@@ -22,9 +25,16 @@ export class GamifiedService {
     private readonly gameProgress: Repository<GameProgress>,
     @InjectRepository(UserBadge)
     private readonly userBadge: Repository<UserBadge>,
+    @InjectRepository(Badge)
+    private readonly badgeRepo: Repository<Badge>,
   ) {}
 
   async create(create: gameOnboard, user: AuthUser): Promise<GamingOnboarding> {
+    const haveAnswered = await this.onboarding.findOne({
+      where: { userId: user.id },
+    });
+    if (haveAnswered) return haveAnswered;
+
     const question = this.onboarding.create({
       ...create,
       hasAnswer: true,
@@ -42,41 +52,43 @@ export class GamifiedService {
   async trackUserProgress(
     create: createProgress,
     user: AuthUser,
-  ): Promise<GameProgress> {
-    const today = new Date();
+  ): Promise<progressResponse> {
+    // Check if progress already exists
+    const exists = await this.gameProgress.findOne({
+      where: { userId: user.id, phase: create.phase, level: create.level },
+    });
+    if (exists) return exists;
 
-    const userProgress = await this.gameProgress.findOne({
+    // Get the latest earnings or 0
+    const latestProgress = await this.gameProgress.findOne({
       where: { userId: user.id },
       select: ['earn'],
       order: { createdAt: 'DESC' },
     });
+    const currentEarnings = latestProgress?.earn ?? 0;
 
-    const track = this.gameProgress.create({
-      ...create,
-      completedAt: today,
-      userId: user.id,
-    });
+    // Calculate new earnings
+    const earningsMap = this.earning();
+    const earnedAmount = earningsMap[create.phase]?.[create.level] ?? 0;
+    const totalEarnings = parseInt(String(currentEarnings), 10) + earnedAmount;
 
-    const earningsMap: Record<string, Record<string, number>> = {
-      'Phase 1': {
-        'Level 3': 500,
-      },
-      'Phase 2': {
-        'Level 3': 2000,
-      },
-      'Phase 3': {
-        'Level 3': 4000,
-      },
-    };
+    // Save progress
+    const progress = await this.gameProgress.save(
+      this.gameProgress.create({
+        ...create,
+        completedAt: new Date(),
+        userId: user.id,
+        earn: totalEarnings,
+      }),
+    );
 
-    const earnings = earningsMap[create.phase]?.[create.level];
-    if (earnings !== undefined) {
-      track.earn = parseInt(String(userProgress?.earn), 10) + earnings;
-    } else {
-      track.earn = parseInt(String(userProgress?.earn), 10);
-    }
+    // Award badge
+    const badge = await this.earnBadges(
+      { phase: create.phase, level: create.level },
+      user,
+    );
 
-    return await this.gameProgress.save(track);
+    return { ...progress, badge };
   }
 
   async userProgress(user: AuthUser) {
@@ -87,9 +99,35 @@ export class GamifiedService {
     return userProgress;
   }
 
-  // async earnBadges(data, user: AuthUser): Promise<UserBadge> {
-  //   return;
-  // }
+  async earnBadges(
+    data: earnBadge,
+    user: AuthUser,
+  ): Promise<badgesResponse | null> {
+    // check if the level is level 3
+    if (data.level !== Level.third) return null;
+
+    const badge = await this.badgeRepo.findOne({
+      where: { phase: data.phase },
+    });
+
+    if (!badge) return null;
+
+    // find if user have already earn the badge
+    const exists = await this.userBadge.findOne({
+      where: { userId: user.id, badgeId: badge.id },
+    });
+
+    if (exists) return { ...exists, image: badge.image };
+
+    const save = this.userBadge.create({
+      userId: user.id,
+      badgeId: badge.id,
+      earnedAt: new Date(),
+    });
+
+    const theBadge = await this.userBadge.save(save);
+    return { ...theBadge, image: badge.image };
+  }
 
   findMany(
     query: findManyOnboardedUser,
@@ -143,5 +181,15 @@ export class GamifiedService {
     }
 
     return filters;
+  }
+
+  private earning() {
+    const EARNINGS_MAP: Record<string, Record<string, number>> = {
+      'Phase 1': { 'Level 1': 500, 'Level 2': 1000, 'Level 3': 1500 },
+      'Phase 2': { 'Level 1': 500, 'Level 2': 1000, 'Level 3': 1500 },
+      'Phase 3': { 'Level 3': 4000 },
+    };
+
+    return EARNINGS_MAP;
   }
 }

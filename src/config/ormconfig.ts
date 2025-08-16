@@ -1,4 +1,9 @@
-import { GameProgress, GamingOnboarding } from '@app/gamified/entities';
+import {
+  Badge,
+  GameProgress,
+  GamingOnboarding,
+  UserBadge,
+} from '@app/gamified/entities';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
 import { CopyTrade } from 'src/app/copy-trading/entities/copy-trade.entity';
@@ -32,6 +37,8 @@ export default (): TypeOrmModuleOptions => ({
     WaitList,
     RoleModel,
     Privileges,
+    Badge,
+    UserBadge,
   ],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
