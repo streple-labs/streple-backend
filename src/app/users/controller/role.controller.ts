@@ -11,7 +11,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AssignRole } from '../dto/toggle-role.dto';
 import { FindManyUser, FindOneUser } from '../dto/top-up.dto';
-import { Role /*, userType */ } from '../interface';
+import { Role } from '../interface';
 import { RoleService } from '../service';
 
 @ApiTags('Users')

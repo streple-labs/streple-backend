@@ -10,14 +10,6 @@ export class CourseService {
     private readonly courseRepo: Repository<Course>,
   ) {}
 
-  //   async findAll(search?: string, status?: string): Promise<Course[]> {
-  //     const where: any = {};
-  //     if (search) where.title = ILike(`%${search}%`);
-  //     if (status) where.status = status;
-
-  //     return this.courseRepo.find({ where });
-  //   }
-
   async findAll(filter?: {
     search?: string;
     status?: string;

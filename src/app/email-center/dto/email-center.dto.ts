@@ -52,7 +52,6 @@ export class FindManyEmail extends FindMany implements findManyEmail {
         : value,
   )
   scheduleDate?: Date[];
-  //   filters?: Record<string, any> | undefined;
 }
 
 export class FindOneEmail extends FindOne implements findOneEmail {

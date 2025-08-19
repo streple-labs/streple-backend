@@ -189,10 +189,6 @@ export class BlogManagerService {
       throw new ForbiddenException('Blog post not found');
     }
 
-    // if (blog.creatorId !== user.id || [1, 2].includes(user.roleLevel)) {
-    //   throw new ForbiddenException('You are not the creator of this blog');
-    // }
-
     return this.blog.delete(param.id);
   }
 

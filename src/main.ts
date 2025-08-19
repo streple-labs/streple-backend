@@ -11,10 +11,6 @@ if (!process.env.PORT) {
   throw new Error('Missing PORT in environment variables');
 }
 
-// if (!process.env.CORS_ORIGINS) {
-//   throw new Error('Missing CORS_ORIGINS in environment variables');
-// }
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
@@ -22,16 +18,6 @@ async function bootstrap() {
   app.use(urlencoded({ limit: '50mb', extended: true }));
 
   app.use(cookieParser()); // Required for reading cookies
-
-  // const CORS_ORIGINS = process.env.CORS_ORIGINS as string; // TODO: remove localhost when about to go live
-  // const allowedOrigins = CORS_ORIGINS.split(',')
-  //   .map((origin) => origin.trim())
-  //   .filter(Boolean);
-
-  // app.enableCors({
-  //   origin: allowedOrigins,
-  //   credentials: true, // allow cookies or Authorization headers
-  // });
 
   app.enableCors({
     origin: [

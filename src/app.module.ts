@@ -29,14 +29,14 @@ import { TradersModule } from './app/traders/traders.module';
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          ttl: 60000, // time to live in milliseconds = 60 seconds
-          limit: 3, // max 3 requests within the TTL (3 requests per minutes)
+          ttl: 60000,
+          limit: 3,
         },
       ],
     }),
     CacheModule.register({
-      ttl: 60 * 60, // cache for 1 hour
-      max: 1000, // store up to 1000 items
+      ttl: 60 * 60,
+      max: 1000,
     }),
     LearninghubModule,
     EmailCenterModule,

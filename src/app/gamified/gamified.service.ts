@@ -57,7 +57,28 @@ export class GamifiedService {
     const exists = await this.gameProgress.findOne({
       where: { userId: user.id, phase: create.phase, level: create.level },
     });
-    if (exists) return exists;
+    if (exists) {
+      // if the phase and level existed already
+      // then check if it matches phase 1 and level 1 and the earn is default earn
+      // the update the user score and earn and return the data
+      if (
+        exists.phase === Phase.first &&
+        exists.level === Level.first &&
+        parseInt(String(exists.earn)) === 250
+      ) {
+        const earningsMap = this.earning();
+        const earnedAmount = earningsMap[create.phase]?.[create.level] ?? 0;
+        const totalEarnings = parseInt(String(exists.earn), 10) + earnedAmount;
+        await this.gameProgress.update(
+          { id: exists.id },
+          { score: create.score, earn: totalEarnings },
+        );
+
+        return { ...exists, earn: totalEarnings, score: create.score };
+      }
+
+      return exists;
+    }
 
     // Get the latest earnings or 0
     const latestProgress = await this.gameProgress.findOne({
