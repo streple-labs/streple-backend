@@ -371,6 +371,7 @@ export class SeederService {
     //   'adetunjimarvellous09@gmail.com',
     //   'nallymba@gmail.com',
     //   'adetunjiboyz@gmail.com',
+    //   'akindelepelumi01@gmail.com',
     // ];
 
     const emails = [
