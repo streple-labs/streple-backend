@@ -16,8 +16,8 @@ import { User } from '@app/users/entity/user.entity';
 import { Privileges, RoleModel } from '@app/users/entity';
 
 export default (): TypeOrmModuleOptions => ({
-  type: (process.env.DB_TYPE as 'postgres' | 'mysql') || 'postgres',
-  url: process.env.DATABASE_URL, // Ignores `host`, `port`, `username`, `password`, `database`
+  type: process.env.DB_TYPE as 'postgres',
+  url: process.env.DATABASE_URL,
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
   username: process.env.DB_USER,
@@ -44,9 +44,5 @@ export default (): TypeOrmModuleOptions => ({
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
   },
   // ssl: false, // Use for http://localhost:4000 in testing
-  synchronize: true, // TODO: ✅ auto‑sync for dev; switch off in prod! (make false)
-  ...(process.env.DB_TYPE === 'mysql' && {
-    charset: 'utf8mb4', // full Unicode incl. emoji
-    timezone: 'Z', // UTC; MySQL needs explicit tz
-  }),
+  synchronize: true, // TODO: auto‑sync for dev; switch off in prod! (make false)
 });
