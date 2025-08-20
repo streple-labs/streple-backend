@@ -107,9 +107,6 @@ export class SeederService {
             relations: ['role'],
           });
 
-          // 'EMAIL_SEND',
-          // 'EMAIL_READ',
-          // 'EMAIL_UPDATE',
           const wanted = [
             'LEARNINGHUB_CREATE',
             'LEARNINGHUB_READ',
@@ -196,73 +193,6 @@ export class SeederService {
             await this.privilegesRepo.save(superAd);
           }
         }
-
-        // // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        // if (user.name === Role.publish) {
-        //   let priv = await this.privilegesRepo.findOne({
-        //     where: { role: { id: user.id } },
-        //     relations: ['role'],
-        //   });
-
-        //   const wanted = [
-        //     'LEARNINGHUB_CREATE',
-        //     'LEARNINGHUB_READ',
-        //     'LEARNINGHUB_UPDATE',
-        //     'BLOG_CREATE',
-        //     'BLOG_EDIT',
-        //     'BLOG_UPDATE',
-        //   ];
-
-        //   if (!priv) {
-        //     priv = this.privilegesRepo.create({
-        //       role: user,
-        //       privileges: wanted,
-        //       roleLevel: 3,
-        //     });
-        //   } else {
-        //     const merged = Array.from(
-        //       new Set([...(priv.privileges || []), ...wanted]),
-        //     );
-        //     priv.privileges = merged;
-        //     priv.roleLevel = 3;
-        //   }
-        //   await this.privilegesRepo.save(priv);
-        // }
-
-        // // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        // if (user.name === Role.marketer) {
-        //   let priv = await this.privilegesRepo.findOne({
-        //     where: { role: { id: user.id } },
-        //     relations: ['role'],
-        //   });
-
-        //   const wanted = [
-        //     'EMAIL_SEND',
-        //     'EMAIL_READ',
-        //     'EMAIL_UPDATE',
-        //     'LEARNINGHUB_CREATE',
-        //     'LEARNINGHUB_READ',
-        //     'LEARNINGHUB_UPDATE',
-        //     'BLOG_CREATE',
-        //     'BLOG_EDIT',
-        //     'BLOG_UPDATE',
-        //   ];
-
-        //   if (!priv) {
-        //     priv = this.privilegesRepo.create({
-        //       role: user,
-        //       privileges: wanted,
-        //       roleLevel: 3,
-        //     });
-        //   } else {
-        //     const merged = Array.from(
-        //       new Set([...(priv.privileges || []), ...wanted]),
-        //     );
-        //     priv.privileges = merged;
-        //     priv.roleLevel = 3;
-        //   }
-        //   await this.privilegesRepo.save(priv);
-        // }
       }
     }
   }
@@ -529,6 +459,12 @@ export class SeederService {
         image:
           'https://streplestorage.s3.eu-north-1.amazonaws.com/images/streple+badge.png',
         phase: Phase.first,
+      },
+      {
+        name: '',
+        image:
+          'https://streplestorage.s3.eu-north-1.amazonaws.com/images/streple_badge_2.png',
+        phase: Phase.second,
       },
     ];
 

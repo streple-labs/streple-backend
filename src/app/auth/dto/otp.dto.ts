@@ -1,4 +1,3 @@
-// otp.dto.ts
 import { IsEmail, IsIn, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 

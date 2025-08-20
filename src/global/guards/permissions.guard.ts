@@ -17,7 +17,6 @@ export class PermissionsGuard implements CanActivate {
     const user = request.user;
     const priv = user?.roles?.privileges;
 
-    // console.log(priv[0].privileges, requiredCaps);
     return requiredCaps.every((reqCap) => {
       const access = priv[0].privileges;
       if (access.includes('all')) return true; // If user has 'all' permission, allow
