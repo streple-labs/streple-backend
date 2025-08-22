@@ -17,7 +17,7 @@ import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
-import { TradesModule } from './app/traders/traders.module';
+import { TradesModule } from './app/trades/trades.module';
 
 @Module({
   imports: [

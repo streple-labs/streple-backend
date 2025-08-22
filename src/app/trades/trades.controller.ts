@@ -19,7 +19,7 @@ import {
   Parameter,
   UpdateTrade,
 } from './input';
-import { TradesService } from './traders.service';
+import { TradesService } from './trades.service';
 
 @Controller({
   version: VERSION_NEUTRAL,
