@@ -8,6 +8,18 @@ import * as dotenv from 'dotenv';
 import { UsersService } from '@app/users/service';
 dotenv.config();
 
+interface GoogleUser {
+  id: string;
+  email: string;
+  verified_email: boolean;
+  name: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+  locale?: string;
+  hd?: string;
+}
+
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error('Missing GOOGLE_CLIENT_ID in environment variables');
 }
@@ -42,23 +54,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: Profile, // Google user profile
     done: VerifyCallback,
   ): Promise<void> {
-    const email = profile.emails?.[0]?.value;
-    const fullName =
-      `${profile.name?.givenName ?? ''} ${profile.name?.familyName ?? ''}`.trim();
-    const avatarUrl = profile.photos?.[0]?.value ?? undefined;
-
-    // TODO use this or remove
     const response = await fetch(
       'https://www.googleapis.com/oauth2/v2/userinfo',
       {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${accessToken}` },
       },
     );
-    const googleUser = await response.json(); // fullName = googleUser.name
-    // TODO remove console logs
-    console.log(`googleUser: ${JSON.stringify(googleUser)}`);
+
+    const googleUser: GoogleUser = await response.json();
+    const email = googleUser.email;
+    const fullName = googleUser.name;
+    const avatarUrl = googleUser.picture;
 
     if (!email) {
       return done(new Error('Email not found in Google profile'), false);

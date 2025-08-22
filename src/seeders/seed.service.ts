@@ -294,15 +294,6 @@ export class SeederService {
   }
 
   async seedWailList() {
-    // @dev: DO NOT remove. This is for testing the waitlist
-    // const emails = [
-    //   'nally.arinze@gmail.com',
-    //   'judeabara@gmail.com',
-    //   'adetunjimarvellous09@gmail.com',
-    //   'nallymba@gmail.com',
-    //   'adetunjiboyz@gmail.com',
-    // ];
-
     const emails = [
       'obasicovenant7@gmail.com',
       'eric2umeh@yahoo.com',
