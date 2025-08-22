@@ -7,7 +7,9 @@ import {
   BlogJobWorker,
   EmailJobWorker,
   FileProcessorService,
+  WebSocketService,
   HtmlChunkerService,
+  HttpClientService,
   MailService,
   SanitizeService,
   SchedulerService,
@@ -20,7 +22,6 @@ import {
     DiscoveryModule,
     forwardRef(() => BlogManagerModule),
     forwardRef(() => EmailCenterModule),
-    // TypeOrmModule.forFeature([Capabilities]),
   ],
   providers: [
     MailService,
@@ -31,6 +32,8 @@ import {
     SanitizeService,
     FileProcessorService,
     HtmlChunkerService,
+    HttpClientService,
+    WebSocketService,
   ],
   exports: [
     MailService,
@@ -40,6 +43,8 @@ import {
     SanitizeService,
     FileProcessorService,
     HtmlChunkerService,
+    HttpClientService,
+    WebSocketService,
   ],
 })
 export class GlobalModule {}

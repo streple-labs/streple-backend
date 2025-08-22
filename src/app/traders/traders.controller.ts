@@ -1,42 +1,68 @@
+import { AuthUser } from '@app/common';
+import { SessionUser } from '@app/decorators';
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
-import { TradersService } from './traders.service';
-import { CreateTraderDto } from './dto/create-trader.dto';
-import { UpdateTraderDto } from './dto/update-trader.dto';
+import {
+  CopyTrade,
+  CreateTrade,
+  FindManyTrade,
+  FindOneTrade,
+  Parameter,
+  UpdateTrade,
+} from './input';
+import { TradesService } from './traders.service';
 
-@Controller('traders')
-export class TradersController {
-  constructor(private readonly tradersService: TradersService) {}
+@Controller({
+  version: VERSION_NEUTRAL,
+})
+export class TradesController {
+  constructor(private readonly tradesService: TradesService) {}
 
-  @Post()
-  create(@Body() createTraderDto: CreateTraderDto) {
-    return this.tradersService.create(createTraderDto);
+  @Post('trade')
+  create(@Body() createTrade: CreateTrade, @SessionUser() user: AuthUser) {
+    return this.tradesService.create(createTrade, user);
   }
 
-  @Get()
-  findAll() {
-    return this.tradersService.findAll();
+  @Get('trades')
+  findAll(@Query() query: FindManyTrade) {
+    return this.tradesService.findAll(query);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tradersService.findOne(+id);
+  @Get('trade')
+  findOne(@Query() query: FindOneTrade) {
+    return this.tradesService.findOne(query);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTraderDto: UpdateTraderDto) {
-    return this.tradersService.update(+id, updateTraderDto);
+  @Post('copy-trade')
+  copyTrade(@Body() body: CopyTrade, @SessionUser() user: AuthUser) {
+    return this.tradesService.copyTrade(body, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tradersService.remove(+id);
+  @Get('cancel-trade/:id')
+  cancelTrade(@Param() param: Parameter, @SessionUser() user: AuthUser) {
+    return this.tradesService.cancelTrade(param.id, user);
+  }
+
+  @Patch('trade/:id')
+  update(
+    @Param() param: Parameter,
+    @Body() updateTrade: UpdateTrade,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.tradesService.update(param.id, updateTrade, user);
+  }
+
+  @Delete('trade/:id')
+  remove(@Param() param: Parameter, @SessionUser() user: AuthUser) {
+    return this.tradesService.remove(param.id, user);
   }
 }

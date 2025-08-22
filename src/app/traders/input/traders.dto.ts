@@ -1,1 +1,158 @@
+import { FindMany, FindOne, transform } from '@app/common';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
+import {
+  action,
+  copyTrade,
+  createTrade,
+  direction,
+  findManyTrade,
+  findOneTrade,
+  status,
+} from './traders.interface';
+
 export class followTrader {}
+
+export class CreateTrade implements createTrade {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  symbol: string;
+
+  @IsNumber()
+  @ApiProperty({ type: Number })
+  @Transform(({ value }: { value: string | number }) =>
+    typeof value === 'string' ? parseFloat(value) : value,
+  )
+  entryMarket: number;
+
+  @IsString()
+  @ApiProperty({ type: String, enum: Object.values(direction) })
+  @IsIn(Object.values(direction))
+  direction: direction;
+
+  @IsNumber()
+  @ApiProperty({ type: Number })
+  @Transform(({ value }: { value: string | number }) =>
+    typeof value === 'string' ? parseFloat(value) : value,
+  )
+  stopLoss: number;
+
+  @IsNumber()
+  @ApiProperty({ type: Number })
+  @Transform(({ value }: { value: string | number }) =>
+    typeof value === 'string' ? parseFloat(value) : value,
+  )
+  takeProfit: number;
+
+  @IsNumber()
+  @ApiPropertyOptional({ type: Number })
+  @IsOptional()
+  @Transform(({ value }: { value: string | number }) =>
+    typeof value === 'string' ? parseFloat(value) : value,
+  )
+  stakeAmount?: number;
+
+  @IsString()
+  @ApiProperty({ type: String, enum: Object.values(action) })
+  @IsIn(Object.values(action))
+  action: action;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String })
+  riskLevel: string;
+}
+
+export class UpdateTrade extends PartialType(CreateTrade) {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
+  status: status;
+}
+
+export class FindManyTrade extends FindMany implements findManyTrade {
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @IsString({ each: true })
+  @IsUUID('all', { each: true })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  creatorId?: string[];
+
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @IsString({ each: true })
+  @IsUUID('all', { each: true })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  userId?: string[];
+
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  @IsString({ each: true })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  symbol?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @IsIn(Object.values(status), { each: true })
+  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
+  status?: status[];
+}
+
+export class FindOneTrade extends FindOne implements findOneTrade {
+  @IsUUID()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  creatorId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  userId?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  symbol?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
+  @IsIn(Object.values(status))
+  status?: status;
+}
+
+export class CopyTrade implements copyTrade {
+  @IsString()
+  @IsUUID()
+  @ApiProperty({ type: String, format: 'uuid' })
+  tradeId: string;
+
+  @IsNumber()
+  @ApiPropertyOptional({ type: Number })
+  @IsOptional()
+  @Transform(({ value }: { value: string | number }) =>
+    typeof value === 'string' ? parseFloat(value) : value,
+  )
+  stakeAmount: number;
+}
+
+export class Parameter {
+  @IsString()
+  @IsUUID()
+  id: string;
+}
