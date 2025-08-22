@@ -21,6 +21,7 @@ import {
   findManyTrade,
   findOneTrade,
   status,
+  type,
   updateTrade,
 } from './input';
 
@@ -49,7 +50,6 @@ export class TradesService {
       );
     }
     const identifier = `${create.symbol}_${uuidv4()}`;
-    const tradeStatus = status.open;
     const userId = user.id;
     const creatorId = user.id;
 
@@ -57,7 +57,7 @@ export class TradesService {
     const save = this.tradeRepo.create({
       ...create,
       identifier,
-      status: tradeStatus,
+      type: type.original,
       userId,
       creatorId,
     });
@@ -92,6 +92,7 @@ export class TradesService {
       ...rest,
       userId: user.id,
       stakeAmount: dto.stakeAmount,
+      type: type.copy,
     });
     // recreate with new userid
     return this.tradeRepo.save(save);
@@ -100,29 +101,26 @@ export class TradesService {
   async cancelTrade(tradeId: string, user: AuthUser): Promise<Trades> {
     // TODO refund the user stake amount
     const trade = await this.tradeRepo.findOne({
-      where: { id: tradeId, status: Not(status.close) },
+      where: { id: tradeId, userId: user.id, status: Not(status.close) },
     });
     if (!trade) {
       throw new ForbiddenException('Trade not exist or Trade already close');
     }
 
-    if (trade.userId !== user.id) {
-      throw new UnauthorizedException('Cancel trade access denied');
-    }
-
+    // eslint-disable-next-line prefer-const
     let exitPrice: number | undefined = 0;
-    const { data } = await this.httpClient.fetchData(
-      'https://coingecko.com/api',
-      {
-        authorization: `Bearer ...`,
-      },
-    );
+    // const { data } = await this.httpClient.fetchData(
+    //   'https://coingecko.com/api',
+    //   {
+    //     authorization: `Bearer ...`,
+    //   },
+    // );
 
-    if (!data) {
-      exitPrice = trade.stakeAmount;
-    } else {
-      exitPrice = 2000; //price from the response
-    }
+    // if (!data) {
+    //   exitPrice = trade.stakeAmount;
+    // } else {
+    //   exitPrice = 2000; //price from the response
+    // }
 
     await this.tradeRepo.update(
       { id: tradeId },
@@ -222,7 +220,7 @@ export class TradesService {
     }
 
     if (trade.creatorId.toLowerCase() !== user.id.toLowerCase()) {
-      throw new UnauthorizedException('Edit access blocked');
+      throw new UnauthorizedException('Delete access blocked');
     }
 
     if (trade.status === status.close) {
@@ -260,6 +258,10 @@ export class TradesService {
 
     if (query.userId) {
       filter = { userId: query.userId };
+    }
+
+    if (query.type) {
+      filter = { type: { $eq: query.type } };
     }
 
     return filter;

@@ -23,6 +23,10 @@ export enum action {
   sell = 'sell',
 }
 
+export enum type {
+  original = 'original',
+  copy = 'copy',
+}
 export interface ITrades {
   id?: string;
   userId: string;
@@ -40,6 +44,7 @@ export interface ITrades {
   exitPrice?: number;
   stakeAmount?: number;
   identifier: string;
+  type: type;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -63,6 +68,7 @@ export interface findManyTrade extends findMany {
   userId?: string[];
   symbol?: string[];
   status?: status[];
+  type?: type;
 }
 
 export interface copyTrade {

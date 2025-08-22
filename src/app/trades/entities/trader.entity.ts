@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { action, direction, ITrades, status } from '../input';
+import { action, direction, ITrades, status, type } from '../input';
 
 @Entity()
 export class Trades implements ITrades {
@@ -22,8 +22,6 @@ export class Trades implements ITrades {
   userId: string;
 
   @Index() @Column() symbol: string;
-
-  @Column('float') entryPrice: number;
 
   @Column({ type: 'enum', enum: Object.values(direction) })
   direction: direction;
@@ -55,14 +53,18 @@ export class Trades implements ITrades {
   @Column()
   riskLevel?: string;
 
-  @Column({ type: 'enum', nullable: false })
+  @Column({ type: 'enum', enum: Object.values(action), nullable: false })
   action: action;
 
   @Column({ type: 'float', nullable: true })
   stakeAmount?: number;
 
   @Index()
-  @Column({ type: 'uuid', nullable: false })
+  @Column({ type: 'enum', enum: Object.values(type), nullable: false })
+  type: type;
+
+  @Index()
+  @Column({ nullable: false })
   identifier: string;
 
   @CreateDateColumn()

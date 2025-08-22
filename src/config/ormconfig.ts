@@ -14,6 +14,7 @@ import { EmailCenter, WaitList } from 'src/app/email-center/entities';
 import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
 import { User } from '@app/users/entity/user.entity';
 import { Privileges, RoleModel } from '@app/users/entity';
+import { Trades } from '@app/trades/entities/trader.entity';
 
 export default (): TypeOrmModuleOptions => ({
   type: process.env.DB_TYPE as 'postgres',
@@ -39,6 +40,7 @@ export default (): TypeOrmModuleOptions => ({
     Privileges,
     Badge,
     UserBadge,
+    Trades,
   ],
   ssl: {
     rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)

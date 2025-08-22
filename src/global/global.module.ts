@@ -15,6 +15,7 @@ import {
   SchedulerService,
   UploadService,
 } from './services';
+import { HttpModule } from '@nestjs/axios';
 @Global()
 @Module({
   imports: [
@@ -22,6 +23,12 @@ import {
     DiscoveryModule,
     forwardRef(() => BlogManagerModule),
     forwardRef(() => EmailCenterModule),
+    HttpModule.registerAsync({
+      useFactory: () => ({
+        timeout: 5000,
+        maxRedirects: 5,
+      }),
+    }),
   ],
   providers: [
     MailService,

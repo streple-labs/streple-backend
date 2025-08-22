@@ -12,11 +12,17 @@ import {
   VERSION_NEUTRAL,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
   CopyTrade,
   CreateTrade,
   FindManyTrade,
   FindOneTrade,
-  Parameter,
   UpdateTrade,
 } from './input';
 import { TradesService } from './trades.service';
@@ -24,45 +30,78 @@ import { TradesService } from './trades.service';
 @Controller({
   version: VERSION_NEUTRAL,
 })
+@ApiTags('TRADES')
+@ApiBearerAuth()
 export class TradesController {
   constructor(private readonly tradesService: TradesService) {}
 
   @Post('trade')
+  @ApiOperation({ summary: 'Create new trade' })
+  @ApiBody({ type: CreateTrade })
   create(@Body() createTrade: CreateTrade, @SessionUser() user: AuthUser) {
     return this.tradesService.create(createTrade, user);
   }
 
   @Get('trades')
+  @ApiOperation({ summary: 'Get all the trades' })
   findAll(@Query() query: FindManyTrade) {
     return this.tradesService.findAll(query);
   }
 
   @Get('trade')
+  @ApiOperation({ summary: 'Get single trade' })
   findOne(@Query() query: FindOneTrade) {
     return this.tradesService.findOne(query);
   }
 
   @Post('copy-trade')
+  @ApiOperation({ summary: 'Copy trades' })
+  @ApiBody({ type: CopyTrade })
   copyTrade(@Body() body: CopyTrade, @SessionUser() user: AuthUser) {
     return this.tradesService.copyTrade(body, user);
   }
 
   @Get('cancel-trade/:id')
-  cancelTrade(@Param() param: Parameter, @SessionUser() user: AuthUser) {
-    return this.tradesService.cancelTrade(param.id, user);
+  @ApiOperation({ summary: 'Cancel on going trade' })
+  @ApiParam({
+    type: String,
+    format: 'uuid',
+    name: 'tradeId',
+    required: true,
+  })
+  cancelTrade(
+    @Param('tradeId') tradeId: string,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.tradesService.cancelTrade(tradeId, user);
   }
 
   @Patch('trade/:id')
+  @ApiOperation({ summary: 'Update un-start trade' })
+  @ApiParam({
+    type: String,
+    format: 'uuid',
+    name: 'tradeId',
+    required: true,
+  })
+  @ApiBody({ type: UpdateTrade })
   update(
-    @Param() param: Parameter,
+    @Param('tradeId') tradeId: string,
     @Body() updateTrade: UpdateTrade,
     @SessionUser() user: AuthUser,
   ) {
-    return this.tradesService.update(param.id, updateTrade, user);
+    return this.tradesService.update(tradeId, updateTrade, user);
   }
 
   @Delete('trade/:id')
-  remove(@Param() param: Parameter, @SessionUser() user: AuthUser) {
-    return this.tradesService.remove(param.id, user);
+  @ApiOperation({ summary: 'Delete Trade' })
+  @ApiParam({
+    type: String,
+    format: 'uuid',
+    name: 'tradeId',
+    required: true,
+  })
+  remove(@Param('tradeId') tradeId: string, @SessionUser() user: AuthUser) {
+    return this.tradesService.remove(tradeId, user);
   }
 }

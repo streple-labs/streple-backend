@@ -17,6 +17,7 @@ import {
   findManyTrade,
   findOneTrade,
   status,
+  type,
 } from './traders.interface';
 
 export class followTrader {}
@@ -111,6 +112,11 @@ export class FindManyTrade extends FindMany implements findManyTrade {
   @IsIn(Object.values(status), { each: true })
   @ApiPropertyOptional({ type: String, enum: Object.values(status) })
   status?: status[];
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ type: String, enum: Object.values(type) })
+  type?: type;
 }
 
 export class FindOneTrade extends FindOne implements findOneTrade {
@@ -154,5 +160,5 @@ export class CopyTrade implements copyTrade {
 export class Parameter {
   @IsString()
   @IsUUID()
-  id: string;
+  tradeId: string;
 }

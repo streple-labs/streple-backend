@@ -58,26 +58,7 @@ export class GamifiedService {
       where: { userId: user.id, phase: create.phase, level: create.level },
     });
     if (exists) {
-      // if the phase and level existed already
-      // then check if it matches phase 1 and level 1 and the earn is default earn
-      // the update the user score and earn and return the data
-      if (
-        exists.phase === Phase.first &&
-        exists.level === Level.first &&
-        parseInt(String(exists.earn)) === 250
-      ) {
-        const earningsMap = this.earning();
-        const earnedAmount = earningsMap[create.phase]?.[create.level] ?? 0;
-        const totalEarnings = parseInt(String(exists.earn), 10) + earnedAmount;
-        await this.gameProgress.update(
-          { id: exists.id },
-          { score: create.score, earn: totalEarnings },
-        );
-
-        return { ...exists, earn: totalEarnings, score: create.score };
-      }
-
-      return exists;
+      return { ...exists, score: create.score };
     }
 
     // Get the latest earnings or 0
@@ -86,7 +67,7 @@ export class GamifiedService {
       select: ['earn'],
       order: { createdAt: 'DESC' },
     });
-    const currentEarnings = latestProgress?.earn ?? 0;
+    const currentEarnings = latestProgress?.earn ?? 250;
 
     // Calculate new earnings
     const earningsMap = this.earning();
@@ -113,11 +94,17 @@ export class GamifiedService {
   }
 
   async userProgress(user: AuthUser) {
-    const userProgress = await this.gameProgress.findOne({
-      where: { userId: user.id },
-      order: { createdAt: 'DESC' },
-    });
-    return userProgress;
+    const [userProgress, question] = await Promise.all([
+      this.gameProgress.findOne({
+        where: { userId: user.id },
+        order: { createdAt: 'DESC' },
+      }),
+      this.onboarding.findOne({
+        where: { userId: user.id },
+      }),
+    ]);
+
+    return { ...userProgress, ...question };
   }
 
   async earnBadges(
