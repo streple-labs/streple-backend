@@ -10,7 +10,6 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -401,13 +400,11 @@ export class TradesService {
     user: AuthUser,
   ): Promise<ITrades> {
     //first find the trader
-    const trade = await this.tradeRepo.findOne({ where: { id } });
+    const trade = await this.tradeRepo.findOne({
+      where: { id, creatorId: user.id },
+    });
     if (!trade) {
       throw new NotFoundException('Trade not found');
-    }
-
-    if (trade.creatorId.toLowerCase() !== user.id.toLowerCase()) {
-      throw new UnauthorizedException('Edit access blocked');
     }
 
     if (trade.status === status.close) {
@@ -431,13 +428,11 @@ export class TradesService {
 
   async remove(id: string, user: AuthUser) {
     //first find the trader
-    const trade = await this.tradeRepo.findOne({ where: { id } });
+    const trade = await this.tradeRepo.findOne({
+      where: { id, creatorId: user.id },
+    });
     if (!trade) {
       throw new NotFoundException('Trade not found');
-    }
-
-    if (trade.creatorId.toLowerCase() !== user.id.toLowerCase()) {
-      throw new UnauthorizedException('Delete access blocked');
     }
 
     if (trade.status === status.close) {
@@ -450,7 +445,7 @@ export class TradesService {
 
     if (ableToEdit.length >= 2) {
       throw new ForbiddenException(
-        'Unable to edit, Trade have been copy by followers',
+        'Unable to delete, Trade have been copy by followers',
       );
     }
 
@@ -478,7 +473,7 @@ export class TradesService {
     }
 
     if (query.type) {
-      filter = { type: { $eq: query.type } };
+      filter = { tradeType: { $eq: query.type } };
     }
 
     return filter;
