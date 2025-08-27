@@ -2,6 +2,7 @@ import { FindMany, FindOne, transform } from '@app/common';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsDate,
   IsIn,
   IsNotEmpty,
   IsNumber,
@@ -14,8 +15,11 @@ import {
   copyTrade,
   createTrade,
   direction,
+  duration,
   findManyTrade,
   findOneTrade,
+  positionSize,
+  riskLevel,
   status,
   type,
 } from './traders.interface';
@@ -26,14 +30,66 @@ export class CreateTrade implements createTrade {
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ type: String })
-  symbol: string;
+  asset: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  leverage: string;
+
+  @IsString()
+  @IsIn(Object.values(positionSize))
+  @ApiProperty({ type: String, enum: Object.values(positionSize) })
+  positionSize: positionSize;
+
+  @IsString()
+  @IsIn(Object.values(duration))
+  @ApiProperty({ type: String, enum: Object.values(duration) })
+  duration: duration;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  comment?: string;
+
+  @IsDate()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Date })
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? new Date(value) : value,
+  )
+  startDate: Date;
+
+  @IsDate()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Date })
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? new Date(value) : value,
+  )
+  startTime: Date;
+
+  @IsDate()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Date })
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? new Date(value) : value,
+  )
+  endDate: Date;
+
+  @IsDate()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Date })
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? new Date(value) : value,
+  )
+  endTime: Date;
 
   @IsNumber()
   @ApiProperty({ type: Number })
   @Transform(({ value }: { value: string | number }) =>
     typeof value === 'string' ? parseFloat(value) : value,
   )
-  entryMarket: number;
+  entryPrice: number;
 
   @IsString()
   @ApiProperty({ type: String, enum: Object.values(direction) })
@@ -55,12 +111,11 @@ export class CreateTrade implements createTrade {
   takeProfit: number;
 
   @IsNumber()
-  @ApiPropertyOptional({ type: Number })
-  @IsOptional()
+  @ApiProperty({ type: Number })
   @Transform(({ value }: { value: string | number }) =>
     typeof value === 'string' ? parseFloat(value) : value,
   )
-  stakeAmount?: number;
+  stakeAmount: number;
 
   @IsString()
   @ApiProperty({ type: String, enum: Object.values(action) })
@@ -70,7 +125,7 @@ export class CreateTrade implements createTrade {
   @IsString()
   @IsOptional()
   @ApiProperty({ type: String })
-  riskLevel: string;
+  riskLevel: riskLevel;
 }
 
 export class UpdateTrade extends PartialType(CreateTrade) {

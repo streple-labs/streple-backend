@@ -1,4 +1,13 @@
+import { BalanceService } from '@app/balance/balance.service';
+import {
+  BalanceMode,
+  BalanceType,
+  Source,
+  TransactionStatus,
+  TransactionType,
+} from '@app/balance/interface';
 import { AuthUser, DocumentResult } from '@app/common';
+import { buildFindManyQuery, FindManyWrapper, Slug } from '@app/helpers';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,10 +20,8 @@ import {
   findManyOnboardedUser,
   gameOnboard,
   Level,
-  Phase,
   progressResponse,
 } from './interface';
-import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
 
 @Injectable()
 export class GamifiedService {
@@ -27,6 +34,7 @@ export class GamifiedService {
     private readonly userBadge: Repository<UserBadge>,
     @InjectRepository(Badge)
     private readonly badgeRepo: Repository<Badge>,
+    private readonly balanceService: BalanceService,
   ) {}
 
   async create(create: gameOnboard, user: AuthUser): Promise<GamingOnboarding> {
@@ -41,8 +49,13 @@ export class GamifiedService {
       userId: user.id,
     });
     const data = await this.onboarding.save(question);
-    await this.trackUserProgress(
-      { phase: Phase.first, level: Level.first, score: 0 },
+
+    void this.fundUser(
+      {
+        amount: '250',
+        des: 'Welcome Bonus',
+        key: `welcome ${user.id}`,
+      },
       user,
     );
 
@@ -58,21 +71,21 @@ export class GamifiedService {
       where: { userId: user.id, phase: create.phase, level: create.level },
     });
     if (exists) {
+      void this.gameProgress.update(exists.id, { score: create.score });
       return { ...exists, score: create.score };
     }
-
-    // Get the latest earnings or 0
-    const latestProgress = await this.gameProgress.findOne({
-      where: { userId: user.id },
-      select: ['earn'],
-      order: { createdAt: 'DESC' },
-    });
-    const currentEarnings = latestProgress?.earn ?? 250;
 
     // Calculate new earnings
     const earningsMap = this.earning();
     const earnedAmount = earningsMap[create.phase]?.[create.level] ?? 0;
-    const totalEarnings = parseInt(String(currentEarnings), 10) + earnedAmount;
+    void this.fundUser(
+      {
+        amount: earnedAmount.toString(),
+        des: `Commission upon completing ${create.level} of ${create.phase} in gamified`,
+        key: `${create.phase} ${create.level} ${user.id}`,
+      },
+      user,
+    );
 
     // Save progress
     const progress = await this.gameProgress.save(
@@ -80,7 +93,6 @@ export class GamifiedService {
         ...create,
         completedAt: new Date(),
         userId: user.id,
-        earn: totalEarnings,
       }),
     );
 
@@ -94,17 +106,38 @@ export class GamifiedService {
   }
 
   async userProgress(user: AuthUser) {
-    const [userProgress, question] = await Promise.all([
+    const [userProgress, totalScore, question] = await Promise.all([
       this.gameProgress.findOne({
         where: { userId: user.id },
         order: { createdAt: 'DESC' },
       }),
+      this.gameProgress
+        .createQueryBuilder('gameProgress')
+        .select('COALESCE(SUM(gameProgress.score), 0)', 'total')
+        .where('gameProgress.userId = :userId', { userId: user.id })
+        .getRawOne(),
       this.onboarding.findOne({
         where: { userId: user.id },
+        select: { hasAnswer: true },
       }),
     ]);
 
-    return { ...userProgress, ...question };
+    if (!userProgress) {
+      return {
+        phase: 'Phase 1',
+        level: 'Level 1',
+        score: 0,
+        completedAt: new Date().toISOString(),
+        totalScore: 0,
+        ...question,
+      };
+    }
+
+    return {
+      ...userProgress,
+      totalScore: parseInt(String(totalScore.total)),
+      ...question,
+    };
   }
 
   async earnBadges(
@@ -199,5 +232,24 @@ export class GamifiedService {
     };
 
     return EARNINGS_MAP;
+  }
+
+  private fundUser(
+    data: { amount: string; des: string; key: string },
+    user: AuthUser,
+  ) {
+    return this.balanceService.transactionOnDemo(
+      {
+        amount: data.amount,
+        description: data.des,
+        mode: BalanceMode.demo,
+        type: BalanceType.funding,
+        source: Source.gamified,
+        transactionType: TransactionType.deposit,
+        status: TransactionStatus.successful,
+        idempotencyKey: Slug(data.key),
+      },
+      user,
+    );
   }
 }

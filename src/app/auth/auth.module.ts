@@ -16,7 +16,7 @@ import { GoogleStrategy } from '../../global/strategies/google.strategy';
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,
-      signOptions: { expiresIn: jwtConstants.expiresIn },
+      // signOptions: { expiresIn: jwtConstants.expiresIn },
     }),
   ],
   providers: [AuthService, JwtStrategy, GoogleStrategy],

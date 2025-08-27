@@ -50,3 +50,8 @@ export type AuthUser = {
   role: Role;
   roleLevel: number;
 };
+
+export interface JwtPayload extends AuthUser {
+  iat: number;
+  exp: number;
+}

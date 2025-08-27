@@ -58,3 +58,6 @@ keeper
 streple_jobs.db
 streple_jobs.db-shm
 streple_jobs.db-wal
+cg-websocket.js
+cmc.js
+coingecko.js

@@ -61,6 +61,18 @@ export class TradesController {
     return this.tradesService.copyTrade(body, user);
   }
 
+  @Get('trading-stats')
+  @ApiOperation({ summary: 'Get treading stats' })
+  tradingStats(@SessionUser() user: AuthUser) {
+    return this.tradesService.getTradingStats(user.id);
+  }
+
+  @Get('token-names')
+  @ApiOperation({ summary: 'Get token names and symbols' })
+  getTokenNames() {
+    return this.tradesService.getTokenNames();
+  }
+
   @Get('cancel-trade/:id')
   @ApiOperation({ summary: 'Cancel on going trade' })
   @ApiParam({

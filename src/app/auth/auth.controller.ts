@@ -1,3 +1,4 @@
+import { Public } from '@app/decorators';
 import {
   Body,
   Controller,
@@ -7,18 +8,17 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { SignupDto } from './dto/signup.dto';
-import { ResendOtpDto, VerifyOtpDto } from './dto/otp.dto';
-import { LoginDto } from './dto/login.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { Request, Response } from 'express';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
-dotenv.config();
+import { Request, Response } from 'express';
+import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { LoginDto, RefreshToken } from './dto/login.dto';
+import { ResendOtpDto, VerifyOtpDto } from './dto/otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { Public } from '@app/decorators';
+import { SignupDto } from './dto/signup.dto';
+dotenv.config();
 
 if (!process.env.FRONTEND_BASE_URL) {
   throw new Error('Missing FRONTEND_BASE_URL in environment variables');
@@ -71,6 +71,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Returns a JWT token' })
   AdminLogin(@Body() dto: LoginDto) {
     return this.auth.adminLogin(dto);
+  }
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Create a new token for user' })
+  @ApiBody({ type: RefreshToken })
+  RefreshToken(@Body() body: RefreshToken) {
+    return this.auth.refreshToken(body.token);
   }
 
   @Get('google')

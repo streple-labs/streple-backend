@@ -1,8 +1,9 @@
+import { BalanceSharedModule } from '@app/balance/module';
 import { Module } from '@nestjs/common';
-import { GamifiedService } from './gamified.service';
-import { GamifiedController } from './gamified.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Badge, GameProgress, GamingOnboarding, UserBadge } from './entities';
+import { GamifiedController } from './gamified.controller';
+import { GamifiedService } from './gamified.service';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { Badge, GameProgress, GamingOnboarding, UserBadge } from './entities';
       UserBadge,
       Badge,
     ]),
+    BalanceSharedModule,
   ],
   controllers: [GamifiedController],
   providers: [GamifiedService],

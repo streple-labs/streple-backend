@@ -1,4 +1,6 @@
+import { AuthUser, JwtPayload } from '@app/common';
 import { Role } from '@app/users/interface';
+import { UsersService } from '@app/users/service';
 import {
   BadRequestException,
   Injectable,
@@ -11,13 +13,12 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
-import { UsersService } from '@app/users/service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly users: UsersService,
-    private readonly jwt: JwtService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async register(dto: SignupDto) {
@@ -49,11 +50,19 @@ export class AuthService {
       throw new UnauthorizedException('access denied users only');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      roleLevel: user.roleLevel,
+    };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, createdAt, updatedAt, ...sanitizedUser } = user;
+    const access = await this.generateTokens(payload, '1h');
+    const refresh = await this.generateTokens(payload, '2h');
     return {
-      streple_auth_token: this.jwt.sign(payload),
+      streple_auth_token: access,
+      streple_refresh_token: refresh,
       token_type: 'Bearer',
       expires_in: jwtConstants.expiresIn,
       data: sanitizedUser,
@@ -81,11 +90,19 @@ export class AuthService {
     ) {
       throw new UnauthorizedException('Access denied');
     }
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      roleLevel: user.roleLevel,
+    };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, createdAt, updatedAt, ...sanitizedUser } = user;
+    const access = await this.generateTokens(payload, '1h');
+    const refresh = await this.generateTokens(payload, '2h');
     return {
-      streple_auth_token: this.jwt.sign(payload),
+      streple_auth_token: access,
+      streple_refresh_token: refresh,
       token_type: 'Bearer',
       expires_in: jwtConstants.expiresIn,
       data: sanitizedUser,
@@ -102,5 +119,29 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     return await this.users.resetPassword(dto);
+  }
+
+  async refreshToken(token: string) {
+    const payload: JwtPayload = await this.jwtService.verifyAsync(token, {
+      secret: jwtConstants.secret,
+    });
+
+    if (!payload) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { iat, exp, ...rest } = payload;
+    const access = await this.generateTokens(rest, '1h');
+    const refresh = await this.generateTokens(rest, '2h');
+
+    return { streple_access_token: access, streple_refresh_token: refresh };
+  }
+
+  private generateTokens(user: AuthUser, expiresIn: string) {
+    return this.jwtService.signAsync(user, {
+      secret: jwtConstants.secret,
+      expiresIn: expiresIn,
+    });
   }
 }

@@ -47,11 +47,10 @@ export class CreateGameProgress implements createProgress {
   level: Level;
 
   @IsInt()
-  @Transform(({ value }: { value: string }) => {
-    const parsed = parseInt(value, 10);
-    return isNaN(parsed) ? 33 : parsed;
-  })
-  @ApiProperty({ type: String, required: true })
+  @Transform(({ value }: { value: string }) =>
+    typeof value === 'string' ? parseInt(value, 10) : value,
+  )
+  @ApiProperty({ type: Number, required: true })
   score: number;
 }
 

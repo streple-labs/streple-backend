@@ -29,8 +29,8 @@ export class GameProgress implements gameProgress {
   @Column()
   score: number;
 
-  @Column({ type: 'decimal', nullable: false, default: 250 })
-  earn: number;
+  // @Column({ type: 'decimal', nullable: false, default: 250 })
+  // earn: number;
 
   @Column({ type: 'timestamp' })
   completedAt: Date;

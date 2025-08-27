@@ -17,7 +17,7 @@ export interface gameProgress {
   phase: Phase;
   level: Level;
   score: number;
-  earn: number;
+  // earn: number;
   completedAt: Date;
   createdAt?: Date;
   updatedAt?: Date;

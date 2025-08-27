@@ -18,6 +18,7 @@ import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
 import { TradesModule } from './app/trades/trades.module';
+import { BalanceModule } from '@app/balance/module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { TradesModule } from './app/trades/trades.module';
     GamifiedModule,
     SeederModule,
     TradesModule,
+    BalanceModule,
   ],
   controllers: [AppController],
   providers: [

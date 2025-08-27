@@ -1,18 +1,10 @@
 import { jwtConstants } from '@app/auth/constants';
-import { Role } from '@app/users/interface';
+import { JwtPayload } from '@app/common';
 import { RoleService } from '@app/users/service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-
-interface JwtPayload {
-  sub: string; // user id
-  email: string;
-  role: Role;
-  iat: number; // issued‑at
-  exp: number; // expiration
-}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -23,9 +15,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         ExtractJwt.fromAuthHeaderAsBearerToken(),
 
         // 2. Then try streple_auth_token from cookies
-        (req: Request) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-          return req?.cookies?.streple_auth_token || null;
+        (req: Request): string | null => {
+          const token: unknown =
+            req?.cookies?.streple_auth_token ||
+            req?.cookies?.streple_refresh_token;
+
+          return typeof token === 'string' ? token : null;
         },
       ]),
       ignoreExpiration: false,
@@ -35,8 +30,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     const user = await this.users.getSingleUserWithRoleAndPermission({
-      id: payload.sub,
-    }); //findById(payload.sub);
+      id: payload.id,
+    });
     if (!user) {
       throw new UnauthorizedException(
         'You are not authorized to perform the operation',
