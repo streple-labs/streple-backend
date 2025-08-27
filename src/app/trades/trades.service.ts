@@ -198,7 +198,7 @@ export class TradesService {
     const url = `https://api.coingecko.com/api/v3/coins/markets?${params.toString()}`;
     const options = {
       accept: 'application/json',
-      'x-cg-demo-api-key': this.configService.get('COINGECKO_API'),
+      'x-cg-demo-api-key': this.configService.get('COINGECKO_DEMO_API_KEY'),
     };
     const { data: response } = await this.httpClient.fetchData<
       tokenPriceResponse[]
