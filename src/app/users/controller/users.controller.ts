@@ -125,8 +125,9 @@ export class UsersController {
   @Post('change-password')
   @ApiOperation({ summary: 'Change password for authenticated user' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 400, description: 'Current password is incorrect' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async changePassword(
     @SessionUser() user: AuthUser,
     @Body() dto: ChangePasswordDto,
