@@ -109,14 +109,8 @@ export class Trades implements ITrades {
   @Column({ type: 'date', nullable: true })
   startDate?: Date;
 
-  @Column({ type: 'time', nullable: true })
-  startTime?: Date;
-
   @Column({ type: 'date', nullable: true })
   endDate?: Date;
-
-  @Column({ type: 'time', nullable: true })
-  endTime?: Date;
 
   @Column({ type: 'enum', enum: Object.values(riskLevel) })
   riskLevel: riskLevel;

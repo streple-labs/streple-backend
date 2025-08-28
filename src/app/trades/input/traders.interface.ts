@@ -27,28 +27,6 @@ export enum type {
   original = 'original',
   copy = 'copy',
 }
-// export interface ITrades {
-//   id?: string;
-//   userId: string;
-//   user: IUser;
-//   creatorId: string;
-//   creator: IUser;
-//   symbol: string;
-//   name: string;
-//   entryMarket: number;
-//   riskLevel?: string;
-//   action: action;
-//   direction: direction;
-//   stopLoss: number;
-//   takeProfit: number;
-//   status: status;
-//   exitPrice?: number;
-//   stakeAmount?: number;
-//   identifier: string;
-//   type: type;
-//   createdAt?: Date;
-//   updatedAt?: Date;
-// }
 
 export enum outcome {
   win = 'Win',
@@ -97,9 +75,7 @@ export interface ITrades {
   duration: duration;
   image?: string;
   startDate?: Date;
-  startTime?: Date;
   endDate?: Date;
-  endTime?: Date;
   riskLevel: riskLevel;
   comment?: string;
   exitPrice?: number;
@@ -124,9 +100,7 @@ export type createTrade = Pick<
   | 'riskLevel'
   | 'comment'
   | 'startDate'
-  | 'startTime'
   | 'endDate'
-  | 'endTime'
   | 'stakeAmount'
 >;
 export interface updateTrade extends Partial<createTrade> {

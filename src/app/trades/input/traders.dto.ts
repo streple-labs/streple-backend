@@ -66,23 +66,7 @@ export class CreateTrade implements createTrade {
   @Transform(({ value }: { value: string }) =>
     typeof value === 'string' ? new Date(value) : value,
   )
-  startTime: Date;
-
-  @IsDate()
-  @IsOptional()
-  @ApiPropertyOptional({ type: Date })
-  @Transform(({ value }: { value: string }) =>
-    typeof value === 'string' ? new Date(value) : value,
-  )
   endDate: Date;
-
-  @IsDate()
-  @IsOptional()
-  @ApiPropertyOptional({ type: Date })
-  @Transform(({ value }: { value: string }) =>
-    typeof value === 'string' ? new Date(value) : value,
-  )
-  endTime: Date;
 
   @IsNumber()
   @ApiProperty({ type: Number })
