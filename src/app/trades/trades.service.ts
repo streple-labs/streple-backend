@@ -1,13 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AuthUser, Document, DocumentResult } from '@app/common';
 import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
 } from '@app/helpers';
-import { HttpClientService, WebSocketService } from '@app/services';
+import {
+  HttpClientService,
+  TradeJobWorker,
+  WebSocketService,
+} from '@app/services';
 import {
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,17 +25,23 @@ import { Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Trades } from './entities/trader.entity';
 import {
+  action,
   copyTrade,
   createTrade,
+  duration,
+  executeTrade,
   findManyTrade,
   findOneTrade,
   ITrades,
+  orderType,
   outcome,
+  riskLevel,
   status,
   tokenPrice,
   tokenPriceResponse,
   TradingStats,
   type,
+  updateParameter,
   updateTrade,
 } from './input';
 
@@ -36,7 +49,11 @@ import {
 export class TradesService {
   constructor(
     @InjectRepository(Trades) private readonly tradeRepo: Repository<Trades>,
+    @Inject(forwardRef(() => TradeJobWorker))
+    private readonly tradeJW: TradeJobWorker,
+    @Inject(forwardRef(() => HttpClientService))
     private readonly httpClient: HttpClientService,
+    @Inject(forwardRef(() => WebSocketService))
     private readonly wsGateway: WebSocketService,
     private readonly configService: ConfigService,
   ) {}
@@ -57,12 +74,13 @@ export class TradesService {
         `You already have an ${duplicate.status} trade for this symbol`,
       );
     }
+    const now = new Date();
     const symbol = create.asset.split('/')[0].toLowerCase();
     const identifier = `${symbol}_${uuidv4()}`;
     const userId = user.id;
     const creatorId = user.id;
-    // get the current price from the internet
 
+    // get the current price from the internet
     const info = await this.fetchPrice({
       vs_currency: 'usd',
       symbols: symbol,
@@ -70,12 +88,81 @@ export class TradesService {
 
     const image = info[0]?.image || '';
     const currentPrice = info[0]?.current_price ?? 0;
-    const isOpen = Big(currentPrice).eq(Big(create.entryPrice));
-    const tradeStatus = isOpen ? status.open : status.pending;
 
-    // TODO debit user account the amount he/she want to use to stake
+    // calculate the margin required using the following formular
+    // leverage ratio: 1x,5x,10
+    // position size: total value of the trade
+    // marginRequired: capital user must have to open the trade
+    // formula marginRequired = positionSize / leverageRatio
+    create.entryPrice = create.entryPrice ?? currentPrice;
+    const margin = Big(create.positionSize.amount)
+      .times(Big(create.entryPrice))
+      .div(Big(create.leverage))
+      .toNumber();
+
+    // TODO check if user have upto marginRequired in his/her trading fund
+    // TODO return insufficient fund if the marginRequired is not less or equal the fund user have
+
+    const DURATION_MAP = {
+      [duration.scalp]: 5 * 60 * 1000,
+      [duration.intraday]: 24 * 60 * 60 * 1000,
+      [duration.swing]: 7 * 24 * 60 * 60 * 1000,
+      [duration.position]: 30 * 24 * 60 * 60 * 1000,
+    };
+
+    if (create.duration === duration.custom) {
+      if (!create.startDate || !create.endDate) {
+        throw new ForbiddenException(
+          'Custom trade duration must provide startDate and endDate',
+        );
+      }
+      create.startDate = new Date(create.startDate);
+      create.expiresAt = new Date(create.endDate);
+
+      const delayStart = create.startDate.getTime() - Date.now();
+      const delayEnd = create.expiresAt.getTime() - Date.now();
+
+      create.scheduleStartId = this.tradeJW.scheduleTrade(
+        { identifier, type: 'starting' },
+        delayStart,
+      );
+
+      create.scheduleEndId = this.tradeJW.scheduleTrade(
+        { identifier, type: 'expiring' },
+        delayEnd,
+      );
+    } else {
+      const ms = DURATION_MAP[create.duration];
+      create.startDate = now;
+      create.expiresAt = new Date(now.getTime() + ms);
+
+      const delayEnd = create.expiresAt.getTime() - Date.now();
+      create.scheduleEndId = this.tradeJW.scheduleTrade(
+        { identifier, type: 'expiring' },
+        delayEnd,
+      );
+    }
+
+    let tradeStatus: status;
+    if (create.isDraft) {
+      tradeStatus = status.draft;
+    } else if (create.duration === duration.custom && create.startDate > now) {
+      tradeStatus = status.schedule;
+    } else {
+      const isOpen = this.executeTrade({
+        action: create.action,
+        currentPrice,
+        entryPrice: create.entryPrice,
+        orderType: create.orderType,
+      });
+      tradeStatus = isOpen ? status.open : status.pending;
+    }
+
+    const riskLevel = this.calculateRisk(create.leverage);
+
+    const { endDate, ...rest } = create;
     const save = this.tradeRepo.create({
-      ...create,
+      ...rest,
       identifier,
       symbol,
       tradeType: type.original,
@@ -84,6 +171,8 @@ export class TradesService {
       status: tradeStatus,
       userId,
       creatorId,
+      riskLevel,
+      margin,
     });
 
     const newTrade = await this.tradeRepo.save(save);
@@ -108,7 +197,9 @@ export class TradesService {
       throw new ForbiddenException('Same trade already executed');
     }
 
-    // TODO debit user account the amount he/she want to use to stake
+    // TODO Get the trade margin and check the user balance
+    // TODO if the user balance is greater than the margin allow copy else throw insufficient balance error
+
     // extract data
     const info = await this.fetchPrice({
       vs_currency: 'usd',
@@ -126,16 +217,23 @@ export class TradesService {
 
       if (!lockedTrade) throw new NotFoundException('Trade not found');
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, userId, stakeAmount, ...rest } = lockedTrade;
-      const noOfCopies = Big(trade.noOfCopiers).plus(Big(1));
+      if (trade.status === status.pending) {
+        const isOpen = this.executeTrade({
+          action: lockedTrade.action,
+          currentPrice,
+          entryPrice: lockedTrade.entryPrice,
+          orderType: lockedTrade.orderType,
+        });
+        lockedTrade.status = isOpen ? status.open : status.pending;
+      }
+
+      const { id, userId, ...rest } = lockedTrade;
+      trade.noOfCopiers = Big(trade.noOfCopiers).plus(Big(1)).toNumber();
 
       const save = manager.create(Trades, {
         ...rest,
         userId: user.id,
-        stakeAmount: dto.stakeAmount,
         currentPrice,
-        noOfCopiers: noOfCopies.toNumber(),
       });
 
       const newTrade = await manager.save(save);
@@ -145,7 +243,8 @@ export class TradesService {
         { identifier: trade.identifier },
         {
           currentPrice,
-          noOfCopiers: noOfCopies.toNumber(),
+          noOfCopiers: lockedTrade.noOfCopiers,
+          status: lockedTrade.status,
         },
       );
 
@@ -154,7 +253,6 @@ export class TradesService {
   }
 
   async cancelTrade(tradeId: string, user: AuthUser): Promise<ITrades> {
-    // TODO refund the user stake amount
     const trade = await this.tradeRepo.findOne({
       where: { id: tradeId, userId: user.id, status: Not(status.close) },
     });
@@ -162,26 +260,27 @@ export class TradesService {
       throw new ForbiddenException('Trade not exist or Trade already close');
     }
 
-    // eslint-disable-next-line prefer-const
-    let exitPrice: number | undefined = 0;
-    // const { data } = await this.httpClient.fetchData(
-    //   'https://coingecko.com/api',
-    //   {
-    //     authorization: `Bearer ...`,
-    //   },
-    // );
+    // extract data
+    const info = await this.fetchPrice({
+      vs_currency: 'usd',
+      symbols: trade.symbol,
+    });
 
-    // if (!data) {
-    //   exitPrice = trade.stakeAmount;
-    // } else {
-    //   exitPrice = 2000; //price from the response
-    // }
+    const currentPrice = info[0]?.current_price ?? 0;
 
-    await this.tradeRepo.update(
-      { id: tradeId },
-      { status: status.close, exitPrice: exitPrice },
+    const { realizedPnL, outcome, tradeRoi } = this.calculateTradeResults(
+      trade,
+      currentPrice,
     );
-    return { ...trade, status: status.close, exitPrice: exitPrice };
+
+    trade.status = status.close;
+    trade.exitPrice = currentPrice;
+    trade.realizedPnl = realizedPnL;
+    trade.outcome = outcome;
+    trade.tradeRoi = tradeRoi;
+
+    // TODO fund the user balance
+    return this.tradeRepo.save(trade);
   }
 
   async getTokenNames() {
@@ -453,30 +552,160 @@ export class TradesService {
     return this.tradeRepo.delete(id);
   }
 
+  async systemUpdate(
+    filter: updateParameter,
+    type: 'starting' | 'expiring',
+    updates: updateTrade,
+  ): Promise<Trades | null> {
+    const findTrades = await this.tradeRepo.find({
+      where: { identifier: filter.identifier, status: Not(status.close) },
+    });
+
+    if (!findTrades.length) return null;
+
+    const trade = findTrades[0];
+    const info = await this.fetchPrice({
+      vs_currency: 'usd',
+      symbols: trade.symbol,
+    });
+
+    const currentPrice = info[0]?.current_price ?? 0;
+    if (type === 'starting') {
+      const isOpen = this.executeTrade({
+        action: trade.action,
+        currentPrice,
+        entryPrice: trade.entryPrice ?? trade.currentPrice,
+        orderType: trade.orderType,
+      });
+      const statusTrade = isOpen ? status.open : status.pending;
+
+      updates.status = statusTrade;
+      updates.currentPrice = currentPrice;
+
+      await this.tradeRepo.update(
+        { identifier: filter.identifier },
+        { ...updates },
+      );
+      return trade;
+    }
+
+    if (type === 'expiring') {
+      const { outcome, tradeRoi, realizedPnL } = this.calculateTradeResults(
+        trade,
+        currentPrice,
+      );
+
+      updates.status = status.close;
+      updates.outcome = outcome;
+      updates.realizedPnl = realizedPnL;
+      updates.tradeRoi = tradeRoi;
+      updates.exitPrice = currentPrice;
+
+      await this.tradeRepo.update(
+        { identifier: filter.identifier },
+        { ...updates },
+      );
+      return trade;
+    }
+    return null;
+  }
+
+  private executeTrade(data: executeTrade) {
+    if (data.orderType === orderType.limit) {
+      if (
+        data.action === action.buy &&
+        Big(data.currentPrice).lte(Big(data.entryPrice))
+      ) {
+        return true;
+      }
+      if (
+        data.action === action.sell &&
+        Big(data.currentPrice).gte(Big(data.entryPrice))
+      ) {
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  private calculateRisk(leverage: number) {
+    if (leverage <= 4) return riskLevel.low;
+    if (leverage <= 9) return riskLevel.medium;
+    return riskLevel.high;
+  }
+
   private filter(query: findManyTrade) {
-    let filter: Record<string, any> = {};
+    const filter: Record<string, any> = {};
 
     if (query.creatorId) {
-      filter = { creatorId: query.creatorId };
+      filter['creatorId'] = query.creatorId;
     }
 
     if (query.status) {
-      filter = { status: query.status };
+      filter['status'] = query.status;
     }
 
     if (query.symbol) {
-      filter = { symbol: query.symbol };
+      filter['symbol'] = query.symbol;
     }
 
     if (query.userId) {
-      filter = { userId: query.userId };
+      filter['userId'] = query.userId;
     }
 
     if (query.type) {
-      filter = { tradeType: { $eq: query.type } };
+      filter['tradeType'] = { $eq: query.type };
+    }
+
+    if (query.draft) {
+      filter['draft'] = { $eq: query.draft };
     }
 
     return filter;
+  }
+
+  private calculateTradeResults(trade: ITrades, exitPrice: number) {
+    let realizedPnL: number;
+    if (trade.action === action.buy) {
+      realizedPnL = Big(exitPrice)
+        .sub(Big(trade.entryPrice))
+        .times(trade.positionSize.amount)
+        .toNumber();
+    } else {
+      realizedPnL = Big(trade.entryPrice)
+        .sub(Big(exitPrice))
+        .times(trade.positionSize.amount)
+        .toNumber();
+    }
+
+    const roi = Big(realizedPnL)
+      .div(Big(trade.margin))
+      .times(Big(100))
+      .toNumber();
+
+    const tradeOutcome =
+      realizedPnL > 0
+        ? outcome.win
+        : realizedPnL < 0
+          ? outcome.loss
+          : outcome.liq;
+
+    return { realizedPnL, tradeRoi: roi, outcome: tradeOutcome };
+  }
+
+  private fundUsers(margin: number, realizedPnL: number) {
+    const totalCredit = Big(margin).add(Big(realizedPnL)).toNumber();
+
+    if (totalCredit <= 0) {
+      return 0; // User lost entire margin (liquidation)
+    } else {
+      return totalCredit;
+    }
+
+    // usage
+    // const toCredit = this.fundUsers(trade.margin, trade.realizedPnL);
+    // user.balance += toCredit;
   }
 
   private toUrlParams(data: Record<string, any>): URLSearchParams {

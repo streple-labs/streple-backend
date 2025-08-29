@@ -1,3 +1,5 @@
+import { TradesModule } from '@app/trades/trades.module';
+import { HttpModule } from '@nestjs/axios';
 import { forwardRef, Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DiscoveryModule } from '@nestjs/core';
@@ -7,15 +9,15 @@ import {
   BlogJobWorker,
   EmailJobWorker,
   FileProcessorService,
-  WebSocketService,
   HtmlChunkerService,
   HttpClientService,
   MailService,
   SanitizeService,
   SchedulerService,
+  TradeJobWorker,
   UploadService,
+  WebSocketService,
 } from './services';
-import { HttpModule } from '@nestjs/axios';
 @Global()
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { HttpModule } from '@nestjs/axios';
     DiscoveryModule,
     forwardRef(() => BlogManagerModule),
     forwardRef(() => EmailCenterModule),
+    forwardRef(() => TradesModule),
     HttpModule.registerAsync({
       useFactory: () => ({
         timeout: 5000,
@@ -35,6 +38,7 @@ import { HttpModule } from '@nestjs/axios';
     EmailJobWorker,
     SchedulerService,
     BlogJobWorker,
+    TradeJobWorker,
     UploadService,
     SanitizeService,
     FileProcessorService,
@@ -50,6 +54,7 @@ import { HttpModule } from '@nestjs/axios';
     SanitizeService,
     FileProcessorService,
     HtmlChunkerService,
+    TradeJobWorker,
     HttpClientService,
     WebSocketService,
   ],

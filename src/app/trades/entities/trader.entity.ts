@@ -10,9 +10,9 @@ import {
 } from 'typeorm';
 import {
   action,
-  direction,
   duration,
   ITrades,
+  orderType,
   outcome,
   positionSize,
   riskLevel,
@@ -39,9 +39,6 @@ export class Trades implements ITrades {
 
   @Index() @Column() symbol: string;
 
-  @Column({ type: 'enum', enum: Object.values(direction) })
-  direction: direction;
-
   @Column('float') stopLoss: number;
   @Column('float') takeProfit: number;
 
@@ -55,13 +52,13 @@ export class Trades implements ITrades {
   status: status;
 
   @Column({ type: 'float', nullable: true })
-  exitPrice?: number;
+  exitPrice: number;
 
   @Column({ type: 'enum', enum: Object.values(action), nullable: false })
   action: action;
 
   @Column({ type: 'float', nullable: false, default: 0 })
-  stakeAmount: number;
+  margin: number;
 
   @Index()
   @Column({
@@ -83,7 +80,7 @@ export class Trades implements ITrades {
   entryPrice: number;
 
   @Column()
-  leverage: string;
+  leverage: number;
 
   @Column({ type: 'enum', enum: Object.values(outcome), nullable: true })
   outcome?: outcome;
@@ -94,26 +91,42 @@ export class Trades implements ITrades {
   @Column({ type: 'float', nullable: false, default: 0 })
   currentPrice: number;
 
-  @Column({ type: 'enum', enum: Object.values(positionSize) })
+  @Column({ type: 'jsonb', default: { amount: 0, currency: 'USDT' } })
   positionSize: positionSize;
 
-  @Column({ type: 'decimal', default: 0 })
+  @Column({ type: 'float', default: 0 })
   realizedPnl: number;
 
   @Column({ type: 'int', nullable: false, default: 0 })
   noOfCopiers: number;
 
+  @Column({ type: 'int', nullable: false, default: 0 })
+  scheduleStartId?: number;
+
+  @Column({ type: 'int', nullable: false, default: 0 })
+  scheduleEndId?: number;
+
   @Column({ type: 'enum', enum: Object.values(duration) })
   duration: duration;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
   startDate?: Date;
 
-  @Column({ type: 'date', nullable: true })
-  endDate?: Date;
+  @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
+  expiresAt?: Date;
 
   @Column({ type: 'enum', enum: Object.values(riskLevel) })
   riskLevel: riskLevel;
+
+  @Column({ type: 'boolean', default: false })
+  isDraft: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: Object.values(orderType),
+    default: orderType.limit,
+  })
+  orderType: orderType;
 
   @Column({ nullable: true })
   image?: string;
@@ -129,7 +142,7 @@ export class Trades implements ITrades {
 
   getTotalProfitForCopies(): number {
     if (this.tradeRoi > 0) {
-      return this.stakeAmount * this.tradeRoi * this.noOfCopiers;
+      return this.margin * this.tradeRoi * this.noOfCopiers;
     }
     return 0;
   }

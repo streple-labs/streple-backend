@@ -7,15 +7,12 @@ export interface ITraders {
   following: string; //the user following pro trader
 }
 
-export enum direction {
-  long = 'long',
-  short = 'short',
-}
-
 export enum status {
   open = 'open',
   close = 'close',
   pending = 'pending',
+  schedule = 'scheduled',
+  draft = 'draft',
 }
 
 export enum action {
@@ -31,11 +28,12 @@ export enum type {
 export enum outcome {
   win = 'Win',
   loss = 'Loss',
+  liq = 'Liquidated',
 }
 
-export enum positionSize {
-  btc = 'BTC',
-  usdt = 'USDT',
+export interface positionSize {
+  amount: number;
+  currency: 'USDT' | 'BTC';
 }
 
 export enum duration {
@@ -52,6 +50,11 @@ export enum riskLevel {
   high = 'High',
 }
 
+export enum orderType {
+  market = 'Market Order',
+  limit = 'Limit Order',
+}
+
 export interface ITrades {
   id: string;
   asset: string;
@@ -60,63 +63,73 @@ export interface ITrades {
   entryPrice: number;
   stopLoss: number;
   takeProfit: number;
-  leverage: string;
+  leverage: number;
+  isDraft: boolean;
   outcome?: outcome;
   tradeRoi: number;
   userId: string;
   user: IUser;
   creatorId: string;
   creator: IUser;
-  direction: direction;
   currentPrice: number; //make api call when creating new trade to get the current price using the symbol
   positionSize: positionSize;
   realizedPnl: number; //the amount of profit take or lose in percentage update in realtime use subtract for lose and without minus sign for profit
   noOfCopiers: number; //once user copy the trade and save successful this will increase by one
   duration: duration;
+  scheduleStartId?: number;
+  scheduleEndId?: number;
   image?: string;
   startDate?: Date;
-  endDate?: Date;
+  orderType: orderType;
+  expiresAt?: Date;
   riskLevel: riskLevel;
   comment?: string;
   exitPrice?: number;
   status: status;
   tradeType: type;
-  stakeAmount: number;
+  margin: number;
   identifier: string;
   createdAt: Date;
   updatedAt?: Date;
 }
 
-export type createTrade = Pick<
-  ITrades,
-  | 'asset'
-  | 'action'
-  | 'entryPrice'
-  | 'stopLoss'
-  | 'takeProfit'
-  | 'leverage'
-  | 'positionSize'
-  | 'duration'
-  | 'riskLevel'
-  | 'comment'
-  | 'startDate'
-  | 'endDate'
-  | 'stakeAmount'
->;
-export interface updateTrade extends Partial<createTrade> {
-  status?: status;
+export interface createTrade
+  extends Pick<
+    ITrades,
+    | 'asset'
+    | 'action'
+    | 'entryPrice'
+    | 'stopLoss'
+    | 'takeProfit'
+    | 'leverage'
+    | 'positionSize'
+    | 'duration'
+    | 'orderType'
+    | 'comment'
+    | 'startDate'
+    | 'isDraft'
+  > {
+  endDate: Date;
+  expiresAt?: Date;
+  scheduleStartId?: number;
+  scheduleEndId?: number;
 }
+export type updateTrade = Partial<Omit<ITrades, 'creator' | 'user'>>;
 export interface findManyTrade extends findMany {
   creatorId?: string[];
   userId?: string[];
   symbol?: string[];
   status?: status[];
   type?: type;
+  draft?: boolean;
 }
 
+export interface updateParameter {
+  identifier: string;
+  id?: string;
+}
 export interface copyTrade {
   tradeId: string;
-  stakeAmount: number;
 }
 
 export interface findOneTrade extends findOne {
@@ -124,6 +137,14 @@ export interface findOneTrade extends findOne {
   userId?: string;
   symbol?: string;
   status?: status;
+  draft?: boolean;
+}
+
+export interface executeTrade {
+  action: action;
+  orderType: orderType;
+  currentPrice: number;
+  entryPrice: number;
 }
 
 export interface TradingStats {

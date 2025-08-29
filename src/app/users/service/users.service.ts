@@ -200,7 +200,7 @@ export class UsersService {
       template.reset,
       'Password Reset Request',
       { username: user.fullName, otp, currentYear: new Date().getFullYear() },
-    ); //Service.sendOtpEmail(user.email, otp, 'reset');
+    );
     return { message: 'OTP sent to your email', email: user.email };
   }
 
