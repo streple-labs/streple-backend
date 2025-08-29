@@ -45,9 +45,6 @@ export default (): TypeOrmModuleOptions => ({
     Balance,
     Transactions,
   ],
-  ssl: {
-    rejectUnauthorized: false, // TODO: disable cert validation (okay for Railway, Heroku, etc.)
-  },
-  // ssl: false, // Use for http://localhost:4000 in testing
-  synchronize: true, // TODO: auto‑sync for dev; switch off in prod! (make false)
+  ssl: process.env.NODE_ENV === 'development' ? false : { rejectUnauthorized: false}, // TODO
+  synchronize: process.env.NODE_ENV === 'development', // TODO
 });
