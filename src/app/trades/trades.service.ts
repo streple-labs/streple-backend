@@ -5,6 +5,7 @@ import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
+  getAggregateValue,
 } from '@app/helpers';
 import {
   HttpClientService,
@@ -26,6 +27,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Trades } from './entities/trader.entity';
 import {
   action,
+  copiers,
   copyTrade,
   createTrade,
   duration,
@@ -227,20 +229,20 @@ export class TradesService {
         lockedTrade.status = isOpen ? status.open : status.pending;
       }
 
-      const { id, userId, ...rest } = lockedTrade;
-      trade.noOfCopiers = Big(trade.noOfCopiers).plus(Big(1)).toNumber();
+      lockedTrade.noOfCopiers = Big(trade.noOfCopiers).plus(Big(1)).toNumber();
+      const { id, userId, tradeType, ...rest } = lockedTrade;
 
       const save = manager.create(Trades, {
         ...rest,
         userId: user.id,
         currentPrice,
+        tradeType: type.copy,
       });
 
       const newTrade = await manager.save(save);
-
       await manager.update(
         Trades,
-        { identifier: trade.identifier },
+        { identifier: lockedTrade.identifier },
         {
           currentPrice,
           noOfCopiers: lockedTrade.noOfCopiers,
@@ -311,10 +313,31 @@ export class TradesService {
       'trade',
       this.filter(query),
       query.search,
-      [],
+      ['asset', 'symbol'],
       query.include,
       query.sort,
     );
+
+    if (query.copiers === copiers.least) {
+      const minCopiers = await getAggregateValue(
+        qb.connection,
+        'trades',
+        'noOfCopiers',
+        'MIN',
+      );
+      qb.andWhere('trade."noOfCopiers" = :minCopiers', { minCopiers });
+    }
+
+    if (query.copiers === copiers.most) {
+      const maxCopiers = await getAggregateValue(
+        qb.connection,
+        'trades',
+        'noOfCopiers',
+        'MAX',
+      );
+      qb.andWhere('trade."noOfCopiers" = :maxCopiers', { maxCopiers });
+    }
+
     return FindManyWrapper(qb, query.page, query.limit).then((data) => {
       data.data = data.data.map((item) => ({
         ...item,
@@ -467,6 +490,17 @@ export class TradesService {
     // Get number of followers (unique users who copied trades)
 
     // Get risk level trends
+    const results = await this.tradeRepo
+      .createQueryBuilder('trade')
+      .select('trade.riskLevel', 'riskLevel')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('trade.riskLevel')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    let treadingRisk: riskLevel;
+    if (results.length === 0) treadingRisk = riskLevel.low;
+    treadingRisk = results[0].riskLevel;
 
     return {
       activeTrade: openTrades,
@@ -481,15 +515,7 @@ export class TradesService {
         isIncreased: percentageChange > 0,
       },
       followers: 0,
-      riskLevelTrends: 'medium',
-      // additionalMetrics: {
-      //   totalVolume: Math.round(totalVolume * 100) / 100,
-      //   averageStakeAmount: Math.round(averageStakeAmount * 100) / 100,
-      //   mostTradedSymbol,
-      //   bestPerformingTrade: Math.round(bestPerformingTrade * 100) / 100,
-      //   worstPerformingTrade: Math.round(worstPerformingTrade * 100) / 100,
-      //   totalTrades: allTrades.length,
-      // },
+      riskLevelTrends: treadingRisk,
     };
   }
 
@@ -520,7 +546,7 @@ export class TradesService {
       );
     }
 
-    // allow update
+    // check if trade is a draft before now
     await this.tradeRepo.update({ id }, { ...update });
     return { ...trade, ...update };
   }
@@ -638,28 +664,17 @@ export class TradesService {
   private filter(query: findManyTrade) {
     const filter: Record<string, any> = {};
 
-    if (query.creatorId) {
-      filter['creatorId'] = query.creatorId;
-    }
-
-    if (query.status) {
-      filter['status'] = query.status;
-    }
-
-    if (query.symbol) {
-      filter['symbol'] = query.symbol;
-    }
-
-    if (query.userId) {
-      filter['userId'] = query.userId;
-    }
-
-    if (query.type) {
-      filter['tradeType'] = { $eq: query.type };
-    }
-
-    if (query.draft) {
-      filter['draft'] = { $eq: query.draft };
+    if (query.creatorId) filter['creatorId'] = query.creatorId;
+    if (query.status) filter['status'] = query.status;
+    if (query.symbol) filter['symbol'] = query.symbol;
+    if (query.userId) filter['userId'] = query.userId;
+    if (query.type) filter['tradeType'] = { $eq: query.type };
+    if (query.asset) filter['asset'] = query.asset;
+    if (query.action) filter['action'] = query.action;
+    if (query.outcome) filter['outcome'] = query.outcome;
+    if (query.draft) filter['draft'] = { $eq: query.draft };
+    if (query.fromDate && query.toDate) {
+      filter['createdAt'] = { $between: [query.fromDate, query.toDate] };
     }
 
     return filter;

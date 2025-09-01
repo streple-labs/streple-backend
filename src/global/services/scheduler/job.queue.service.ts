@@ -9,8 +9,8 @@ export class JobQueueService {
   readonly jobQueue = defineQueue({
     connection: this.connection,
     timeout: 30 * 60 * 1000,
-    removeDoneJobsOlderThan: 7 * 24 * 60 * 60 * 1000,
-    removeFailedJobsOlderThan: 30 * 24 * 60 * 60 * 1000,
+    removeDoneJobsOlderThan: 1 * 24 * 60 * 60 * 1000,
+    removeFailedJobsOlderThan: 3 * 24 * 60 * 60 * 1000,
     logger: {
       info() {},
       error(message) {

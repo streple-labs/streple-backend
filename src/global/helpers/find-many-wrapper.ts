@@ -11,7 +11,27 @@ const operatorMap: Record<string, string> = {
   $in: 'IN',
   $nin: 'NOT IN',
   $between: 'BETWEEN',
+  $min: 'MIN',
+  $max: 'MAX',
+  $avg: 'AVG',
+  $sum: 'SUM',
 };
+
+export async function getAggregateValue(
+  connection: any,
+  tableName: string,
+  field: string,
+  aggregate: 'MIN' | 'MAX' | 'AVG' | 'SUM',
+): Promise<number> {
+  const result = await connection
+    .createQueryBuilder()
+    .select(`${aggregate}("${field}")`, 'value')
+    .from(tableName)
+    .getRawOne();
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return result.value;
+}
 
 // const logger = new Logger('FindManyWrapper');
 export function buildFindManyQuery<T extends ObjectLiteral>(
@@ -61,6 +81,10 @@ export function buildFindManyQuery<T extends ObjectLiteral>(
           }
         } else if (['IN', 'NOT IN'].includes(sqlOp)) {
           qb.andWhere(`${alias}.${field} ${sqlOp} (:...${dynamicParamKey})`, {
+            [dynamicParamKey]: opValue,
+          });
+        } else if (['MIN', 'MAX', 'AVG', 'SUM'].includes(sqlOp)) {
+          qb.andWhere(`${alias}.${field} = :${dynamicParamKey}`, {
             [dynamicParamKey]: opValue,
           });
         } else {

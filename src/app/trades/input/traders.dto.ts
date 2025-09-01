@@ -15,12 +15,14 @@ import {
 } from 'class-validator';
 import {
   action,
+  copiers,
   copyTrade,
   createTrade,
   duration,
   findManyTrade,
   findOneTrade,
   orderType,
+  outcome,
   positionSize,
   status,
   type,
@@ -90,8 +92,8 @@ export class CreateTrade implements createTrade {
   endDate: Date;
 
   @IsNumber()
-  @ApiProperty({ type: Number })
   @IsOptional()
+  @ApiProperty({ type: Number })
   @Transform(({ value }: { value: string | number }) =>
     typeof value === 'string' ? parseFloat(value) : value,
   )
@@ -143,7 +145,7 @@ export class UpdateTrade extends PartialType(CreateTrade) {}
 
 export class FindManyTrade extends FindMany implements findManyTrade {
   @IsOptional()
-  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @ApiPropertyOptional({ type: [String], format: 'uuid' })
   @IsString({ each: true })
   @IsUUID('all', { each: true })
   @Transform(({ value }: { value: transform }) =>
@@ -152,7 +154,7 @@ export class FindManyTrade extends FindMany implements findManyTrade {
   creatorId?: string[];
 
   @IsOptional()
-  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @ApiPropertyOptional({ type: [String], format: 'uuid' })
   @IsString({ each: true })
   @IsUUID('all', { each: true })
   @Transform(({ value }: { value: transform }) =>
@@ -161,7 +163,7 @@ export class FindManyTrade extends FindMany implements findManyTrade {
   userId?: string[];
 
   @IsOptional()
-  @ApiPropertyOptional({ type: String })
+  @ApiPropertyOptional({ type: [String] })
   @IsString({ each: true })
   @Transform(({ value }: { value: transform }) =>
     typeof value === 'string' ? [value] : value,
@@ -171,7 +173,10 @@ export class FindManyTrade extends FindMany implements findManyTrade {
   @IsOptional()
   @IsString({ each: true })
   @IsIn(Object.values(status), { each: true })
-  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
+  @ApiPropertyOptional({ type: [String], enum: Object.values(status) })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
   status?: status[];
 
   @IsOptional()
@@ -190,6 +195,55 @@ export class FindManyTrade extends FindMany implements findManyTrade {
     return value;
   })
   draft?: boolean;
+
+  @IsOptional()
+  @IsString({ each: true })
+  @IsIn(Object.values(action), { each: true })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  @ApiPropertyOptional({ type: [String], enum: Object.values(action) })
+  action?: action[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @IsIn(Object.values(status), { each: true })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  @ApiPropertyOptional({ type: [String] })
+  asset?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @IsIn(Object.values(outcome), { each: true })
+  @Transform(({ value }: { value: transform }) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  @ApiPropertyOptional({ type: [String], enum: Object.values(outcome) })
+  outcome?: outcome[];
+
+  @IsOptional()
+  @IsString()
+  @IsIn(Object.values(copiers))
+  @ApiPropertyOptional({ type: String, enum: Object.values(copiers) })
+  copiers?: copiers;
+
+  @IsDate()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Date })
+  @Transform(({ value }: { value: string | Date }) =>
+    typeof value === 'string' ? new Date(value) : value,
+  )
+  fromDate?: Date;
+
+  @IsDate()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Date })
+  @Transform(({ value }: { value: string | Date }) =>
+    typeof value === 'string' ? new Date(value) : value,
+  )
+  toDate?: Date;
 }
 
 export class FindOneTrade extends FindOne implements findOneTrade {
@@ -210,20 +264,61 @@ export class FindOneTrade extends FindOne implements findOneTrade {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
   @IsIn(Object.values(status))
+  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
   status?: status;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(Object.values(action))
+  @ApiPropertyOptional({ type: String, enum: Object.values(action) })
+  action?: action;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  asset?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(Object.values(outcome))
+  @ApiPropertyOptional({ type: String, enum: Object.values(outcome) })
+  outcome?: outcome;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(Object.values(copiers))
+  @ApiPropertyOptional({ type: String, enum: Object.values(copiers) })
+  copiers?: copiers;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ type: String, enum: Object.values(type) })
+  tradeType?: type;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ type: Boolean })
+  @Transform(({ value }: { value: string | boolean }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    if (value === 'yes') return true;
+    if (value === 'no') return false;
+    return value;
+  })
+  draft?: boolean;
 }
 
 export class CopyTrade implements copyTrade {
-  @IsString()
   @IsUUID()
+  @IsString()
   @ApiProperty({ type: String, format: 'uuid' })
   tradeId: string;
 }
 
 export class Parameter {
-  @IsString()
   @IsUUID()
+  @IsString()
+  @ApiProperty({ type: String, format: 'uuid' })
   tradeId: string;
 }

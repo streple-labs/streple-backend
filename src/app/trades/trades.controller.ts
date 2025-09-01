@@ -48,6 +48,15 @@ export class TradesController {
     return this.tradesService.findAll(query);
   }
 
+  @Get('user-trades')
+  @ApiOperation({ summary: 'Get all the trades' })
+  findAllTradePostedByCurrentUser(
+    @Query() query: FindManyTrade,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.tradesService.findAll({ ...query, userId: [user.id] });
+  }
+
   @Get('trade')
   @ApiOperation({ summary: 'Get single trade' })
   findOne(@Query() query: FindOneTrade) {

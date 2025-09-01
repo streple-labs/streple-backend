@@ -55,6 +55,11 @@ export enum orderType {
   limit = 'Limit Order',
 }
 
+export enum copiers {
+  most = 'most copied',
+  least = 'least copied',
+}
+
 export interface ITrades {
   id: string;
   asset: string;
@@ -120,6 +125,12 @@ export interface findManyTrade extends findMany {
   userId?: string[];
   symbol?: string[];
   status?: status[];
+  action?: action[];
+  asset?: string[];
+  outcome?: outcome[];
+  copiers?: copiers;
+  fromDate?: Date;
+  toDate?: Date;
   type?: type;
   draft?: boolean;
 }
@@ -137,6 +148,11 @@ export interface findOneTrade extends findOne {
   userId?: string;
   symbol?: string;
   status?: status;
+  action?: action;
+  asset?: string;
+  outcome?: outcome;
+  copiers?: copiers;
+  tradeType?: type;
   draft?: boolean;
 }
 

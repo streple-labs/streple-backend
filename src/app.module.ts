@@ -1,3 +1,4 @@
+import { BalanceModule } from '@app/balance/module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -12,13 +13,12 @@ import { CopyTradingModule } from './app/copy-trading/copy-trading.module';
 import { EmailCenterModule } from './app/email-center/email-center.module';
 import { GamifiedModule } from './app/gamified/gamified.module';
 import { LearninghubModule } from './app/learninghub/learninghub.module';
+import { TradesModule } from './app/trades/trades.module';
 import { UsersModule } from './app/users/users.module';
 import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
-import { TradesModule } from './app/trades/trades.module';
-import { BalanceModule } from '@app/balance/module';
 
 @Module({
   imports: [
