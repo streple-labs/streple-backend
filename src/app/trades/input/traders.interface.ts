@@ -119,7 +119,10 @@ export interface createTrade
   scheduleStartId?: number;
   scheduleEndId?: number;
 }
-export type updateTrade = Partial<Omit<ITrades, 'creator' | 'user'>>;
+export interface updateTrade
+  extends Partial<Omit<ITrades, 'creator' | 'user'>> {
+  endDate?: Date;
+}
 export interface findManyTrade extends findMany {
   creatorId?: string[];
   userId?: string[];

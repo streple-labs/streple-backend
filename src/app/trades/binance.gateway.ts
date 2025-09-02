@@ -1,16 +1,23 @@
-import * as WebSocket from 'ws';
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import * as WebSocket from 'ws';
 import { PriceCache } from './price-caches';
-import { PriceChecker } from './check.service';
+import { TradesService } from './services';
 
 @Injectable()
 export class BinanceGateway implements OnModuleInit {
   private ws: WebSocket;
-  private readonly symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT'];
+  private readonly symbols = [
+    'BTCUSDT',
+    'ETHUSDT',
+    'ADAUSDT',
+    'BNBUSDT',
+    'SOLUSDT',
+    'XRPUSDT',
+  ];
 
   constructor(
     private readonly priceCache: PriceCache,
-    private readonly priceChecker: PriceChecker,
+    private readonly tradeService: TradesService,
   ) {}
 
   onModuleInit() {
@@ -31,7 +38,7 @@ export class BinanceGateway implements OnModuleInit {
         if (shouldUpdate) {
           // Get all current prices and check trading conditions
           const currentPrices = this.priceCache.getAllPrices();
-          this.priceChecker.checkTradingConditions(currentPrices);
+          void this.tradeService.checkTradingConditions(currentPrices);
         }
       } catch (error) {
         console.error('Error processing message:', error);
@@ -39,8 +46,10 @@ export class BinanceGateway implements OnModuleInit {
     });
 
     this.ws.on('error', console.error);
-    this.ws.on('close', () => {
-      console.log('WebSocket closed, reconnecting...');
+    this.ws.on('close', (code, reason: Buffer) => {
+      console.log(
+        `WebSocket closed (${code}: ${reason.toString()}), reconnecting...`,
+      );
       setTimeout(() => this.onModuleInit(), 5000);
     });
   }

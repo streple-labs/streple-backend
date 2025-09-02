@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { defineWorker, Job as plainJob } from 'plainjob';
 import { JobQueueService } from './job.queue.service';
-import { TradesService } from '@app/trades/trades.service';
+import { TradesService } from '@app/trades/services';
 import { status } from '@app/trades/input';
 
 interface trade {
@@ -53,6 +53,10 @@ export class TradeJobWorker {
   scheduleTrade(data: trade, delay: number) {
     const JobId = this.jobQueueService.jobQueue.add(jobType, data, { delay });
     return JobId.id;
+  }
+
+  closeJob(jobId: number) {
+    return this.jobQueueService.jobQueue.markJobAsDone(jobId);
   }
 
   private async handleTrade(data: string | trade): Promise<void> {

@@ -14,8 +14,8 @@ import { EmailCenter, WaitList } from 'src/app/email-center/entities';
 import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
 import { User } from '@app/users/entity/user.entity';
 import { Privileges, RoleModel } from '@app/users/entity';
-import { Trades } from '@app/trades/entities/trader.entity';
 import { Balance, Transactions } from '@app/balance/entities';
+import { TradeActivityFeeds, Trades } from '@app/trades/entities';
 
 export default (): TypeOrmModuleOptions => ({
   type: process.env.DB_TYPE as 'postgres',
@@ -42,9 +42,13 @@ export default (): TypeOrmModuleOptions => ({
     Badge,
     UserBadge,
     Trades,
+    TradeActivityFeeds,
     Balance,
     Transactions,
   ],
-  ssl: process.env.NODE_ENV === 'development' ? false : { rejectUnauthorized: false}, // TODO
+  ssl:
+    process.env.NODE_ENV === 'development'
+      ? false
+      : { rejectUnauthorized: false }, // TODO
   synchronize: process.env.NODE_ENV === 'development', // TODO
 });

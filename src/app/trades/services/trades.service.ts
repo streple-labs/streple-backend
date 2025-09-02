@@ -22,9 +22,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import Big from 'big.js';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { Trades } from './entities/trader.entity';
+import { Trades } from '../entities/trader.entity';
 import {
   action,
   copiers,
@@ -45,10 +45,13 @@ import {
   type,
   updateParameter,
   updateTrade,
-} from './input';
+} from '../input';
+import { PriceCache } from '../price-caches';
+import { ActivityService } from './activity.service';
 
 @Injectable()
 export class TradesService {
+  private canQuery: boolean = true;
   constructor(
     @InjectRepository(Trades) private readonly tradeRepo: Repository<Trades>,
     @Inject(forwardRef(() => TradeJobWorker))
@@ -58,6 +61,8 @@ export class TradesService {
     @Inject(forwardRef(() => WebSocketService))
     private readonly wsGateway: WebSocketService,
     private readonly configService: ConfigService,
+    private readonly priceCache: PriceCache,
+    private readonly activityFeed: ActivityService,
   ) {}
 
   async create(create: createTrade, user: AuthUser): Promise<Trades> {
@@ -67,7 +72,7 @@ export class TradesService {
         asset: create.asset,
         creatorId: user.id,
         action: create.action,
-        status: Not(status.close),
+        status: Not(In([status.close, status.draft])),
       },
     });
 
@@ -78,18 +83,10 @@ export class TradesService {
     }
     const now = new Date();
     const symbol = create.asset.split('/')[0].toLowerCase();
+    const currentPrice = this.currentPrice(create.asset);
     const identifier = `${symbol}_${uuidv4()}`;
     const userId = user.id;
     const creatorId = user.id;
-
-    // get the current price from the internet
-    const info = await this.fetchPrice({
-      vs_currency: 'usd',
-      symbols: symbol,
-    });
-
-    const image = info[0]?.image || '';
-    const currentPrice = info[0]?.current_price ?? 0;
 
     // calculate the margin required using the following formular
     // leverage ratio: 1x,5x,10
@@ -97,10 +94,13 @@ export class TradesService {
     // marginRequired: capital user must have to open the trade
     // formula marginRequired = positionSize / leverageRatio
     create.entryPrice = create.entryPrice ?? currentPrice;
-    const margin = Big(create.positionSize.amount)
-      .times(Big(create.entryPrice))
-      .div(Big(create.leverage))
-      .toNumber();
+    const margin =
+      create.positionSize.amount > 0
+        ? Big(create.positionSize.amount)
+            .times(Big(create.entryPrice))
+            .div(Big(create.leverage))
+            .toNumber()
+        : 0;
 
     // TODO check if user have upto marginRequired in his/her trading fund
     // TODO return insufficient fund if the marginRequired is not less or equal the fund user have
@@ -124,25 +124,29 @@ export class TradesService {
       const delayStart = create.startDate.getTime() - Date.now();
       const delayEnd = create.expiresAt.getTime() - Date.now();
 
-      create.scheduleStartId = this.tradeJW.scheduleTrade(
-        { identifier, type: 'starting' },
-        delayStart,
-      );
+      if (!create.isDraft) {
+        create.scheduleStartId = this.tradeJW.scheduleTrade(
+          { identifier, type: 'starting' },
+          delayStart,
+        );
 
-      create.scheduleEndId = this.tradeJW.scheduleTrade(
-        { identifier, type: 'expiring' },
-        delayEnd,
-      );
+        create.scheduleEndId = this.tradeJW.scheduleTrade(
+          { identifier, type: 'expiring' },
+          delayEnd,
+        );
+      }
     } else {
       const ms = DURATION_MAP[create.duration];
       create.startDate = now;
       create.expiresAt = new Date(now.getTime() + ms);
 
       const delayEnd = create.expiresAt.getTime() - Date.now();
-      create.scheduleEndId = this.tradeJW.scheduleTrade(
-        { identifier, type: 'expiring' },
-        delayEnd,
-      );
+      if (!create.isDraft) {
+        create.scheduleEndId = this.tradeJW.scheduleTrade(
+          { identifier, type: 'expiring' },
+          delayEnd,
+        );
+      }
     }
 
     let tradeStatus: status;
@@ -159,7 +163,7 @@ export class TradesService {
       });
       tradeStatus = isOpen ? status.open : status.pending;
     }
-
+    this.canQuery = true;
     const riskLevel = this.calculateRisk(create.leverage);
 
     const { endDate, ...rest } = create;
@@ -168,7 +172,6 @@ export class TradesService {
       identifier,
       symbol,
       tradeType: type.original,
-      image,
       currentPrice,
       status: tradeStatus,
       userId,
@@ -179,47 +182,41 @@ export class TradesService {
 
     const newTrade = await this.tradeRepo.save(save);
     // broadcast to users on the pages
-    this.wsGateway.broadcast('newTrade', newTrade);
+    if (!create.isDraft) {
+      this.wsGateway.broadcast('newTrade', newTrade);
+    }
+    void this.activityFeed.create({
+      title: `Trade ${create.isDraft ? 'Drafted' : 'Published'} `,
+      message: `${create.asset} trade ${create.isDraft ? 'Drafted' : 'Published'} - Entry: ${create.entryPrice.toLocaleString()} | SL: ${create.stopLoss.toLocaleString()} | PT: ${create.takeProfit.toLocaleString()}`,
+      userId: user.id,
+    });
+
     return newTrade;
   }
 
   async copyTrade(dto: copyTrade, user: AuthUser): Promise<Trades> {
-    // find trade
-    const trade = await this.tradeRepo.findOne({ where: { id: dto.tradeId } });
-    if (!trade) {
-      throw new NotFoundException('Trade not found');
-    }
-
-    // Check if user already copied this trade (by identifier)
-    const isUserHaveSameTrade = await this.tradeRepo.findOne({
-      where: { identifier: trade.identifier, userId: user.id },
-    });
-
-    if (isUserHaveSameTrade) {
-      throw new ForbiddenException('Same trade already executed');
-    }
-
     // TODO Get the trade margin and check the user balance
     // TODO if the user balance is greater than the margin allow copy else throw insufficient balance error
-
-    // extract data
-    const info = await this.fetchPrice({
-      vs_currency: 'usd',
-      symbols: trade.symbol,
-    });
-
-    const currentPrice = info[0]?.current_price ?? 0;
-
     return this.tradeRepo.manager.transaction(async (manager) => {
       // Lock the original trade row for update
       const lockedTrade = await manager.findOne(Trades, {
-        where: { id: trade.id },
+        where: { id: dto.tradeId, status: Not(status.close) },
         lock: { mode: 'pessimistic_write' },
       });
 
       if (!lockedTrade) throw new NotFoundException('Trade not found');
 
-      if (trade.status === status.pending) {
+      // Check if user already copied this trade (by identifier)
+      const isUserHaveSameTrade = await this.tradeRepo.findOne({
+        where: { identifier: lockedTrade.identifier, userId: user.id },
+      });
+
+      if (isUserHaveSameTrade) {
+        throw new ForbiddenException('Same trade already executed');
+      }
+
+      const currentPrice = this.currentPrice(lockedTrade.asset);
+      if (lockedTrade.status === status.pending) {
         const isOpen = this.executeTrade({
           action: lockedTrade.action,
           currentPrice,
@@ -229,7 +226,9 @@ export class TradesService {
         lockedTrade.status = isOpen ? status.open : status.pending;
       }
 
-      lockedTrade.noOfCopiers = Big(trade.noOfCopiers).plus(Big(1)).toNumber();
+      lockedTrade.noOfCopiers = Big(lockedTrade.noOfCopiers)
+        .plus(Big(1))
+        .toNumber();
       const { id, userId, tradeType, ...rest } = lockedTrade;
 
       const save = manager.create(Trades, {
@@ -262,13 +261,7 @@ export class TradesService {
       throw new ForbiddenException('Trade not exist or Trade already close');
     }
 
-    // extract data
-    const info = await this.fetchPrice({
-      vs_currency: 'usd',
-      symbols: trade.symbol,
-    });
-
-    const currentPrice = info[0]?.current_price ?? 0;
+    const currentPrice = this.currentPrice(trade.asset);
 
     const { realizedPnL, outcome, tradeRoi } = this.calculateTradeResults(
       trade,
@@ -282,6 +275,11 @@ export class TradesService {
     trade.tradeRoi = tradeRoi;
 
     // TODO fund the user balance
+    void this.activityFeed.create({
+      title: 'Trade Closed',
+      message: `${trade.asset} trade closed at: ${trade.exitPrice.toLocaleString()} - ${trade.realizedPnl}% P&L`,
+      userId: user.id,
+    });
     return this.tradeRepo.save(trade);
   }
 
@@ -347,34 +345,65 @@ export class TradesService {
     });
   }
 
-  async findAllOpenTrade() {
-    const qb = this.tradeRepo
-      .createQueryBuilder('trade')
-      .select([
-        'trade.identifier',
-        'trade.symbol',
-        'entryMarket',
-        'stopLoss',
-        'takeProfit',
-      ])
-      .addSelect('COUNT(trade.id)', 'count')
-      .where('trade.status = :status', { status: status.open })
-      .groupBy('trade.identifier')
-      .addGroupBy('trade.symbol')
-      .addGroupBy('trade.entryMarket')
-      .addGroupBy('trade.stopLoss')
-      .addGroupBy('trade.takeProfit');
+  async checkTradingConditions(currentPrices: Record<string, number>) {
+    if (this.canQuery) {
+      const data = await this.findAllOpenTrade();
+      if (!data.length) return (this.canQuery = false);
 
-    const results = await qb.getRawMany();
+      data.forEach((user) => {
+        if (user.status === status.pending) {
+          void this.systemUpdate(
+            { identifier: user.identifier },
+            'starting',
+            {},
+          );
+        }
 
-    return results.map((row) => ({
-      identifier: row.trade_identifier,
-      symbol: row.trade_symbol,
-      entryMarket: row.trade_entryMarket,
-      stopLoss: row.trade_stopLoss,
-      takeProfit: row.trade_takeProfile,
-      count: Number(row.count),
-    }));
+        const currentPrice = this.currentPrice(user.asset);
+
+        // For BUY orders
+        if (user.action === action.buy) {
+          // Close if TP hit or SL hit
+          if (
+            Big(currentPrice).gte(Big(user.takeProfit)) ||
+            Big(currentPrice).lte(Big(user.stopLoss))
+          ) {
+            void this.systemUpdate(
+              { identifier: user.identifier },
+              'expiring',
+              {
+                status: status.close,
+              },
+            );
+            this.tradeJW.closeJob(user.endingId);
+            return;
+          }
+        }
+
+        // For SELL orders
+        if (user.action === action.sell) {
+          if (
+            Big(currentPrice).lte(Big(user.takeProfit)) ||
+            Big(currentPrice).gte(Big(user.stopLoss))
+          ) {
+            void this.systemUpdate(
+              { identifier: user.identifier },
+              'expiring',
+              {
+                status: status.close,
+              },
+            );
+            this.tradeJW.closeJob(user.endingId);
+            return;
+          }
+        }
+
+        // Only update open status if still open
+        void this.systemUpdate({ identifier: user.identifier }, 'expiring', {
+          status: status.open,
+        });
+      });
+    }
   }
 
   async findOne(query: findOneTrade): Promise<Document<Trades>> {
@@ -519,11 +548,13 @@ export class TradesService {
     };
   }
 
+  async dashboardTradingStats(user: AuthUser) {}
+
   async update(
     id: string,
     update: updateTrade,
     user: AuthUser,
-  ): Promise<ITrades> {
+  ): Promise<ITrades | null> {
     //first find the trader
     const trade = await this.tradeRepo.findOne({
       where: { id, creatorId: user.id },
@@ -545,9 +576,83 @@ export class TradesService {
         'Unable to edit, Trade have been copy by followers',
       );
     }
+    const now = new Date();
+    console.log(trade.asset);
+    const symbol = update.asset ?? trade.asset;
+    const DURATION_MAP = {
+      [duration.scalp]: 5 * 60 * 1000,
+      [duration.intraday]: 24 * 60 * 60 * 1000,
+      [duration.swing]: 7 * 24 * 60 * 60 * 1000,
+      [duration.position]: 30 * 24 * 60 * 60 * 1000,
+    };
 
+    // const info = await this.fetchPrice({
+    //   vs_currency: 'usd',
+    //   symbols: symbol,
+    // });
+
+    const currentPrice = this.currentPrice(symbol);
+    let tradeStatus: status = status.draft;
     // check if trade is a draft before now
-    await this.tradeRepo.update({ id }, { ...update });
+    if (!update.isDraft && trade.isDraft) {
+      if (update.duration === duration.custom) {
+        if (!update.startDate || !update.endDate) {
+          throw new ForbiddenException(
+            'Custom trade duration must provide startDate and endDate',
+          );
+        }
+        update.startDate = new Date(update.startDate);
+        update.expiresAt = new Date(update.endDate);
+
+        const delayStart = update.startDate.getTime() - Date.now();
+        const delayEnd = update.expiresAt.getTime() - Date.now();
+
+        update.scheduleStartId = this.tradeJW.scheduleTrade(
+          { identifier: trade.identifier, type: 'starting' },
+          delayStart,
+        );
+
+        update.scheduleEndId = this.tradeJW.scheduleTrade(
+          { identifier: trade.identifier, type: 'expiring' },
+          delayEnd,
+        );
+      } else {
+        type DurationKey = keyof typeof DURATION_MAP;
+        const duration = update.duration ?? trade.duration;
+        const ms = DURATION_MAP[duration as DurationKey];
+        update.startDate = now;
+        update.expiresAt = new Date(now.getTime() + ms);
+
+        const delayEnd = update.expiresAt.getTime() - Date.now();
+        update.scheduleEndId = this.tradeJW.scheduleTrade(
+          { identifier: trade.identifier, type: 'expiring' },
+          delayEnd,
+        );
+      }
+
+      if (update.isDraft) {
+        tradeStatus = status.draft;
+      } else if (
+        update.duration === duration.custom &&
+        update.startDate > now
+      ) {
+        tradeStatus = status.schedule;
+      } else {
+        const isOpen = this.executeTrade({
+          action: update.action || trade.action,
+          currentPrice,
+          entryPrice: update.entryPrice || trade.entryPrice,
+          orderType: update.orderType || trade.orderType,
+        });
+        tradeStatus = isOpen ? status.open : status.pending;
+      }
+    }
+    void this.activityFeed.create({
+      title: 'Trade Updated',
+      message: `Modified ${trade.asset} trade - New Stop Loss: ${trade.stopLoss.toLocaleString()}`,
+      userId: user.id,
+    });
+    await this.tradeRepo.update({ id }, { ...update, status: tradeStatus });
     return { ...trade, ...update };
   }
 
@@ -583,57 +688,120 @@ export class TradesService {
     type: 'starting' | 'expiring',
     updates: updateTrade,
   ): Promise<Trades | null> {
-    const findTrades = await this.tradeRepo.find({
-      where: { identifier: filter.identifier, status: Not(status.close) },
-    });
-
-    if (!findTrades.length) return null;
-
-    const trade = findTrades[0];
-    const info = await this.fetchPrice({
-      vs_currency: 'usd',
-      symbols: trade.symbol,
-    });
-
-    const currentPrice = info[0]?.current_price ?? 0;
-    if (type === 'starting') {
-      const isOpen = this.executeTrade({
-        action: trade.action,
-        currentPrice,
-        entryPrice: trade.entryPrice ?? trade.currentPrice,
-        orderType: trade.orderType,
+    return this.tradeRepo.manager.transaction(async (manager) => {
+      const lockedTrade = await manager.find(Trades, {
+        where: {
+          identifier: filter.identifier,
+          status: Not(status.close),
+        },
+        lock: { mode: 'pessimistic_write' },
       });
-      const statusTrade = isOpen ? status.open : status.pending;
 
-      updates.status = statusTrade;
-      updates.currentPrice = currentPrice;
+      if (!lockedTrade.length) return null;
+      const trade = lockedTrade[0];
+      const currentPrice = this.currentPrice(trade.asset);
 
-      await this.tradeRepo.update(
-        { identifier: filter.identifier },
-        { ...updates },
-      );
-      return trade;
-    }
+      if (type === 'starting') {
+        const isOpen = this.executeTrade({
+          action: trade.action,
+          currentPrice,
+          entryPrice: trade.entryPrice ?? trade.currentPrice,
+          orderType: trade.orderType,
+        });
 
-    if (type === 'expiring') {
-      const { outcome, tradeRoi, realizedPnL } = this.calculateTradeResults(
-        trade,
-        currentPrice,
-      );
+        const statusTrade = isOpen ? status.open : status.pending;
 
-      updates.status = status.close;
-      updates.outcome = outcome;
-      updates.realizedPnl = realizedPnL;
-      updates.tradeRoi = tradeRoi;
-      updates.exitPrice = currentPrice;
+        updates.status = statusTrade;
+        updates.currentPrice = currentPrice;
 
-      await this.tradeRepo.update(
-        { identifier: filter.identifier },
-        { ...updates },
-      );
-      return trade;
-    }
-    return null;
+        await manager.update(
+          Trades,
+          { identifier: filter.identifier, status: Not(status.close) },
+          { ...updates },
+        );
+        void this.activityFeed.create({
+          title: 'Trade Updated',
+          message: `${trade.asset} trade hit the market at: ${trade.entryPrice.toLocaleString()}`,
+          userId: trade.creatorId,
+        });
+        return trade;
+      }
+
+      if (type === 'expiring') {
+        const { outcome, tradeRoi, realizedPnL } = this.calculateTradeResults(
+          trade,
+          currentPrice,
+        );
+
+        updates.outcome = outcome;
+        updates.realizedPnl = realizedPnL;
+        updates.tradeRoi = tradeRoi;
+        updates.exitPrice = currentPrice;
+
+        await manager.update(
+          Trades,
+          { identifier: filter.identifier, status: Not(status.close) },
+          { ...updates },
+        );
+
+        if (updates.status === status.close) {
+          void this.activityFeed.create({
+            title: 'Trade Closed',
+            message: `${trade.asset} trade closed at: ${updates.exitPrice.toLocaleString()} - ${updates.realizedPnl}% P&L`,
+            userId: trade.creatorId,
+          });
+        }
+        return trade;
+      }
+      return null;
+    });
+  }
+
+  private async findAllOpenTrade() {
+    const qb = this.tradeRepo
+      .createQueryBuilder('trade')
+      .select([
+        'trade.identifier',
+        'trade.asset',
+        'trade.entryPrice',
+        'trade.stopLoss',
+        'trade.takeProfit',
+        'trade.status',
+        'trade.orderType',
+        'trade.action',
+        'trade.scheduleEndId',
+        'trade.scheduleStartId',
+      ])
+      .addSelect('COUNT(trade.id)', 'count')
+      .where('trade.status IN (:...status)', {
+        status: [status.open, status.pending],
+      })
+      .groupBy('trade.identifier')
+      .addGroupBy('trade.asset')
+      .addGroupBy('trade.entryPrice')
+      .addGroupBy('trade.stopLoss')
+      .addGroupBy('trade.takeProfit')
+      .addGroupBy('trade.status')
+      .addGroupBy('trade.orderType')
+      .addGroupBy('trade.action')
+      .addGroupBy('trade.scheduleEndId')
+      .addGroupBy('trade.scheduleStartId');
+
+    const results = await qb.getRawMany();
+
+    return results.map((row) => ({
+      identifier: row.trade_identifier,
+      asset: row.trade_asset,
+      entryPrice: row.trade_entryPrice,
+      stopLoss: row.trade_stopLoss,
+      takeProfit: row.trade_takeProfit,
+      status: row.trade_status,
+      orderType: row.trade_orderType,
+      action: row.trade_action,
+      startingId: row.trade_scheduleStartId,
+      endingId: row.trade_scheduleEndId,
+      count: Number(row.count),
+    }));
   }
 
   private executeTrade(data: executeTrade) {
@@ -694,10 +862,10 @@ export class TradesService {
         .toNumber();
     }
 
-    const roi = Big(realizedPnL)
-      .div(Big(trade.margin))
-      .times(Big(100))
-      .toNumber();
+    const roi =
+      realizedPnL > 0
+        ? Big(realizedPnL).div(Big(trade.margin)).times(Big(100)).toNumber()
+        : 0;
 
     const tradeOutcome =
       realizedPnL > 0
@@ -736,5 +904,11 @@ export class TradesService {
       // skip undefined/null
     });
     return searchParams;
+  }
+
+  private currentPrice(asset: string): number {
+    const part1 = asset.split('/')[0];
+    const sym = `${part1}USDT`;
+    return this.priceCache.getPrice(sym) || 0;
   }
 }

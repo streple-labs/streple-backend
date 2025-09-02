@@ -6,22 +6,19 @@ import { DiscoveryModule } from '@nestjs/core';
 import { BlogManagerModule } from 'src/app/blog-manager/blog-manager.module';
 import { EmailCenterModule } from 'src/app/email-center/email-center.module';
 import {
-  BinanceGateway,
   BlogJobWorker,
   EmailJobWorker,
   FileProcessorService,
   HtmlChunkerService,
   HttpClientService,
   MailService,
-  PriceBatcherService,
-  PriceCache,
   SanitizeService,
   SchedulerService,
   TradeJobWorker,
   UploadService,
   WebSocketService,
 } from './services';
-import { PriceChecker } from './services/price-fetcher/check.service';
+
 @Global()
 @Module({
   imports: [
@@ -49,10 +46,6 @@ import { PriceChecker } from './services/price-fetcher/check.service';
     HtmlChunkerService,
     HttpClientService,
     WebSocketService,
-    PriceCache,
-    PriceBatcherService,
-    BinanceGateway,
-    PriceChecker,
   ],
   exports: [
     MailService,
@@ -65,9 +58,6 @@ import { PriceChecker } from './services/price-fetcher/check.service';
     TradeJobWorker,
     HttpClientService,
     WebSocketService,
-    PriceCache,
-    PriceBatcherService,
-    BinanceGateway,
   ],
 })
 export class GlobalModule {}

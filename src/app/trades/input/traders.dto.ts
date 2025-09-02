@@ -207,7 +207,6 @@ export class FindManyTrade extends FindMany implements findManyTrade {
 
   @IsOptional()
   @IsString({ each: true })
-  @IsIn(Object.values(status), { each: true })
   @Transform(({ value }: { value: transform }) =>
     typeof value === 'string' ? [value] : value,
   )

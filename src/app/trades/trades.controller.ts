@@ -21,11 +21,12 @@ import {
 import {
   CopyTrade,
   CreateTrade,
+  FindManyActivity,
   FindManyTrade,
   FindOneTrade,
   UpdateTrade,
 } from './input';
-import { TradesService } from './trades.service';
+import { ActivityService, TradesService } from './services';
 
 @Controller({
   version: VERSION_NEUTRAL,
@@ -33,7 +34,10 @@ import { TradesService } from './trades.service';
 @ApiTags('TRADES')
 @ApiBearerAuth()
 export class TradesController {
-  constructor(private readonly tradesService: TradesService) {}
+  constructor(
+    private readonly tradesService: TradesService,
+    private readonly activity: ActivityService,
+  ) {}
 
   @Post('trade')
   @ApiOperation({ summary: 'Create new trade' })
@@ -55,6 +59,12 @@ export class TradesController {
     @SessionUser() user: AuthUser,
   ) {
     return this.tradesService.findAll({ ...query, userId: [user.id] });
+  }
+
+  @Get('activities')
+  @ApiOperation({ summary: 'Find users Activities' })
+  ActivityFeeds(@Query() query: FindManyActivity) {
+    return this.activity.findMany(query);
   }
 
   @Get('trade')
@@ -82,7 +92,7 @@ export class TradesController {
     return this.tradesService.getTokenNames();
   }
 
-  @Get('cancel-trade/:id')
+  @Get('cancel-trade/:tradeId')
   @ApiOperation({ summary: 'Cancel on going trade' })
   @ApiParam({
     type: String,
@@ -97,7 +107,7 @@ export class TradesController {
     return this.tradesService.cancelTrade(tradeId, user);
   }
 
-  @Patch('trade/:id')
+  @Patch('trade/:tradeId')
   @ApiOperation({ summary: 'Update un-start trade' })
   @ApiParam({
     type: String,
@@ -114,7 +124,7 @@ export class TradesController {
     return this.tradesService.update(tradeId, updateTrade, user);
   }
 
-  @Delete('trade/:id')
+  @Delete('trade/:tradeId')
   @ApiOperation({ summary: 'Delete Trade' })
   @ApiParam({
     type: String,
