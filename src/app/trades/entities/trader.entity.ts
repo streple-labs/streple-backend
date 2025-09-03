@@ -28,12 +28,14 @@ export class Trades implements ITrades {
   @ManyToOne(() => User, (u) => u.id)
   user: User;
 
+  @Index()
   @Column({ type: 'uuid', nullable: false })
   userId: string;
 
   @ManyToOne(() => User, (u) => u.id)
   creator: User;
 
+  @Index()
   @Column({ type: 'uuid', nullable: false })
   creatorId: string;
 

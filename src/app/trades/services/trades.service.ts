@@ -47,7 +47,7 @@ import {
   updateTrade,
 } from '../input';
 import { PriceCache } from '../price-caches';
-import { ActivityService } from './activity.service';
+import { ActivityService } from './trade.community.service';
 
 @Injectable()
 export class TradesService {
@@ -426,7 +426,7 @@ export class TradesService {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // Base query for 90 days
+    // Base query
     const baseQuery = this.tradeRepo
       .createQueryBuilder('trade')
       .where('trade.creatorId = :userId', { userId });

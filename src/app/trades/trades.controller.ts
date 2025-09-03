@@ -1,4 +1,4 @@
-import { AuthUser } from '@app/common';
+import { AuthUser, FindMany } from '@app/common';
 import { SessionUser } from '@app/decorators';
 import {
   Body,
@@ -20,10 +20,14 @@ import {
 } from '@nestjs/swagger';
 import {
   CopyTrade,
+  CreateFollower,
   CreateTrade,
+  Curve,
+  FilterWithUserId,
   FindManyActivity,
   FindManyTrade,
   FindOneTrade,
+  ProfilePerformance,
   UpdateTrade,
 } from './input';
 import { ActivityService, TradesService } from './services';
@@ -59,12 +63,6 @@ export class TradesController {
     @SessionUser() user: AuthUser,
   ) {
     return this.tradesService.findAll({ ...query, userId: [user.id] });
-  }
-
-  @Get('activities')
-  @ApiOperation({ summary: 'Find users Activities' })
-  ActivityFeeds(@Query() query: FindManyActivity) {
-    return this.activity.findMany(query);
   }
 
   @Get('trade')
@@ -134,5 +132,49 @@ export class TradesController {
   })
   remove(@Param('tradeId') tradeId: string, @SessionUser() user: AuthUser) {
     return this.tradesService.remove(tradeId, user);
+  }
+
+  @Get('activities')
+  @ApiOperation({ summary: 'Find users Activities' })
+  ActivityFeeds(@Query() query: FindManyActivity) {
+    return this.activity.findMany(query);
+  }
+
+  @Post('followTrader')
+  @ApiOperation({ summary: 'Follow a trader' })
+  @ApiBody({ type: CreateFollower })
+  followTrader(@Body() body: CreateFollower, @SessionUser() user: AuthUser) {
+    return this.activity.followTrader(body, user);
+  }
+
+  @Get('traders')
+  @ApiOperation({ summary: 'Find all traders' })
+  findAllTraders(@Query() query: FindMany) {
+    return this.activity.allTraders(query);
+  }
+
+  @Get('trade-profile-stats/:traderId')
+  @ApiOperation({ summary: 'Get trader profile stats' })
+  @ApiParam({ required: true, name: 'traderId', type: String, format: 'uuid' })
+  getTraderStats(@Param() param: FilterWithUserId) {
+    return this.activity.tradeProfileStats(param.traderId);
+  }
+
+  @Get('trade-profile-performance')
+  @ApiOperation({ summary: 'Get trader performances' })
+  profilePerformance(@Query() query: ProfilePerformance) {
+    return this.activity.profitPerformance(query.period, query.userId);
+  }
+
+  @Get('drawdown-curve')
+  @ApiOperation({ summary: 'Get the drawdown curve' })
+  drawdownCurve(@Query() query: Curve) {
+    return this.activity.drawdownCurve(query.period, query.userId);
+  }
+
+  @Get('performance-curve')
+  @ApiOperation({ summary: 'Get the performance curve' })
+  performanceCurve(@Query() query: Curve) {
+    return this.activity.performanceCurve(query.period, query.userId);
   }
 }

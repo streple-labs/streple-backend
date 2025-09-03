@@ -1,2 +1,2 @@
 export * from './trades.service';
-export * from './activity.service';
+export * from './trade.community.service';

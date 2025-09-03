@@ -393,6 +393,10 @@ export class UsersService {
       where['type'] = query.type;
     }
 
+    if (query.roleName) {
+      where['role'] = query.roleName;
+    }
+
     return where;
   }
 
