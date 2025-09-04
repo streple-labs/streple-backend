@@ -7,11 +7,7 @@ import {
   FindOneWrapper,
   getAggregateValue,
 } from '@app/helpers';
-import {
-  HttpClientService,
-  TradeJobWorker,
-  WebSocketService,
-} from '@app/services';
+import { HttpClientService, TradeJobWorker } from '@app/services';
 import {
   ForbiddenException,
   forwardRef,
@@ -24,6 +20,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import Big from 'big.js';
 import { In, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import { FollowTraders } from '../entities';
 import { Trades } from '../entities/trader.entity';
 import {
   action,
@@ -48,8 +45,6 @@ import {
 } from '../input';
 import { PriceCache } from '../price-caches';
 import { ActivityService } from './trade.community.service';
-import { FollowTraders } from '../entities';
-import pLimit from 'p-limit';
 
 @Injectable()
 export class TradesService {
@@ -62,8 +57,6 @@ export class TradesService {
     private readonly tradeJW: TradeJobWorker,
     @Inject(forwardRef(() => HttpClientService))
     private readonly httpClient: HttpClientService,
-    @Inject(forwardRef(() => WebSocketService))
-    private readonly wsGateway: WebSocketService,
     private readonly configService: ConfigService,
     private readonly priceCache: PriceCache,
     private readonly activityFeed: ActivityService,
@@ -187,7 +180,10 @@ export class TradesService {
     const newTrade = await this.tradeRepo.save(save);
     // broadcast to users on the pages
     if (!create.isDraft) {
-      this.wsGateway.broadcast('newTrade', newTrade);
+      this.tradeJW.scheduleCopyTrade({
+        tradeId: newTrade.id,
+        creatorId: user.id,
+      });
     }
     void this.activityFeed.create({
       title: `Trade ${create.isDraft ? 'Drafted' : 'Published'} `,
@@ -195,10 +191,6 @@ export class TradesService {
       userId: user.id,
     });
 
-    this.tradeJW.scheduleCopyTrade({
-      tradeId: newTrade.id,
-      creatorId: user.id,
-    });
     return newTrade;
   }
 
@@ -714,7 +706,6 @@ export class TradesService {
     if (!followers.length) return { total: 0, copied: 0, skipped: 0 };
 
     const userIds = followers.map((f) => f.followerId);
-
     // Get the trade (skip if not available)
     const trade = await this.tradeRepo.findOne({
       where: { id: dto.tradeId, status: Not(In([status.close, status.draft])) },

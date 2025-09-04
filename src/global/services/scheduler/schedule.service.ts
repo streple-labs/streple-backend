@@ -26,6 +26,11 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       console.error('Trade Worker failed', err);
       process.exit(1);
     });
+
+    this.tradeJobWorker.startCopyTrading().catch((err) => {
+      console.error('Copy Trade Worker failed', err);
+      process.exit(1);
+    });
   }
 
   onModuleDestroy() {
@@ -39,8 +44,13 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       process.exit(1);
     });
 
-    this.tradeJobWorker.start().catch((err) => {
+    this.tradeJobWorker.stop().catch((err) => {
       console.error('Trade Worker failed', err);
+      process.exit(1);
+    });
+
+    this.tradeJobWorker.stopCopyTrading().catch((err) => {
+      console.error('Copy Trade Worker failed', err);
       process.exit(1);
     });
   }

@@ -76,11 +76,18 @@ export class TradeJobWorker {
 
   async start() {
     await this.trading.start();
+  }
+
+  async startCopyTrading() {
     await this.copyTrades.start();
   }
 
   async stop() {
     await this.trading.stop();
+    this.jobQueueService.jobQueue.close();
+  }
+
+  async stopCopyTrading() {
     await this.copyTrades.stop();
     this.jobQueueService.jobQueue.close();
   }
@@ -91,7 +98,8 @@ export class TradeJobWorker {
   }
 
   scheduleCopyTrade(data: copyTrade) {
-    return this.jobQueueService.jobQueue.add(trading, data);
+    const jobId = this.jobQueueService.jobQueue.add(copyTrade, data);
+    return jobId;
   }
 
   closeJob(jobId: number) {
