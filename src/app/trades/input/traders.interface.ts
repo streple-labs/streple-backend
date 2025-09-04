@@ -127,7 +127,7 @@ export interface findManyTrade extends findMany {
   creatorId?: string[];
   userId?: string[];
   symbol?: string[];
-  status?: status[];
+  status?: status;
   action?: action[];
   asset?: string[];
   outcome?: outcome[];
@@ -143,7 +143,8 @@ export interface updateParameter {
   id?: string;
 }
 export interface copyTrade {
-  tradeId: string;
+  tradeId?: string;
+  creatorId: string;
 }
 
 export interface findOneTrade extends findOne {

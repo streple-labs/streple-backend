@@ -171,13 +171,10 @@ export class FindManyTrade extends FindMany implements findManyTrade {
   symbol?: string[];
 
   @IsOptional()
-  @IsString({ each: true })
-  @IsIn(Object.values(status), { each: true })
-  @ApiPropertyOptional({ type: [String], enum: Object.values(status) })
-  @Transform(({ value }: { value: transform }) =>
-    typeof value === 'string' ? [value] : value,
-  )
-  status?: status[];
+  @IsString()
+  @IsIn(Object.values(status))
+  @ApiPropertyOptional({ type: String, enum: Object.values(status) })
+  status?: status;
 
   @IsOptional()
   @IsString()
@@ -311,8 +308,15 @@ export class FindOneTrade extends FindOne implements findOneTrade {
 export class CopyTrade implements copyTrade {
   @IsUUID()
   @IsString()
-  @ApiProperty({ type: String, format: 'uuid' })
-  tradeId: string;
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  tradeId?: string;
+
+  @IsUUID()
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  creatorId: string;
 }
 
 export class Parameter {

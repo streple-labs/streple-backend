@@ -2,7 +2,13 @@ import { AuthUser, DocumentResult, findMany } from '@app/common';
 import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
 import { Role } from '@app/users/interface';
 import { UsersService } from '@app/users/service';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays, format, isWithinInterval, subDays } from 'date-fns';
 import { Repository } from 'typeorm';
@@ -34,7 +40,29 @@ export class ActivityService {
     return this.activityRepo.save(this.activityRepo.create(create));
   }
 
-  followTrader(data: createFollower, user: AuthUser): Promise<FollowTraders> {
+  async followTrader(
+    data: createFollower,
+    user: AuthUser,
+  ): Promise<FollowTraders> {
+    const trader = await this.userService.findOne({ id: data.followingId });
+    if (!trader.data) {
+      throw new NotFoundException('User with given id not found');
+    }
+
+    if (trader.data.role !== Role.pro) {
+      throw new ForbiddenException('You can only follow pro traders');
+    }
+
+    const alreadyFollowing = await this.followTrade.findOne({
+      where: {
+        followerId: user.id,
+        followingId: data.followingId,
+      },
+    });
+
+    if (alreadyFollowing) {
+      throw new ForbiddenException('You already follow this Pro trader');
+    }
     return this.followTrade.save(
       this.followTrade.create({
         followerId: user.id,

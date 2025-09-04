@@ -3,6 +3,7 @@ import { Role } from '@app/users/interface';
 import { UsersService } from '@app/users/service';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -39,15 +40,15 @@ export class AuthService {
   async userLogin(dto: LoginDto) {
     const user = await this.users.login(dto.email);
     if (!user || !(await user.validatePassword(dto.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new ForbiddenException('Invalid credentials');
     }
 
     if (!user.isVerified) {
-      throw new UnauthorizedException('Email not verified');
+      throw new ForbiddenException('Email not verified');
     }
 
     if (![Role.follower].includes(user.role)) {
-      throw new UnauthorizedException('access denied users only');
+      throw new ForbiddenException('access denied users only');
     }
 
     const payload = {
@@ -72,11 +73,11 @@ export class AuthService {
   async adminLogin(dto: LoginDto) {
     const user = await this.users.login(dto.email);
     if (!user || !(await user.validatePassword(dto.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new ForbiddenException('Invalid credentials');
     }
 
     if (!user.isVerified) {
-      throw new UnauthorizedException('Email not verified');
+      throw new ForbiddenException('Email not verified');
     }
 
     if (
@@ -88,7 +89,7 @@ export class AuthService {
         Role.pro,
       ].includes(user.role)
     ) {
-      throw new UnauthorizedException('Access denied');
+      throw new ForbiddenException('Access denied');
     }
     const payload = {
       id: user.id,

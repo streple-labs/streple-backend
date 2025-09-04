@@ -48,12 +48,16 @@ import {
 } from '../input';
 import { PriceCache } from '../price-caches';
 import { ActivityService } from './trade.community.service';
+import { FollowTraders } from '../entities';
+import pLimit from 'p-limit';
 
 @Injectable()
 export class TradesService {
   private canQuery: boolean = true;
   constructor(
     @InjectRepository(Trades) private readonly tradeRepo: Repository<Trades>,
+    @InjectRepository(FollowTraders)
+    private readonly follower: Repository<FollowTraders>,
     @Inject(forwardRef(() => TradeJobWorker))
     private readonly tradeJW: TradeJobWorker,
     @Inject(forwardRef(() => HttpClientService))
@@ -191,66 +195,11 @@ export class TradesService {
       userId: user.id,
     });
 
-    return newTrade;
-  }
-
-  async copyTrade(dto: copyTrade, user: AuthUser): Promise<Trades> {
-    // TODO Get the trade margin and check the user balance
-    // TODO if the user balance is greater than the margin allow copy else throw insufficient balance error
-    return this.tradeRepo.manager.transaction(async (manager) => {
-      // Lock the original trade row for update
-      const lockedTrade = await manager.findOne(Trades, {
-        where: { id: dto.tradeId, status: Not(status.close) },
-        lock: { mode: 'pessimistic_write' },
-      });
-
-      if (!lockedTrade) throw new NotFoundException('Trade not found');
-
-      // Check if user already copied this trade (by identifier)
-      const isUserHaveSameTrade = await this.tradeRepo.findOne({
-        where: { identifier: lockedTrade.identifier, userId: user.id },
-      });
-
-      if (isUserHaveSameTrade) {
-        throw new ForbiddenException('Same trade already executed');
-      }
-
-      const currentPrice = this.currentPrice(lockedTrade.asset);
-      if (lockedTrade.status === status.pending) {
-        const isOpen = this.executeTrade({
-          action: lockedTrade.action,
-          currentPrice,
-          entryPrice: lockedTrade.entryPrice,
-          orderType: lockedTrade.orderType,
-        });
-        lockedTrade.status = isOpen ? status.open : status.pending;
-      }
-
-      lockedTrade.noOfCopiers = Big(lockedTrade.noOfCopiers)
-        .plus(Big(1))
-        .toNumber();
-      const { id, userId, tradeType, ...rest } = lockedTrade;
-
-      const save = manager.create(Trades, {
-        ...rest,
-        userId: user.id,
-        currentPrice,
-        tradeType: type.copy,
-      });
-
-      const newTrade = await manager.save(save);
-      await manager.update(
-        Trades,
-        { identifier: lockedTrade.identifier },
-        {
-          currentPrice,
-          noOfCopiers: lockedTrade.noOfCopiers,
-          status: lockedTrade.status,
-        },
-      );
-
-      return newTrade;
+    this.tradeJW.scheduleCopyTrade({
+      tradeId: newTrade.id,
+      creatorId: user.id,
     });
+    return newTrade;
   }
 
   async cancelTrade(tradeId: string, user: AuthUser): Promise<ITrades> {
@@ -548,8 +497,6 @@ export class TradesService {
     };
   }
 
-  async dashboardTradingStats(user: AuthUser) {}
-
   async update(
     id: string,
     update: updateTrade,
@@ -557,15 +504,12 @@ export class TradesService {
   ): Promise<ITrades | null> {
     //first find the trader
     const trade = await this.tradeRepo.findOne({
-      where: { id, creatorId: user.id },
+      where: { id, creatorId: user.id, status: Not(status.close) },
     });
     if (!trade) {
       throw new NotFoundException('Trade not found');
     }
 
-    if (trade.status === status.close) {
-      throw new ForbiddenException('Unable to update trade close');
-    }
     // check if the trade as not be copy by anybody
     const ableToEdit = await this.tradeRepo.find({
       where: { identifier: trade.identifier },
@@ -573,11 +517,10 @@ export class TradesService {
 
     if (ableToEdit.length >= 2) {
       throw new ForbiddenException(
-        'Unable to edit, Trade have been copy by followers',
+        'Trade cannot be edited after it has been copied by followers',
       );
     }
     const now = new Date();
-    console.log(trade.asset);
     const symbol = update.asset ?? trade.asset;
     const DURATION_MAP = {
       [duration.scalp]: 5 * 60 * 1000,
@@ -653,6 +596,12 @@ export class TradesService {
       userId: user.id,
     });
     await this.tradeRepo.update({ id }, { ...update, status: tradeStatus });
+    if (!update.isDraft && trade.isDraft) {
+      this.tradeJW.scheduleCopyTrade({
+        tradeId: id,
+        creatorId: trade.creatorId,
+      });
+    }
     return { ...trade, ...update };
   }
 
@@ -757,6 +706,126 @@ export class TradesService {
     });
   }
 
+  async copyTradeBatch(dto: copyTrade) {
+    const followers = await this.follower.find({
+      where: { followingId: dto.creatorId },
+      select: ['followerId'],
+    });
+    if (!followers.length) return { total: 0, copied: 0, skipped: 0 };
+
+    const userIds = followers.map((f) => f.followerId);
+
+    // Get the trade (skip if not available)
+    const trade = await this.tradeRepo.findOne({
+      where: { id: dto.tradeId, status: Not(In([status.close, status.draft])) },
+    });
+    if (!trade) {
+      return { total: userIds.length, copied: 0, skipped: userIds.length };
+    }
+
+    // Get a set of users who already copied this trade
+    const existingCopies = await this.tradeRepo.find({
+      where: { identifier: trade.identifier, userId: In(userIds) },
+      select: ['userId'],
+    });
+    const copiedUserIds = new Set(existingCopies.map((t) => t.userId));
+
+    const usersToCopy = userIds.filter((uid) => !copiedUserIds.has(uid));
+
+    // TODO Check if user have the margin required
+    const tradesToInsert = usersToCopy.map((userId) => {
+      const { user, creator, id, createdAt, updatedAt, ...rest } = trade;
+      return {
+        ...rest,
+        userId,
+        tradeType: type.copy,
+      };
+    });
+
+    // const concurrency = 100;
+    // const limit = pLimit(concurrency);
+    // For *many thousands* (beyond 10k-100k) you may need to batch further (say, 1000 at a time), but for 100 or a few hundred, you’re absolutely within normal DB practice.
+    if (tradesToInsert.length > 0) {
+      await this.tradeRepo
+        .createQueryBuilder()
+        .insert()
+        .into(Trades)
+        .values(tradesToInsert)
+        .orIgnore()
+        .execute();
+    }
+
+    await this.tradeRepo.update(
+      { identifier: trade.identifier },
+      { noOfCopiers: () => `noOfCopiers + ${usersToCopy.length}` },
+    );
+
+    return {
+      total: userIds.length,
+      copied: usersToCopy.length,
+      skipped: copiedUserIds.size,
+    };
+  }
+
+  // async copyTrade(dto: copyTrade, user: AuthUser): Promise<Trades> {
+  //   // TODO Get the trade margin and check the user balance
+  //   // TODO if the user balance is greater than the margin allow copy else throw insufficient balance error
+  //   return this.tradeRepo.manager.transaction(async (manager) => {
+  //     // Lock the original trade row for update
+  //     const lockedTrade = await manager.findOne(Trades, {
+  //       where: { id: dto.tradeId, status: Not(status.close) },
+  //       lock: { mode: 'pessimistic_write' },
+  //     });
+
+  //     if (!lockedTrade) throw new NotFoundException('Trade not found');
+
+  //     // Check if user already copied this trade (by identifier)
+  //     const isUserHaveSameTrade = await this.tradeRepo.findOne({
+  //       where: { identifier: lockedTrade.identifier, userId: user.id },
+  //     });
+
+  //     if (isUserHaveSameTrade) {
+  //       throw new ForbiddenException('Same trade already executed');
+  //     }
+
+  //     const currentPrice = this.currentPrice(lockedTrade.asset);
+  //     if (lockedTrade.status === status.pending) {
+  //       const isOpen = this.executeTrade({
+  //         action: lockedTrade.action,
+  //         currentPrice,
+  //         entryPrice: lockedTrade.entryPrice,
+  //         orderType: lockedTrade.orderType,
+  //       });
+  //       lockedTrade.status = isOpen ? status.open : status.pending;
+  //     }
+
+  //     lockedTrade.noOfCopiers = Big(lockedTrade.noOfCopiers)
+  //       .plus(Big(1))
+  //       .toNumber();
+  //     const { id, userId, tradeType, ...rest } = lockedTrade;
+
+  //     const save = manager.create(Trades, {
+  //       ...rest,
+  //       userId: user.id,
+  //       currentPrice,
+  //       tradeType: type.copy,
+  //     });
+
+  //     const newTrade = await manager.save(save);
+  //     await manager.update(
+  //       Trades,
+  //       { identifier: lockedTrade.identifier },
+  //       {
+  //         currentPrice,
+  //         noOfCopiers: lockedTrade.noOfCopiers,
+  //         status: lockedTrade.status,
+  //       },
+  //     );
+
+  //     return newTrade;
+  //   });
+  // }
+
   private async findAllOpenTrade() {
     const qb = this.tradeRepo
       .createQueryBuilder('trade')
@@ -833,7 +902,7 @@ export class TradesService {
     const filter: Record<string, any> = {};
 
     if (query.creatorId) filter['creatorId'] = query.creatorId;
-    if (query.status) filter['status'] = query.status;
+    if (query.status) filter['status'] = { $eq: query.status };
     if (query.symbol) filter['symbol'] = query.symbol;
     if (query.userId) filter['userId'] = query.userId;
     if (query.type) filter['tradeType'] = { $eq: query.type };

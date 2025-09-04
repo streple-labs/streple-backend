@@ -13,15 +13,25 @@ type Job = plainJob & {
   data: trade;
 };
 
-const jobType = 'trades';
+interface copyTrade {
+  tradeId: string;
+  creatorId: string;
+}
+
+type CopyJob = plainJob & {
+  data: copyTrade;
+};
+
+const trading = 'trades';
+const copyTrade = 'copyTrades';
 
 @Injectable()
 export class TradeJobWorker {
   private readonly jobQueueService = new JobQueueService();
   constructor(private readonly tradeService: TradesService) {}
 
-  private readonly worker = defineWorker(
-    jobType,
+  private readonly trading = defineWorker(
+    trading,
     async (job: Job) => {
       await this.handleTrade(job.data);
     },
@@ -42,21 +52,61 @@ export class TradeJobWorker {
     },
   );
 
+  private readonly copyTrades = defineWorker(
+    copyTrade,
+    async (job: CopyJob) => {
+      await this.handleCopyTrade(job.data);
+    },
+    {
+      queue: this.jobQueueService.jobQueue,
+      onCompleted: (job) => console.log(`✅ Job ${job.id} completed`),
+      onFailed: (job, error) =>
+        console.error(`❌ Job ${job.id} failed: ${error}`),
+      pollIntervall: 5000,
+      logger: {
+        info() {},
+        error(message) {
+          console.error(message);
+        },
+        warn() {},
+        debug() {},
+      },
+    },
+  );
+
   async start() {
-    await this.worker.start();
+    await this.trading.start();
+    await this.copyTrades.start();
   }
+
   async stop() {
-    await this.worker.stop();
+    await this.trading.stop();
+    await this.copyTrades.stop();
     this.jobQueueService.jobQueue.close();
   }
 
   scheduleTrade(data: trade, delay: number) {
-    const JobId = this.jobQueueService.jobQueue.add(jobType, data, { delay });
+    const JobId = this.jobQueueService.jobQueue.add(trading, data, { delay });
     return JobId.id;
+  }
+
+  scheduleCopyTrade(data: copyTrade) {
+    return this.jobQueueService.jobQueue.add(trading, data);
   }
 
   closeJob(jobId: number) {
     return this.jobQueueService.jobQueue.markJobAsDone(jobId);
+  }
+
+  private async handleCopyTrade(data: string | copyTrade): Promise<void> {
+    let details: copyTrade;
+    try {
+      details = typeof data === 'string' ? await JSON.parse(data) : data;
+      await this.tradeService.copyTradeBatch(details);
+    } catch (error) {
+      console.error('Error processing Trade job:', error);
+      throw error;
+    }
   }
 
   private async handleTrade(data: string | trade): Promise<void> {
