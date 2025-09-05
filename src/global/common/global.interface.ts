@@ -10,7 +10,7 @@ export interface findMany {
 }
 
 export interface findOne {
-  id: string;
+  id?: string;
   include?: string[];
   sort?: string[];
 }

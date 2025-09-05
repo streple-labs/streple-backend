@@ -36,4 +36,8 @@ export class SignupDto {
   @IsString()
   @IsUrl({}, { message: 'avatarUrl must be a valid URL' })
   avatarUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  referral?: string;
 }

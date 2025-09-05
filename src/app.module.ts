@@ -9,7 +9,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './app/auth/auth.module';
 import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
-import { CopyTradingModule } from './app/copy-trading/copy-trading.module';
 import { EmailCenterModule } from './app/email-center/email-center.module';
 import { GamifiedModule } from './app/gamified/gamified.module';
 import { LearninghubModule } from './app/learninghub/learninghub.module';
@@ -19,13 +18,13 @@ import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
+import { ReferralModule } from './app/referral/referral.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({ useFactory: ormConfig }),
     UsersModule,
-    CopyTradingModule,
     AuthModule,
     ThrottlerModule.forRoot({
       throttlers: [
@@ -47,6 +46,7 @@ import { SeederModule } from './seeders/seeder.module';
     SeederModule,
     TradesModule,
     BalanceModule,
+    ReferralModule,
   ],
   controllers: [AppController],
   providers: [

@@ -74,11 +74,12 @@ export class ActivityService {
   async allTraders(query: findMany) {
     const proTraders = await this.userService.findMany({
       ...query,
-      roleName: [Role.pro],
+      roleName: [Role.pro, Role.superAdmin, Role.admin],
     });
     if (!proTraders) return [];
-    // TODO return full data
-    return Promise.all(
+
+    // Enrich each user in the data array
+    const enrichedData = await Promise.all(
       proTraders.data.map(async (user) => {
         const totalFollowers = await this.followTrade.count({
           where: { followingId: user.id },
@@ -86,11 +87,9 @@ export class ActivityService {
         const roi = await this.tradeRepo.sum('tradeRoi', {
           creatorId: user.id,
         });
-        // Fetch all trades by this user
         const trades = await this.tradeRepo.find({
           where: { creatorId: user.id },
         });
-        // Calculate average weighted risk score
         let totalWeightedRisk = 0;
         let totalPositionSize = 0;
         trades.forEach((trade) => {
@@ -113,6 +112,12 @@ export class ActivityService {
         return { ...user, ...data };
       }),
     );
+
+    // Return the full response, replacing data with enrichedData
+    return {
+      ...proTraders,
+      data: enrichedData,
+    };
   }
 
   async tradeProfileStats(traderId: string) {

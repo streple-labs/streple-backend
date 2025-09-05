@@ -22,11 +22,10 @@ import {
   CreateUser,
   FindManyUser,
   FindOneUser,
-  TopUpDto,
   UpdateProfile,
 } from '../dto/top-up.dto';
-import { UsersService } from '../service';
 import { Role } from '../interface';
+import { UsersService } from '../service';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -92,34 +91,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Find One User' })
   async FindOneUser(@Query() query: FindOneUser) {
     return this.users.findOne(query);
-  }
-
-  /* -------- funding account balance ----------------------- */
-  @Get('demo-balance')
-  @ApiOperation({ summary: 'Funding account balance' })
-  @ApiResponse({ status: 200, description: 'Returns user funding balance' })
-  async demoFunding(@SessionUser() user: AuthUser) {
-    return this.users.getDemoFunding(user.id);
-  }
-
-  /* -------- top‑up funding balance (DEV / DEMO) ----------- */
-  @Patch('demo-balance/top-up')
-  @ApiOperation({ summary: 'Top-up funding balance (DEMO)' })
-  @ApiResponse({ status: 200, description: 'Balance updated successfully' })
-  async topUp(@SessionUser() user: AuthUser, @Body() dto: TopUpDto) {
-    const response = await this.users.topUpDemoFunding(user.id, dto);
-    return { ok: true, balance: response.demoFundingBalance };
-  }
-
-  /* -------- list copy wallets (per‑pro trading balances) -- */
-  @Get('wallets')
-  @ApiOperation({ summary: 'Per-pro copy wallets' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns wallet balances grouped by trader',
-  })
-  wallets(@SessionUser() user: AuthUser) {
-    return this.users.getCopyWallets(user.id);
   }
 
   @Post('change-password')

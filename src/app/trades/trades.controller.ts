@@ -139,7 +139,7 @@ export class TradesController {
     return this.activity.findMany(query);
   }
 
-  @Post('followTrader')
+  @Post('follow-trader')
   @ApiOperation({ summary: 'Follow a trader' })
   @ApiBody({ type: CreateFollower })
   followTrader(@Body() body: CreateFollower, @SessionUser() user: AuthUser) {

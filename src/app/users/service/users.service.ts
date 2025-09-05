@@ -3,7 +3,6 @@ import { ResendOtpDto, VerifyOtpDto } from '@app/auth/dto/otp.dto';
 import { ResetPasswordDto } from '@app/auth/dto/reset-password.dto';
 import { SignupDto } from '@app/auth/dto/signup.dto';
 import { AuthUser, Document, DocumentResult } from '@app/common';
-import { CopyWallet } from '@app/copy-trading/entities';
 import {
   buildFindManyQuery,
   FindManyWrapper,
@@ -22,7 +21,6 @@ import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { toggle } from '../dto/toggle-role.dto';
-import { TopUpDto } from '../dto/top-up.dto';
 import { RoleModel, User } from '../entity';
 import {
   authType,
@@ -39,8 +37,6 @@ import {
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly repo: Repository<User>,
-    @InjectRepository(CopyWallet)
-    private readonly wallets: Repository<CopyWallet>,
     @InjectRepository(RoleModel)
     private readonly roleModel: Repository<RoleModel>,
     private readonly mailer: MailService,
@@ -60,20 +56,25 @@ export class UsersService {
 
     if (role) user.roles = role;
 
-    await this.repo.save({
+    const data = await this.repo.save({
       ...user,
       auth_type: authType.email,
       type: userType.external,
       roleLevel: 1,
+      refercode: this.generateReferralCode(),
     });
-    await this.mailer.sendMail(
+    void this.mailer.sendMail(
       user.email,
       template.reg,
       'Verify Your Email Address to Complete Registration',
       { otp, username: user.fullName, currentYear: new Date().getFullYear() },
     ); //Service.sendOtpEmail(user.email, otp, 'verify');
 
-    return { message: 'OTP sent to your email', email: user.email };
+    return {
+      message: 'OTP sent to your email',
+      email: user.email,
+      id: data.id,
+    };
   }
 
   async createUserWithGoogle(dto: SignupDto): Promise<User> {
@@ -86,7 +87,11 @@ export class UsersService {
 
     if (role) user.roles = role;
 
-    return this.repo.save({ ...user, auth_type: authType.oath });
+    return this.repo.save({
+      ...user,
+      auth_type: authType.oath,
+      refercode: this.generateReferralCode(),
+    });
   }
 
   async createAdmin(dto: createUser) {
@@ -133,7 +138,7 @@ export class UsersService {
       .getOne();
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<User | null> {
     return this.repo.findOne({ where: { email } });
   }
 
@@ -275,9 +280,6 @@ export class UsersService {
         'email',
         'bio',
         'avatarUrl',
-        'stats',
-        'followerCount',
-        'performanceHistory',
         'role',
         'createdAt',
       ],
@@ -336,44 +338,11 @@ export class UsersService {
       role: user.role,
       bio: user.bio,
       avatarUrl: user.avatarUrl,
-      stats: user.stats,
-      followerCount: user.followerCount,
-      performanceHistory: user.performanceHistory,
-      demoFundingBalance: user.demoFundingBalance,
       createdAt: user.createdAt,
     };
   }
 
-  /* ---------------- demo funding getter -------------------- */
-  async getDemoFunding(id: string) {
-    const user = await this.findById(id);
-    return {
-      demoFundingBalance: user.demoFundingBalance,
-    };
-  }
-
-  /* ---------------- demo funding top-up -------------------- */
-  async topUpDemoFunding(id: string, dto: TopUpDto) {
-    const amt = Number(dto.amount);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      throw new BadRequestException('Amount must be a positive number');
-    }
-
-    const user = await this.findById(id);
-    user.demoFundingBalance = Number(user.demoFundingBalance) + amt;
-    return this.repo.save(user);
-  }
-
-  /* ---------------- wallet tracking ------------------------ */
-  async getCopyWallets(userId: string) {
-    return this.wallets.find({
-      where: { user: { id: userId } },
-      relations: ['proTrader'],
-    });
-  }
-
   /* add convenience for stats updates, followers etc later */
-
   private filter(query: findManyUser) {
     const where: Record<string, any> = {};
 
@@ -429,4 +398,13 @@ export class UsersService {
 
     return password;
   };
+
+  private generateReferralCode(length = 8): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < length; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
 }

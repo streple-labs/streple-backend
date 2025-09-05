@@ -5,18 +5,16 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CopyWallet } from '../../copy-trading/entities/copy-wallet.entity';
 import {
-  userType,
   authType,
   gender,
   IUser,
   Role,
   userStatus,
+  userType,
 } from '../interface/user.interface';
 import { RoleModel } from './roles.entity';
 
@@ -66,23 +64,6 @@ export class User implements IUser {
   @Column({ type: 'boolean', nullable: false, default: false })
   hasAnswer: boolean;
 
-  @Column({ type: 'json', nullable: true })
-  stats: Record<string, unknown>;
-
-  @Column({ type: 'json', nullable: true })
-  performanceHistory: Array<{ date: Date; value: number }>;
-
-  @Column({ default: 0 })
-  followerCount: number;
-
-  /* --- DEMO FUNDING ACCOUNT ---------------------------------- */
-  @Column({ type: 'decimal', precision: 18, scale: 8, default: 0 })
-  demoFundingBalance: number;
-
-  /* --- RELATION: copy wallets per Pro Trader ----------------- */
-  @OneToMany(() => CopyWallet, (w) => w.user, { cascade: true })
-  copyWallets: CopyWallet[];
-
   @Column({ type: 'enum', enum: authType, default: authType.email })
   auth_type: authType;
 
@@ -97,6 +78,10 @@ export class User implements IUser {
 
   @Column({ default: 1 })
   roleLevel: number;
+
+  @Column({ nullable: true })
+  refercode?: string;
+
   /* timestamps */
   @CreateDateColumn()
   createdAt: Date;

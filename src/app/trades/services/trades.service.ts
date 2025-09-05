@@ -349,6 +349,7 @@ export class TradesService {
 
   async findOne(query: findOneTrade): Promise<Document<Trades>> {
     const { include, sort, ...filters } = query;
+    // TODO risk ratio/reward
     return FindOneWrapper<Trades>(this.tradeRepo, {
       include,
       sort,
@@ -472,6 +473,10 @@ export class TradesService {
     if (results.length === 0) treadingRisk = riskLevel.low;
     treadingRisk = results[0].riskLevel;
 
+    const followers = await this.follower.find({
+      where: { followingId: userId },
+    });
+
     return {
       activeTrade: openTrades,
       closedTrade: closedTrades,
@@ -484,7 +489,7 @@ export class TradesService {
         percentage: Math.round(percentageChange * 100) / 100,
         isIncreased: percentageChange > 0,
       },
-      followers: 0,
+      followers: followers.length,
       riskLevelTrends: treadingRisk,
     };
   }
@@ -900,7 +905,7 @@ export class TradesService {
     if (query.asset) filter['asset'] = query.asset;
     if (query.action) filter['action'] = query.action;
     if (query.outcome) filter['outcome'] = query.outcome;
-    if (query.draft) filter['draft'] = { $eq: query.draft };
+    if (query.draft) filter['isDraft'] = { $eq: query.draft };
     if (query.fromDate && query.toDate) {
       filter['createdAt'] = { $between: [query.fromDate, query.toDate] };
     }

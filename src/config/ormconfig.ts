@@ -6,10 +6,6 @@ import {
 } from '@app/gamified/entities';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
-import { CopyTrade } from 'src/app/copy-trading/entities/copy-trade.entity';
-import { CopyWallet } from 'src/app/copy-trading/entities/copy-wallet.entity';
-import { ProSignal } from 'src/app/copy-trading/entities/pro-signal.entity';
-import { Course } from 'src/app/course/course.entity';
 import { EmailCenter, WaitList } from 'src/app/email-center/entities';
 import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
 import { User } from '@app/users/entity/user.entity';
@@ -20,6 +16,7 @@ import {
   TradeActivityFeeds,
   Trades,
 } from '@app/trades/entities';
+import { Referral, ReferralRewardSetting } from '@app/referral/entities';
 
 export default (): TypeOrmModuleOptions => ({
   type: process.env.DB_TYPE as 'postgres',
@@ -31,10 +28,6 @@ export default (): TypeOrmModuleOptions => ({
   database: process.env.DB_NAME,
   entities: [
     BlogManager,
-    CopyTrade,
-    CopyWallet,
-    ProSignal,
-    Course,
     EmailCenter,
     LearningHub,
     User,
@@ -50,10 +43,12 @@ export default (): TypeOrmModuleOptions => ({
     FollowTraders,
     Balance,
     Transactions,
+    Referral,
+    ReferralRewardSetting,
   ],
   ssl:
     process.env.NODE_ENV === 'development'
       ? false
       : { rejectUnauthorized: false }, // TODO
-  synchronize: process.env.NODE_ENV === 'development', // TODO
+  synchronize: true, //process.env.NODE_ENV === 'development', // TODO
 });
