@@ -24,8 +24,8 @@ export class MailService {
       connectionTimeout: 30000,
       greetingTimeout: 30000,
       socketTimeout: 30000,
-      // debug: true,
-      // logger: true,
+      debug: true,
+      logger: true,
     });
 
     this.withreply = nodemailer.createTransport({
@@ -41,8 +41,8 @@ export class MailService {
       connectionTimeout: 30000,
       greetingTimeout: 30000,
       socketTimeout: 30000,
-      // debug: true,
-      // logger: true,
+      debug: true,
+      logger: true,
     });
   }
 
