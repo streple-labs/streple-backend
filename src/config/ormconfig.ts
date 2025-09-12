@@ -50,5 +50,5 @@ export default (): TypeOrmModuleOptions => ({
     process.env.NODE_ENV === 'development'
       ? false
       : { rejectUnauthorized: false }, // TODO
-  synchronize: true, //process.env.NODE_ENV === 'development', // TODO
+  synchronize: process.env.NODE_ENV === 'development', // TODO
 });

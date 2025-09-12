@@ -50,7 +50,7 @@ export class BinanceGateway implements OnModuleInit {
       console.log(
         `WebSocket closed (${code}: ${reason.toString()}), reconnecting...`,
       );
-      setTimeout(() => this.onModuleInit(), 5000);
+      // setTimeout(() => this.onModuleInit(), 5000);
     });
   }
 }

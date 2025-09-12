@@ -19,7 +19,13 @@ export class MailService {
         user: this.config.getOrThrow('NO_REPLY_MAIL_USER'),
         pass: this.config.getOrThrow('NO_REPLY_MAIL_PASS'),
       },
+      tls: { rejectUnauthorized: false },
       pool: true,
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
+      // debug: true,
+      // logger: true,
     });
 
     this.withreply = nodemailer.createTransport({
@@ -30,7 +36,13 @@ export class MailService {
         user: this.config.getOrThrow('REPLY_MAIL_USER'),
         pass: this.config.getOrThrow('REPLY_MAIL_PASS'),
       },
+      tls: { rejectUnauthorized: false },
       pool: true,
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
+      // debug: true,
+      // logger: true,
     });
   }
 
