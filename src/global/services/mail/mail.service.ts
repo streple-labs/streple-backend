@@ -1,50 +1,12 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import * as handlebars from 'handlebars';
 import * as fs from 'fs';
+import * as handlebars from 'handlebars';
 import * as path from 'path';
-import { ConfigService } from '@nestjs/config';
+import { HttpClientService } from '../httpclient';
 
 @Injectable()
 export class MailService {
-  private readonly noreply: nodemailer.Transporter;
-  private readonly withreply: nodemailer.Transporter;
-
-  constructor(private config: ConfigService) {
-    this.noreply = nodemailer.createTransport({
-      host: this.config.getOrThrow('MAIL_HOST'),
-      port: this.config.getOrThrow('MAIL_PORT'),
-      secure: true,
-      auth: {
-        user: this.config.getOrThrow('NO_REPLY_MAIL_USER'),
-        pass: this.config.getOrThrow('NO_REPLY_MAIL_PASS'),
-      },
-      tls: { rejectUnauthorized: false, ciphers: 'SSLv3' },
-      pool: true,
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-      debug: true,
-      logger: true,
-    });
-
-    this.withreply = nodemailer.createTransport({
-      host: this.config.getOrThrow('MAIL_HOST'),
-      port: this.config.getOrThrow('MAIL_PORT'),
-      secure: true,
-      auth: {
-        user: this.config.getOrThrow('REPLY_MAIL_USER'),
-        pass: this.config.getOrThrow('REPLY_MAIL_PASS'),
-      },
-      tls: { rejectUnauthorized: false, ciphers: 'SSLv3' },
-      pool: true,
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-      debug: true,
-      logger: true,
-    });
-  }
+  constructor(private readonly httpClientService: HttpClientService) {}
 
   public async sendMail(
     email: string,
@@ -64,19 +26,16 @@ export class MailService {
       const compiledTemplate = handlebars.compile(templateHtml);
       const html = compiledTemplate(context);
 
-      // Email details
-      const mailDetails = {
-        from: `"Streple" <${this.config.getOrThrow(withReply ? 'REPLY_MAIL_USER' : 'NO_REPLY_MAIL_USER')}>`,
-        to: email,
-        subject: subject,
-        html: html,
-      };
-
-      // Send email
-      const info = withReply
-        ? await this.withreply.sendMail(mailDetails)
-        : await this.noreply.sendMail(mailDetails);
-      console.log('Email sent successfully:', info.response);
+      const response = await this.httpClientService.postData(
+        'https://streple-mailer.vercel.app/send-mail',
+        {
+          email,
+          subject,
+          context: html,
+          withReply,
+        },
+      );
+      console.log(response);
     } catch (error) {
       console.error('Error sending email:', error);
       throw new InternalServerErrorException({
