@@ -261,7 +261,9 @@ export class BalanceService {
     }
   }
 
-  findAll(query: findManyTransaction): Promise<DocumentResult<Transactions>> {
+  async findAll(
+    query: findManyTransaction,
+  ): Promise<DocumentResult<Transactions>> {
     const filters = this.filter(query);
     const qb = this.transactionModel.createQueryBuilder('transaction');
     buildFindManyQuery(
@@ -277,13 +279,31 @@ export class BalanceService {
     return FindManyWrapper(qb, query.page, query.limit);
   }
 
-  findOne(query: findOneTransaction): Promise<Document<Transactions>> {
+  async findOne(query: findOneTransaction): Promise<Document<Transactions>> {
     const { include, sort, ...filters } = query;
     return FindOneWrapper<Transactions>(this.transactionModel, {
       include,
       sort,
       filters,
     });
+  }
+
+  async stpLeaderBoard(limit = 10) {
+    return this.balanceModel
+      .createQueryBuilder('balance')
+      .select('balance.userId', 'userId')
+      .addSelect('user.fullName', 'username')
+      .addSelect('SUM(CAST(balance.balance AS float8))', 'totalBalance')
+      .leftJoin('balance.user', 'user')
+      .where('balance.mode = :mode', { mode: BalanceMode.demo })
+      .andWhere('balance.type IN (:...types)', {
+        types: [BalanceType.funding, BalanceType.trading],
+      })
+      .groupBy('balance.userId')
+      .addGroupBy('user.fullName')
+      .orderBy('SUM(CAST(balance.balance AS float8))', 'DESC')
+      .limit(limit)
+      .getRawMany();
   }
 
   private filter(query: findManyTransaction) {

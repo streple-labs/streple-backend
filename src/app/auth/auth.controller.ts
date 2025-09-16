@@ -16,8 +16,11 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto, RefreshToken } from './dto/login.dto';
 import { ResendOtpDto, VerifyOtpDto } from './dto/otp.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResetPasswordDto, VerifyTfaLogin } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
+import { Throttle } from '@nestjs/throttler';
+import { GoogleOauthGuard } from '@app/guards';
+import { Role } from '@app/users/interface';
 dotenv.config();
 
 if (!process.env.FRONTEND_BASE_URL) {
@@ -60,6 +63,7 @@ export class AuthController {
   }
 
   @Post('login/user')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   @ApiOperation({ summary: 'User Login with email and password' })
   @ApiResponse({ status: 200, description: 'Returns a JWT token' })
   loginUser(@Body() dto: LoginDto) {
@@ -67,6 +71,7 @@ export class AuthController {
   }
 
   @Post('login/admin')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   @ApiOperation({ summary: 'User Login with email and password' })
   @ApiResponse({ status: 200, description: 'Returns a JWT token' })
   AdminLogin(@Body() dto: LoginDto) {
@@ -86,10 +91,8 @@ export class AuthController {
     status: 302,
     description: 'Redirects the user to the Google OAuth consent screen.',
   })
-  @UseGuards(AuthGuard('google'))
-  async googleAuth() {
-    // Guard handles redirection
-  }
+  @UseGuards(GoogleOauthGuard)
+  async googleAuth() {}
 
   // Callback after Google login
   @Get('google/redirect')
@@ -100,17 +103,30 @@ export class AuthController {
   })
   @UseGuards(AuthGuard('google'))
   googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
-    const { accessToken } = req.user as any;
+    if (!req.user) return res.redirect(process.env.FRONTEND_BASE_URL as string);
+
+    const { accessToken, role } = req.user as {
+      accessToken: string;
+      role?: Role;
+    };
 
     // Set the token in a secure cookie
     res.cookie('streple_auth_token', accessToken, {
-      httpOnly: true, // Cannot be accessed via JavaScript
-      secure: true, // Only sent over HTTPS
-      sameSite: 'lax', // Protects against CSRF for most cases
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
       maxAge: 1000 * 60 * 60, // 1 hour
     });
 
-    // Redirect to dashboard
+    // Type guard for role
+    if (role && Object.values(Role).includes(role)) {
+      if (role === Role.follower) {
+        return res.redirect(process.env.FRONTEND_BASE_URL as string);
+      }
+      return res.redirect(process.env.ADMINS_FRONTEND_BASE_URL as string);
+    }
+
+    // Fallback redirect
     return res.redirect(process.env.FRONTEND_BASE_URL as string);
   }
 
@@ -131,5 +147,10 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto);
+  }
+
+  @Post('verify-tfa')
+  async VerifyTFA(@Body() dto: VerifyTfaLogin) {
+    return this.auth.verifyTfaLogin(dto.email, dto.code);
   }
 }

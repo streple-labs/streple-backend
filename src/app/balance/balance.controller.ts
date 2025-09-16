@@ -4,11 +4,18 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { BalanceService } from './balance.service';
 import {
   FindManyTransaction,
@@ -51,5 +58,12 @@ export class BalanceController {
     @SessionUser() user: AuthUser,
   ) {
     return this.balanceService.transferBetweenAccount(dto, user);
+  }
+
+  @Get('stp-leader-board/:limit')
+  @ApiOperation({ summary: 'Get stp leader board' })
+  @ApiParam({ name: 'limit', type: Number, required: false })
+  STPLeaderBoard(@Param('limit') limit: number) {
+    return this.balanceService.stpLeaderBoard(limit);
   }
 }

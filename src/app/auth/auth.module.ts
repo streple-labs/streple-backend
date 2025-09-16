@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { jwtConstants } from './constants';
+import { SecurityService } from '@app/helpers';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { jwtConstants } from './constants';
       secret: jwtConstants.secret,
     }),
   ],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, SecurityService],
   controllers: [AuthController],
   exports: [AuthService],
 })

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { AuthUser, JwtPayload } from '@app/common';
 import { IUser, Role } from '@app/users/interface';
 import { UsersService } from '@app/users/service';
@@ -15,6 +16,8 @@ import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
 import { ReferralService } from '@app/referral/referral.service';
+import { SecurityService } from '@app/helpers';
+import { TwoFAService } from '@app/users/service/twofa.service';
 
 @Injectable()
 export class AuthService {
@@ -22,11 +25,21 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly jwtService: JwtService,
     private readonly referralService: ReferralService,
+    private readonly security: SecurityService,
+    private readonly twoFAService: TwoFAService,
   ) {}
 
   async register(dto: SignupDto) {
-    const existing: IUser | null = await this.users.findByEmail(dto.email);
-    if (existing) throw new BadRequestException('Email already in use');
+    const existing: IUser | null = await this.users.findByEmail(
+      dto.email.toLowerCase(),
+    );
+    if (existing) {
+      if (!existing.isVerified) {
+        void this.resendOtp({ email: existing.email, purpose: 'verify' });
+        throw new BadRequestException('Account not verified new Otp sent');
+      }
+      throw new BadRequestException('Email already in use');
+    }
 
     const referDetails: {
       directReferrerId?: string | undefined;
@@ -56,15 +69,21 @@ export class AuthService {
   }
 
   async verifyEmail(dto: VerifyOtpDto) {
-    return this.users.verifyEmail(dto);
+    return this.users.verifyEmail({
+      email: dto.email.toLowerCase(),
+      otp: dto.otp,
+    });
   }
 
   async resendOtp(dto: ResendOtpDto) {
-    return this.users.resendOtp(dto);
+    return this.users.resendOtp({
+      email: dto.email.toLowerCase(),
+      purpose: dto.purpose,
+    });
   }
 
   async userLogin(dto: LoginDto) {
-    const user = await this.users.login(dto.email);
+    const user = await this.users.login(dto.email.toLowerCase());
     if (!user || !(await user.validatePassword(dto.password))) {
       throw new ForbiddenException('Invalid credentials');
     }
@@ -74,7 +93,15 @@ export class AuthService {
     }
 
     if (![Role.follower].includes(user.role)) {
-      throw new ForbiddenException('access denied users only');
+      throw new BadRequestException('Access denied users only');
+    }
+
+    if (user.isTfaEnabled) {
+      return {
+        status: 'TFA_REQUIRED',
+        message: 'Enter your 2FA code',
+        email: user.email,
+      };
     }
 
     const payload = {
@@ -83,7 +110,6 @@ export class AuthService {
       role: user.role,
       roleLevel: user.roleLevel,
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, createdAt, updatedAt, ...sanitizedUser } = user;
     const access = await this.generateTokens(payload, '1h');
     const refresh = await this.generateTokens(payload, '2h');
@@ -97,7 +123,7 @@ export class AuthService {
   }
 
   async adminLogin(dto: LoginDto) {
-    const user = await this.users.login(dto.email);
+    const user = await this.users.login(dto.email.toLowerCase());
     if (!user || !(await user.validatePassword(dto.password))) {
       throw new ForbiddenException('Invalid credentials');
     }
@@ -106,24 +132,25 @@ export class AuthService {
       throw new ForbiddenException('Email not verified');
     }
 
-    if (
-      ![
-        Role.admin,
-        Role.publish,
-        Role.superAdmin,
-        Role.marketer,
-        Role.pro,
-      ].includes(user.role)
-    ) {
-      throw new ForbiddenException('Access denied');
+    if ([Role.follower].includes(user.role)) {
+      throw new BadRequestException('Access denied');
     }
+
+    if (user.isTfaEnabled) {
+      return {
+        status: 'TFA_REQUIRED',
+        message: 'Enter your 2FA code',
+        email: user.email,
+      };
+    }
+
     const payload = {
       id: user.id,
       email: user.email,
       role: user.role,
       roleLevel: user.roleLevel,
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { password, createdAt, updatedAt, ...sanitizedUser } = user;
     const access = await this.generateTokens(payload, '1h');
     const refresh = await this.generateTokens(payload, '2h');
@@ -136,16 +163,57 @@ export class AuthService {
     };
   }
 
+  async verifyTfaLogin(email: string, tfaToken: string) {
+    const user = await this.users.login(email.toLowerCase());
+    if (!user) throw new BadRequestException('Invalid user');
+
+    if (!user.isTfaEnabled || !user.tfaSecret) {
+      throw new ForbiddenException('TFA is not enabled for this account');
+    }
+
+    const secret = await this.security.decrypt(user.tfaSecret);
+    const isValid = this.twoFAService.verifyTfaCode(secret, tfaToken);
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid TFA code');
+    }
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      roleLevel: user.roleLevel,
+    };
+
+    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
+      user;
+    const access = await this.generateTokens(payload, '1h');
+    const refresh = await this.generateTokens(payload, '2h');
+    return {
+      streple_auth_token: access,
+      streple_refresh_token: refresh,
+      token_type: 'Bearer',
+      expires_in: jwtConstants.expiresIn,
+      data: sanitizedUser,
+    };
+  }
+
   async forgotPassword(dto: ForgotPasswordDto) {
-    return await this.users.forgotPassword(dto);
+    return await this.users.forgotPassword({ email: dto.email.toLowerCase() });
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
-    return this.users.verifyOtp(dto);
+    return this.users.verifyOtp({
+      email: dto.email.toLowerCase(),
+      otp: dto.otp,
+    });
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    return await this.users.resetPassword(dto);
+    return await this.users.resetPassword({
+      email: dto.email.toLowerCase(),
+      newPassword: dto.newPassword,
+    });
   }
 
   async refreshToken(token: string) {
@@ -157,7 +225,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { iat, exp, ...rest } = payload;
     const access = await this.generateTokens(rest, '1h');
     const refresh = await this.generateTokens(rest, '2h');

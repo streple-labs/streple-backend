@@ -29,6 +29,13 @@ export const CAPABILITIES = [
   'LEARNINGHUB_UPDATE',
   'LEARNINGHUB_DELETE',
 
+  // Traders
+  'TRADE_READ',
+  'TRADE_CREATE',
+  'TRADE_MANAGE',
+  'TRADE_UPDATE',
+  'TRADE_DELETE',
+
   // user
   'MANAGE_USER',
 ];

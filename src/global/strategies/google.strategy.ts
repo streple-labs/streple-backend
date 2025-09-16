@@ -1,11 +1,11 @@
 // src/auth/strategies/google.strategy.ts
-import { PassportStrategy } from '@nestjs/passport';
+import { UsersService } from '@app/users/service';
 import { Injectable } from '@nestjs/common';
-import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { JwtService } from '@nestjs/jwt';
+import { PassportStrategy } from '@nestjs/passport';
 import { randomBytes } from 'crypto';
 import * as dotenv from 'dotenv';
-import { UsersService } from '@app/users/service';
+import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 dotenv.config();
 
 interface GoogleUser {
@@ -82,16 +82,23 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, otp, otpExpiresAt, ...sanitizedUser } = user;
-
-    const streple_auth_token = this.jwt.sign({
+    const authUser = {
       sub: user.id,
       email: user.email,
       role: user.role,
+    };
+
+    const streple_auth_token = this.jwt.sign(authUser, {
+      expiresIn: '1h',
+    });
+    const streple_refresh_token = this.jwt.sign(authUser, {
+      expiresIn: '2h',
     });
 
     return done(null, {
       user: sanitizedUser,
       accessToken: streple_auth_token,
+      refreshToken: streple_refresh_token,
     });
   }
 }

@@ -49,6 +49,8 @@ export interface IUser {
   hasAnswer: boolean;
   status: userStatus;
   gender: gender;
+  isTfaEnabled?: boolean;
+  tfaSecret?: string;
   roleLevel: number;
   roles: Roles;
   refercode?: string;
@@ -85,4 +87,24 @@ export interface findOneUser extends findOne {
 export interface createUser
   extends Pick<IUser, 'email' | 'fullName' | 'role' | 'roleLevel' | 'type'> {
   roles?: Roles;
+}
+
+export interface generate2FaPayload {
+  uri: string;
+  secret: string;
+}
+
+export interface initiateTfaEnabling {
+  secret: string;
+  email: string;
+}
+
+export interface ManageTfa {
+  email: string;
+  tfaToken: string;
+}
+
+export interface verifyTfaEnabling {
+  secret: string;
+  code: string;
 }

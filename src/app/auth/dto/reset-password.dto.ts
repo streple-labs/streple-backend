@@ -19,3 +19,16 @@ export class ResetPasswordDto {
   @MinLength(8)
   newPassword: string;
 }
+
+export class VerifyTfaLogin {
+  @ApiProperty({ type: String })
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({ type: String })
+  @IsNotEmpty()
+  @IsString()
+  code: string;
+}

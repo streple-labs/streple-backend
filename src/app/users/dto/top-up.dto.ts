@@ -155,3 +155,10 @@ export class CreateUser implements createUser {
   @IsIn(Object.values(userType))
   type: userType = userType.internal;
 }
+
+export class TwoFaToken {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  token: string;
+}

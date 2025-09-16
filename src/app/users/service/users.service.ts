@@ -32,7 +32,6 @@ import {
   updateProfile,
   userType,
 } from '../interface';
-
 @Injectable()
 export class UsersService {
   constructor(
@@ -44,7 +43,7 @@ export class UsersService {
 
   /* ---------------- registration / lookup ------------------ */
   async createUser(dto: SignupDto) {
-    const user = this.repo.create(dto);
+    const user = this.repo.create({ ...dto, email: dto.email.toLowerCase() });
     user.password = await bcrypt.hash(dto.password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
@@ -78,7 +77,7 @@ export class UsersService {
   }
 
   async createUserWithGoogle(dto: SignupDto): Promise<User> {
-    const user = this.repo.create(dto);
+    const user = this.repo.create({ ...dto, email: dto.email.toLowerCase() });
     user.password = await bcrypt.hash(dto.password, 10);
     user.isVerified = true;
     const role = await this.roleModel.findOne({
@@ -89,13 +88,15 @@ export class UsersService {
 
     return this.repo.save({
       ...user,
+      type: userType.external,
+      roleLevel: 1,
       auth_type: authType.oath,
       refercode: this.generateReferralCode(),
     });
   }
 
   async createAdmin(dto: createUser) {
-    const adminExists = await this.findByEmail(dto.email);
+    const adminExists = await this.findByEmail(dto.email.toLowerCase());
     if (adminExists) throw new BadRequestException('Admin already exists');
 
     const pass = this.generatePassword(10);
@@ -134,12 +135,13 @@ export class UsersService {
     return this.repo
       .createQueryBuilder('user')
       .addSelect('user.password')
-      .where('user.email = :email', { email })
+      .addSelect('user.tfaSecret')
+      .where('user.email = :email', { email: email.toLowerCase() })
       .getOne();
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.repo.findOne({ where: { email } });
+    return this.repo.findOne({ where: { email: email.toLowerCase() } });
   }
 
   async findById(id: string) {

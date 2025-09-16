@@ -17,6 +17,7 @@ import {
   userType,
 } from '../interface/user.interface';
 import { RoleModel } from './roles.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User implements IUser {
@@ -43,6 +44,12 @@ export class User implements IUser {
 
   @Column({ default: false })
   otpVerified: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  isTfaEnabled: boolean;
+
+  @Column({ nullable: true, select: false })
+  tfaSecret: string;
 
   /* role toggle */
   @Column({ type: 'enum', enum: Role, default: Role.follower })

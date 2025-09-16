@@ -1,5 +1,5 @@
 import { AuthUser, FindMany } from '@app/common';
-import { SessionUser } from '@app/decorators';
+import { Abilities, SessionUser } from '@app/decorators';
 import {
   Body,
   Controller,
@@ -43,6 +43,7 @@ export class TradesController {
   ) {}
 
   @Post('trade')
+  @Abilities('TRADE_CREATE')
   @ApiOperation({ summary: 'Create new trade' })
   @ApiBody({ type: CreateTrade })
   create(@Body() createTrade: CreateTrade, @SessionUser() user: AuthUser) {
@@ -50,6 +51,7 @@ export class TradesController {
   }
 
   @Get('trades')
+  @Abilities('TRADE_MANAGE')
   @ApiOperation({ summary: 'Get all the trades' })
   findAll(@Query() query: FindManyTrade) {
     return this.tradesService.findAll(query);
@@ -78,6 +80,7 @@ export class TradesController {
   // }
 
   @Get('trading-stats')
+  @Abilities('TRADE_MANAGE')
   @ApiOperation({ summary: 'Get treading stats' })
   tradingStats(@SessionUser() user: AuthUser) {
     return this.tradesService.getTradingStats(user.id);
@@ -105,6 +108,7 @@ export class TradesController {
   }
 
   @Patch('trade/:tradeId')
+  @Abilities('TRADE_UPDATE')
   @ApiOperation({ summary: 'Update un-start trade' })
   @ApiParam({
     type: String,
@@ -122,6 +126,7 @@ export class TradesController {
   }
 
   @Delete('trade/:tradeId')
+  @Abilities('TRADE_DELETE')
   @ApiOperation({ summary: 'Delete Trade' })
   @ApiParam({
     type: String,
