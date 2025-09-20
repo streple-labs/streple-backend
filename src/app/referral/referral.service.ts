@@ -192,7 +192,7 @@ export class ReferralService {
       .addSelect('user.fullName', 'userFullName')
       .addSelect('user.email', 'userEmail')
       .leftJoin('referral.directReferrer', 'user')
-      .where('referral.status = :status', { status: ReferralStatus.PENDING })
+      .where('referral.status = :status', { status: ReferralStatus.ACTIVE })
       .groupBy('referral.directReferrerId')
       .addGroupBy('user.id')
       .addGroupBy('user.fullName')
