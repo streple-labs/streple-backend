@@ -110,7 +110,8 @@ export class AuthService {
       role: user.role,
       roleLevel: user.roleLevel,
     };
-    const { password, createdAt, updatedAt, ...sanitizedUser } = user;
+    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
+      user;
     const access = await this.generateTokens(payload, '1h');
     const refresh = await this.generateTokens(payload, '2h');
     return {
@@ -151,7 +152,8 @@ export class AuthService {
       roleLevel: user.roleLevel,
     };
 
-    const { password, createdAt, updatedAt, ...sanitizedUser } = user;
+    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
+      user;
     const access = await this.generateTokens(payload, '1h');
     const refresh = await this.generateTokens(payload, '2h');
     return {

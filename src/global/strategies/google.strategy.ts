@@ -1,7 +1,6 @@
 // src/auth/strategies/google.strategy.ts
 import { UsersService } from '@app/users/service';
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { randomBytes } from 'crypto';
 import * as dotenv from 'dotenv';
@@ -36,10 +35,7 @@ const GOOGLE_CALLBACK_URL = `${process.env.BASE_URL}/auth/google/redirect`;
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-  constructor(
-    private users: UsersService,
-    private jwt: JwtService,
-  ) {
+  constructor(private users: UsersService) {
     super({
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
@@ -81,24 +77,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, otp, otpExpiresAt, ...sanitizedUser } = user;
-    const authUser = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
+    const { password, tfaSecret, otp, otpExpiresAt, ...sanitizedUser } = user;
 
-    const streple_auth_token = this.jwt.sign(authUser, {
-      expiresIn: '1h',
-    });
-    const streple_refresh_token = this.jwt.sign(authUser, {
-      expiresIn: '2h',
-    });
-
-    return done(null, {
-      user: sanitizedUser,
-      accessToken: streple_auth_token,
-      refreshToken: streple_refresh_token,
-    });
+    return done(null, { user: sanitizedUser });
   }
 }

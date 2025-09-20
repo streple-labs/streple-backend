@@ -192,7 +192,7 @@ export class ReferralService {
       .addSelect('user.fullName', 'userFullName')
       .addSelect('user.email', 'userEmail')
       .leftJoin('referral.directReferrer', 'user')
-      .where('referral.status = :status', { status: ReferralStatus.ACTIVE })
+      .where('referral.status = :status', { status: ReferralStatus.PENDING })
       .groupBy('referral.directReferrerId')
       .addGroupBy('user.id')
       .addGroupBy('user.fullName')
@@ -214,7 +214,7 @@ export class ReferralService {
     }));
   }
 
-  findAll(query: findManyReferral): Promise<DocumentResult<Referral>> {
+  async findAll(query: findManyReferral): Promise<DocumentResult<Referral>> {
     const where = this.filterReferral(query);
     const qb = this.referral.createQueryBuilder('referral');
     buildFindManyQuery(
@@ -230,7 +230,7 @@ export class ReferralService {
     return FindManyWrapper(qb, query.page, query.limit);
   }
 
-  findOne(query: findOneReferral): Promise<Document<Referral>> {
+  async findOne(query: findOneReferral): Promise<Document<Referral>> {
     const { include, sort, ...filters } = query;
     return FindOneWrapper<Referral>(this.referral, {
       include,

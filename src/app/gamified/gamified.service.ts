@@ -76,7 +76,7 @@ export class GamifiedService {
     }
 
     // Calculate new earnings
-    const earningsMap = this.earning();
+    const earningsMap = this.earning(create.score);
     const earnedAmount = earningsMap[create.phase]?.[create.level] ?? 0;
     void this.fundUser(
       {
@@ -224,11 +224,20 @@ export class GamifiedService {
     return filters;
   }
 
-  private earning() {
+  private earning(score: number) {
+    const correct = score >= 70;
     const EARNINGS_MAP: Record<string, Record<string, number>> = {
-      'Phase 1': { 'Level 1': 500, 'Level 2': 1000, 'Level 3': 1500 },
-      'Phase 2': { 'Level 1': 500, 'Level 2': 1000, 'Level 3': 1500 },
-      'Phase 3': { 'Level 3': 4000 },
+      'Phase 1': {
+        'Level 1': correct ? 10 : 5,
+        'Level 2': correct ? 10 : 5,
+        'Level 3': correct ? 10 : 5,
+      },
+      'Phase 2': {
+        'Level 1': correct ? 50 : 20,
+        'Level 2': correct ? 50 : 20,
+        'Level 3': 100,
+      },
+      // 'Phase 3': { 'Level 3': 4000 },
     };
 
     return EARNINGS_MAP;
