@@ -1,3 +1,4 @@
+import { Subscription } from '@app/subscription/entities';
 import * as bcrypt from 'bcrypt';
 import {
   Column,
@@ -5,6 +6,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -17,7 +19,6 @@ import {
   userType,
 } from '../interface/user.interface';
 import { RoleModel } from './roles.entity';
-import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User implements IUser {
@@ -88,6 +89,9 @@ export class User implements IUser {
 
   @Column({ nullable: true })
   refercode?: string;
+
+  @OneToMany(() => Subscription, (subscription) => subscription.user)
+  subscriptions: Subscription[];
 
   /* timestamps */
   @CreateDateColumn()

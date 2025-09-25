@@ -44,8 +44,8 @@ export class Balance implements IBalance {
   })
   status: BalanceStatus;
 
-  @Column({ type: 'varchar', nullable: false })
-  balance: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  balance: number;
 
   @CreateDateColumn()
   createdAt: Date;

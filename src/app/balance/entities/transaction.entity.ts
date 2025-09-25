@@ -46,8 +46,8 @@ export class Transactions implements ITransaction {
   })
   source: Source;
 
-  @Column({ type: 'varchar', nullable: false })
-  amount: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  amount: number;
 
   @Column({
     type: 'enum',

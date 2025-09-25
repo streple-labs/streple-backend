@@ -17,6 +17,7 @@ import {
   Trades,
 } from '@app/trades/entities';
 import { Referral, ReferralRewardSetting } from '@app/referral/entities';
+import { Subscription, SubscriptionHistory } from '@app/subscription/entities';
 
 export default (): TypeOrmModuleOptions => ({
   type: process.env.DB_TYPE as 'postgres',
@@ -45,6 +46,8 @@ export default (): TypeOrmModuleOptions => ({
     Transactions,
     Referral,
     ReferralRewardSetting,
+    Subscription,
+    SubscriptionHistory,
   ],
   ssl:
     process.env.NODE_ENV === 'development'

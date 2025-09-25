@@ -14,6 +14,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import Big from 'big.js';
 import { DataSource, EntityManager, Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { Balance, Transactions } from './entities';
 import {
   BalanceMode,
@@ -28,7 +29,6 @@ import {
   transfer,
   userBalance,
 } from './interface';
-import { v4 as uuidv4 } from 'uuid';
 
 // Set global Big.js configuration
 Big.DP = 20; // Decimal places
@@ -45,15 +45,17 @@ export class BalanceService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async transactionOnDemo(data: newTransaction, user: AuthUser) {
+  async transactionOnDemo(
+    data: newTransaction,
+    user: AuthUser,
+    manager?: EntityManager,
+  ) {
     this.logger.log(
       `Processing demo transaction: ${data.transactionType} for user: ${user.id}`,
     );
 
-    // Validate input
     this.validateTransactionData(data);
 
-    // Check idempotency
     const existing = await this.checkIdempotency(user, data.idempotencyKey);
     if (existing) {
       this.logger.log(
@@ -62,27 +64,33 @@ export class BalanceService {
       return { alreadyProcessed: true, transaction: existing };
     }
 
+    // If a manager is provided (i.e., we’re within an outer transaction), use it!
+    const run = async (txnMgr: EntityManager) => {
+      const amount = Big(data.amount);
+
+      if (this.isFundingOperation(data.transactionType)) {
+        await this.processFundingOperation(txnMgr, user.id, data, amount);
+      } else if (data.transactionType === TransactionType.transfer) {
+        await this.processTransferOperation(txnMgr, user.id, data, amount);
+      } else {
+        throw new ForbiddenException('Unknown transaction type');
+      }
+
+      // Log transaction
+      const transaction = await this.logTransaction(txnMgr, user, data);
+      this.logger.log(`Demo transaction completed: ${data.idempotencyKey}`);
+
+      return { transaction };
+    };
+
     try {
-      return await this.dataSource.transaction(
-        'REPEATABLE READ',
-        async (manager) => {
-          const amount = Big(data.amount);
-
-          if (this.isFundingOperation(data.transactionType)) {
-            await this.processFundingOperation(manager, user.id, data, amount);
-          } else if (data.transactionType === TransactionType.transfer) {
-            await this.processTransferOperation(manager, user.id, data, amount);
-          } else {
-            throw new ForbiddenException('Unknown transaction type');
-          }
-
-          // Log transaction
-          const transaction = await this.logTransaction(manager, user, data);
-          this.logger.log(`Demo transaction completed: ${data.idempotencyKey}`);
-
-          return { transaction };
-        },
-      );
+      if (manager) {
+        // Use provided transaction context
+        return await run(manager);
+      } else {
+        // Start a new transaction (standalone)
+        return await this.dataSource.transaction('REPEATABLE READ', run);
+      }
     } catch (error) {
       this.logger.error(
         `Demo transaction failed for user ${user.id}`,
@@ -201,7 +209,7 @@ export class BalanceService {
     }
   }
 
-  async userBalance(data: userBalance, user: AuthUser) {
+  async userBalance(data: userBalance, user: AuthUser): Promise<Balance[]> {
     const filter: Record<string, any> = { user: { id: user.id } };
     if (data.mode) filter.mode = data.mode;
     if (data.type) filter.type = data.type;
@@ -369,11 +377,11 @@ export class BalanceService {
       throw new ForbiddenException('Insufficient funds in the source wallet');
     }
 
-    const newBalance = Big(fromBalance.balance).minus(amount).toString();
+    const newBalance = Big(fromBalance.balance).minus(amount).toNumber();
 
     let newToBalance;
     if (toBalance) {
-      newToBalance = Big(toBalance?.balance).plus(amount).toString();
+      newToBalance = Big(toBalance?.balance).plus(amount).toNumber();
     }
     // Subtract from source
     await this.updateBalance(
@@ -392,7 +400,7 @@ export class BalanceService {
       userId,
       data.toType,
       data.mode,
-      newToBalance ? newToBalance : amount.toString(),
+      newToBalance ? newToBalance : amount.toNumber(),
       data.source,
       toBalance ? toBalance : undefined,
     );
@@ -459,7 +467,7 @@ export class BalanceService {
       userId,
       BalanceType.funding,
       BalanceMode.demo,
-      newBalance.toString(),
+      newBalance.toNumber(),
       data.source,
       generalBalance ? generalBalance : undefined,
     );
@@ -505,7 +513,7 @@ export class BalanceService {
     userId: string,
     type: BalanceType,
     mode: BalanceMode,
-    amount: string,
+    amount: number,
     source: string,
     currentBalance?: Balance,
   ): Promise<Balance> {

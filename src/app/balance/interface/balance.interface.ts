@@ -20,6 +20,7 @@ export enum Source {
   gamified = 'Gamified',
   referral = 'Referral',
   internal = 'Internal Transfer',
+  sub = 'Subscription',
 }
 
 export enum TransactionType {
@@ -40,7 +41,7 @@ export interface IBalance {
   type: BalanceType;
   mode: BalanceMode;
   status: BalanceStatus;
-  balance: string;
+  balance: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,7 +52,7 @@ export interface ITransaction {
   type: BalanceType;
   mode: BalanceMode;
   source: Source;
-  amount: string;
+  amount: number;
   transactionType: TransactionType;
   description: string;
   status: TransactionStatus;

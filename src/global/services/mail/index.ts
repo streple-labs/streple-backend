@@ -5,4 +5,5 @@ export enum template {
   reg = 'register',
   reset = 'reset',
   resend = 'resend',
+  tradeNote = 'trade-note',
 }

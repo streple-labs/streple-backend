@@ -6,8 +6,15 @@ import {
   FindManyWrapper,
   FindOneWrapper,
   getAggregateValue,
+  sleep,
 } from '@app/helpers';
-import { HttpClientService, TradeJobWorker } from '@app/services';
+import {
+  HttpClientService,
+  MailService,
+  template,
+  TradeJobWorker,
+} from '@app/services';
+import { User } from '@app/users/entity';
 import {
   ForbiddenException,
   forwardRef,
@@ -18,7 +25,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import Big from 'big.js';
-import { In, Not, Repository } from 'typeorm';
+import { Between, In, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { FollowTraders } from '../entities';
 import { Trades } from '../entities/trader.entity';
@@ -45,12 +52,14 @@ import {
 } from '../input';
 import { PriceCache } from '../price-caches';
 import { ActivityService } from './trade.community.service';
+import { endOfWeek, startOfWeek } from 'date-fns';
 
 @Injectable()
 export class TradesService {
   private canQuery: boolean = true;
   constructor(
     @InjectRepository(Trades) private readonly tradeRepo: Repository<Trades>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(FollowTraders)
     private readonly follower: Repository<FollowTraders>,
     @Inject(forwardRef(() => TradeJobWorker))
@@ -60,6 +69,8 @@ export class TradesService {
     private readonly configService: ConfigService,
     private readonly priceCache: PriceCache,
     private readonly activityFeed: ActivityService,
+    @Inject(forwardRef(() => MailService))
+    private readonly mailService: MailService,
   ) {}
 
   async create(create: createTrade, user: AuthUser): Promise<Trades> {
@@ -178,11 +189,12 @@ export class TradesService {
     });
 
     const newTrade = await this.tradeRepo.save(save);
-    // broadcast to users on the pages
+
+    // notify the pro trades followers about the new posted trade
     if (!create.isDraft) {
-      this.tradeJW.scheduleCopyTrade({
-        tradeId: newTrade.id,
+      this.tradeJW.sendNotificationToFollowers({
         creatorId: user.id,
+        tradeId: newTrade.id,
       });
     }
     void this.activityFeed.create({
@@ -703,124 +715,233 @@ export class TradesService {
     });
   }
 
-  async copyTradeBatch(dto: copyTrade) {
+  async sendNotificationJob(dto: copyTrade) {
+    // Get followers
     const followers = await this.follower.find({
       where: { followingId: dto.creatorId },
       select: ['followerId'],
     });
-    if (!followers.length) return { total: 0, copied: 0, skipped: 0 };
+    if (!followers.length)
+      return { total: 0, succeeded: 0, failed: 0, failedEmails: [] };
 
     const userIds = followers.map((f) => f.followerId);
-    // Get the trade (skip if not available)
+
+    // Get creator info
+    const creator = await this.userRepo.findOne({
+      where: { id: dto.creatorId },
+      select: ['fullName'],
+    });
+    if (!creator)
+      return { total: 0, succeeded: 0, failed: 0, failedEmails: [] };
+
+    // Get follower user details
+    const users = await this.userRepo.find({
+      where: { id: In(userIds) },
+      select: ['email', 'fullName'],
+    });
+    if (!users.length) {
+      return { total: 0, succeeded: 0, failed: 0, failedEmails: [] };
+    }
+
+    // Batch and summary
+    const batchSize = 10;
+    const total = users.length;
+    let succeeded = 0;
+    let failed = 0;
+    const failedEmails: string[] = [];
+
     const trade = await this.tradeRepo.findOne({
-      where: { id: dto.tradeId, status: Not(In([status.close, status.draft])) },
+      where: { id: dto.tradeId },
     });
+
     if (!trade) {
-      return { total: userIds.length, copied: 0, skipped: userIds.length };
+      return { total: 0, succeeded: 0, failed: 0, failedEmails: [] };
     }
 
-    // Get a set of users who already copied this trade
-    const existingCopies = await this.tradeRepo.find({
-      where: { identifier: trade.identifier, userId: In(userIds) },
-      select: ['userId'],
-    });
-    const copiedUserIds = new Set(existingCopies.map((t) => t.userId));
+    for (let i = 0; i < total; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
 
-    const usersToCopy = userIds.filter((uid) => !copiedUserIds.has(uid));
+      const results = await Promise.allSettled(
+        batch.map((user) =>
+          this.mailService.sendMail(
+            user.email,
+            template.tradeNote,
+            `${creator.fullName} just posted a new trade`,
+            {
+              username: user.fullName,
+              proTraderName: creator.fullName,
+              symbol: trade.asset,
+              direction: trade.orderType,
+              price: trade.margin,
+              stopLoss: trade.stopLoss,
+              takeProfit: trade.takeProfit,
+              currentYear: new Date().getFullYear(),
+            },
+          ),
+        ),
+      );
 
-    // TODO Check if user have the margin required
-    const tradesToInsert = usersToCopy.map((userId) => {
-      const { user, creator, id, createdAt, updatedAt, ...rest } = trade;
-      return {
-        ...rest,
-        userId,
-        tradeType: type.copy,
-      };
-    });
+      // Update summary counters
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') succeeded++;
+        else {
+          failed++;
+          failedEmails.push(batch[idx].email);
+        }
+      });
 
-    // const concurrency = 100;
-    // const limit = pLimit(concurrency);
-    // For *many thousands* (beyond 10k-100k) you may need to batch further (say, 1000 at a time), but for 100 or a few hundred, you’re absolutely within normal DB practice.
-    if (tradesToInsert.length > 0) {
-      await this.tradeRepo
-        .createQueryBuilder()
-        .insert()
-        .into(Trades)
-        .values(tradesToInsert)
-        .orIgnore()
-        .execute();
+      if (i + batchSize < total) {
+        await sleep(500); // Sleep between batches to manage concurrency
+      }
     }
+    const summary = { total, succeeded, failed, failedEmails };
 
-    await this.tradeRepo.update(
-      { identifier: trade.identifier },
-      { noOfCopiers: () => `noOfCopiers + ${usersToCopy.length}` },
-    );
+    // logger.info('Email job summary:', summary);
 
-    return {
-      total: userIds.length,
-      copied: usersToCopy.length,
-      skipped: copiedUserIds.size,
-    };
+    return summary;
   }
 
-  // async copyTrade(dto: copyTrade, user: AuthUser): Promise<Trades> {
-  //   // TODO Get the trade margin and check the user balance
-  //   // TODO if the user balance is greater than the margin allow copy else throw insufficient balance error
-  //   return this.tradeRepo.manager.transaction(async (manager) => {
-  //     // Lock the original trade row for update
-  //     const lockedTrade = await manager.findOne(Trades, {
-  //       where: { id: dto.tradeId, status: Not(status.close) },
-  //       lock: { mode: 'pessimistic_write' },
-  //     });
-
-  //     if (!lockedTrade) throw new NotFoundException('Trade not found');
-
-  //     // Check if user already copied this trade (by identifier)
-  //     const isUserHaveSameTrade = await this.tradeRepo.findOne({
-  //       where: { identifier: lockedTrade.identifier, userId: user.id },
-  //     });
-
-  //     if (isUserHaveSameTrade) {
-  //       throw new ForbiddenException('Same trade already executed');
-  //     }
-
-  //     const currentPrice = this.currentPrice(lockedTrade.asset);
-  //     if (lockedTrade.status === status.pending) {
-  //       const isOpen = this.executeTrade({
-  //         action: lockedTrade.action,
-  //         currentPrice,
-  //         entryPrice: lockedTrade.entryPrice,
-  //         orderType: lockedTrade.orderType,
-  //       });
-  //       lockedTrade.status = isOpen ? status.open : status.pending;
-  //     }
-
-  //     lockedTrade.noOfCopiers = Big(lockedTrade.noOfCopiers)
-  //       .plus(Big(1))
-  //       .toNumber();
-  //     const { id, userId, tradeType, ...rest } = lockedTrade;
-
-  //     const save = manager.create(Trades, {
-  //       ...rest,
-  //       userId: user.id,
-  //       currentPrice,
-  //       tradeType: type.copy,
-  //     });
-
-  //     const newTrade = await manager.save(save);
-  //     await manager.update(
-  //       Trades,
-  //       { identifier: lockedTrade.identifier },
-  //       {
-  //         currentPrice,
-  //         noOfCopiers: lockedTrade.noOfCopiers,
-  //         status: lockedTrade.status,
-  //       },
-  //     );
-
-  //     return newTrade;
+  // async copyTradeBatch(dto: copyTrade) {
+  //   const followers = await this.follower.find({
+  //     where: { followingId: dto.creatorId },
+  //     select: ['followerId'],
   //   });
+  //   if (!followers.length) return { total: 0, copied: 0, skipped: 0 };
+
+  //   const userIds = followers.map((f) => f.followerId);
+  //   // Get the trade (skip if not available)
+  //   const trade = await this.tradeRepo.findOne({
+  //     where: { id: dto.tradeId, status: Not(In([status.close, status.draft])) },
+  //   });
+  //   if (!trade) {
+  //     return { total: userIds.length, copied: 0, skipped: userIds.length };
+  //   }
+
+  //   // Get a set of users who already copied this trade
+  //   const existingCopies = await this.tradeRepo.find({
+  //     where: { identifier: trade.identifier, userId: In(userIds) },
+  //     select: ['userId'],
+  //   });
+  //   const copiedUserIds = new Set(existingCopies.map((t) => t.userId));
+
+  //   const usersToCopy = userIds.filter((uid) => !copiedUserIds.has(uid));
+
+  //   // TODO Check if user have the margin required
+  //   const tradesToInsert = usersToCopy.map((userId) => {
+  //     const { user, creator, id, createdAt, updatedAt, ...rest } = trade;
+  //     return {
+  //       ...rest,
+  //       userId,
+  //       tradeType: type.copy,
+  //     };
+  //   });
+
+  //   // const concurrency = 100;
+  //   // const limit = pLimit(concurrency);
+  //   // For *many thousands* (beyond 10k-100k) you may need to batch further (say, 1000 at a time), but for 100 or a few hundred, you’re absolutely within normal DB practice.
+  //   if (tradesToInsert.length > 0) {
+  //     await this.tradeRepo
+  //       .createQueryBuilder()
+  //       .insert()
+  //       .into(Trades)
+  //       .values(tradesToInsert)
+  //       .orIgnore()
+  //       .execute();
+  //   }
+
+  //   await this.tradeRepo.update(
+  //     { identifier: trade.identifier },
+  //     { noOfCopiers: () => `noOfCopiers + ${usersToCopy.length}` },
+  //   );
+
+  //   return {
+  //     total: userIds.length,
+  //     copied: usersToCopy.length,
+  //     skipped: copiedUserIds.size,
+  //   };
   // }
+
+  async copyTrade(dto: copyTrade, user: AuthUser): Promise<Trades> {
+    // TODO Get the trade margin and check the user balance
+    // TODO if the user balance is greater than the margin allow copy else throw insufficient balance error
+    return this.tradeRepo.manager.transaction(async (manager) => {
+      // find if the user account is on subscription if not the user can only copy five trade per week
+      // TODO check for subscription
+      // if (!userAccount) throw new Error('User account not found');
+
+      // const userSubscription = await manager.findOne(UserSubscription, {
+      //   where: { userId: user.id },
+      // });
+
+      const userSubscription = false;
+      const current = new Date();
+      const start = startOfWeek(current, { weekStartsOn: 1 });
+      const end = endOfWeek(current, { weekStartsOn: 1 });
+
+      if (!userSubscription) {
+        const weeklyCopy = await manager.find(Trades, {
+          where: { userId: user.id, createdAt: Between(start, end) },
+        });
+
+        if (weeklyCopy.length >= 5) {
+          throw new ForbiddenException('Weekly trade copied exhausted');
+        }
+      }
+
+      // Lock the original trade row for update
+      const lockedTrade = await manager.findOne(Trades, {
+        where: { id: dto.tradeId, status: Not(status.close) },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!lockedTrade) throw new NotFoundException('Trade not found');
+
+      // Check if user already copied this trade (by identifier)
+      const isUserHaveSameTrade = await manager.findOne(Trades, {
+        where: { identifier: lockedTrade.identifier, userId: user.id },
+      });
+
+      if (isUserHaveSameTrade) {
+        throw new ForbiddenException('Same trade already executed');
+      }
+
+      const currentPrice = this.currentPrice(lockedTrade.asset);
+      if (lockedTrade.status === status.pending) {
+        const isOpen = this.executeTrade({
+          action: lockedTrade.action,
+          currentPrice,
+          entryPrice: lockedTrade.entryPrice,
+          orderType: lockedTrade.orderType,
+        });
+        lockedTrade.status = isOpen ? status.open : status.pending;
+      }
+
+      lockedTrade.noOfCopiers = Big(lockedTrade.noOfCopiers)
+        .plus(Big(1))
+        .toNumber();
+      const { id, userId, tradeType, ...rest } = lockedTrade;
+
+      const save = manager.create(Trades, {
+        ...rest,
+        userId: user.id,
+        currentPrice,
+        tradeType: type.copy,
+      });
+
+      const newTrade = await manager.save(save);
+      await manager.update(
+        Trades,
+        { identifier: lockedTrade.identifier },
+        {
+          currentPrice,
+          noOfCopiers: lockedTrade.noOfCopiers,
+          status: lockedTrade.status,
+        },
+      );
+
+      return newTrade;
+    });
+  }
 
   private async findAllOpenTrade() {
     const qb = this.tradeRepo

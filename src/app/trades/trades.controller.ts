@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import {
+  CopyTrade,
   CreateFollower,
   CreateTrade,
   Curve,
@@ -72,12 +73,12 @@ export class TradesController {
     return this.tradesService.findOne(query);
   }
 
-  // @Post('copy-trade')
-  // @ApiOperation({ summary: 'Copy trades' })
-  // @ApiBody({ type: CopyTrade })
-  // copyTrade(@Body() body: CopyTrade) {
-  //   return this.tradesService.copyTradeBatch(body);
-  // }
+  @Post('copy-trade')
+  @ApiOperation({ summary: 'Copy trades' })
+  @ApiBody({ type: CopyTrade })
+  copyTrade(@Body() body: CopyTrade, @SessionUser() user: AuthUser) {
+    return this.tradesService.copyTrade(body, user);
+  }
 
   @Get('trading-stats')
   @Abilities('TRADE_MANAGE')

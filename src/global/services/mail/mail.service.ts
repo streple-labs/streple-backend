@@ -27,7 +27,7 @@ export class MailService {
       const html = compiledTemplate(context);
 
       const response = await this.httpClientService.postData(
-        'https://streple-mailer.vercel.app/send-mail',
+        'http://localhost:5001/send-mail',
         {
           email,
           subject,

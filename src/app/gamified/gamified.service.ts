@@ -50,14 +50,14 @@ export class GamifiedService {
     });
     const data = await this.onboarding.save(question);
 
-    void this.fundUser(
-      {
-        amount: '250',
-        des: 'Welcome Bonus',
-        key: `welcome ${user.id}`,
-      },
-      user,
-    );
+    // void this.fundUser(
+    //   {
+    //     amount: 250,
+    //     des: 'Welcome Bonus',
+    //     key: `welcome ${user.id}`,
+    //   },
+    //   user,
+    // );
 
     return data;
   }
@@ -80,7 +80,7 @@ export class GamifiedService {
     const earnedAmount = earningsMap[create.phase]?.[create.level] ?? 0;
     void this.fundUser(
       {
-        amount: earnedAmount.toString(),
+        amount: earnedAmount,
         des: `Commission upon completing ${create.level} of ${create.phase} in gamified`,
         key: `${create.phase} ${create.level} ${user.id}`,
       },
@@ -244,7 +244,7 @@ export class GamifiedService {
   }
 
   private fundUser(
-    data: { amount: string; des: string; key: string },
+    data: { amount: number; des: string; key: string },
     user: AuthUser,
   ) {
     return this.balanceService.transactionOnDemo(

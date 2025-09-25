@@ -37,7 +37,7 @@ export interface findOneTransaction extends findOne {
 }
 
 export interface transfer {
-  amount: string;
+  amount: number;
   fromAccount: BalanceType;
   toAccount: BalanceType;
   mode: BalanceMode;

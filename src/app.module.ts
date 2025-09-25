@@ -19,6 +19,7 @@ import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
 import { ReferralModule } from './app/referral/referral.module';
+import { SubscriptionModule } from './app/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ReferralModule } from './app/referral/referral.module';
     TradesModule,
     BalanceModule,
     ReferralModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [

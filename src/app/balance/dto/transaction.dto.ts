@@ -106,7 +106,7 @@ export class Transfer implements transfer {
   @IsNumber()
   @IsPositive()
   @ApiProperty({ type: Number })
-  amount: string;
+  amount: number;
 
   @IsString()
   @IsIn(Object.values(BalanceType))

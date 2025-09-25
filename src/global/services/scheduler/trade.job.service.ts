@@ -22,8 +22,13 @@ type CopyJob = plainJob & {
   data: copyTrade;
 };
 
+type notification = plainJob & {
+  data: copyTrade;
+};
+
 const trading = 'trades';
 const copyTrade = 'copyTrades';
+const follower = 'sendNotificationToFollowers';
 
 @Injectable()
 export class TradeJobWorker {
@@ -74,23 +79,53 @@ export class TradeJobWorker {
     },
   );
 
+  private readonly sendNotification = defineWorker(
+    follower,
+    async (job: notification) => {
+      await this.handleSendNotification(job.data);
+    },
+    {
+      queue: this.jobQueueService.jobQueue,
+      onCompleted: (job) => console.log(`✅ Job ${job.id} completed`),
+      onFailed: (job, error) =>
+        console.error(`❌ Job ${job.id} failed: ${error}`),
+      pollIntervall: 5000,
+      logger: {
+        info() {},
+        error(message) {
+          console.error(message);
+        },
+        warn() {},
+        debug() {},
+      },
+    },
+  );
+
   async start() {
     await this.trading.start();
   }
 
-  async startCopyTrading() {
-    await this.copyTrades.start();
+  async startSendingNotification() {
+    await this.sendNotification.start();
   }
+
+  // async startCopyTrading() {
+  //   await this.copyTrades.start();
+  // }
 
   async stop() {
     await this.trading.stop();
     this.jobQueueService.jobQueue.close();
   }
 
-  async stopCopyTrading() {
-    await this.copyTrades.stop();
-    this.jobQueueService.jobQueue.close();
+  async stopSendingNotification() {
+    await this.sendNotification.stop();
   }
+
+  // async stopCopyTrading() {
+  //   await this.copyTrades.stop();
+  //   this.jobQueueService.jobQueue.close();
+  // }
 
   scheduleTrade(data: trade, delay: number) {
     const JobId = this.jobQueueService.jobQueue.add(trading, data, { delay });
@@ -102,6 +137,11 @@ export class TradeJobWorker {
     return jobId;
   }
 
+  sendNotificationToFollowers(data: copyTrade) {
+    const { id } = this.jobQueueService.jobQueue.add(follower, data);
+    return id;
+  }
+
   closeJob(jobId: number) {
     return this.jobQueueService.jobQueue.markJobAsDone(jobId);
   }
@@ -110,7 +150,22 @@ export class TradeJobWorker {
     let details: copyTrade;
     try {
       details = typeof data === 'string' ? await JSON.parse(data) : data;
-      await this.tradeService.copyTradeBatch(details);
+      console.log(details);
+      // await this.tradeService.copyTradeBatch(details);
+    } catch (error) {
+      console.error('Error processing Trade job:', error);
+      throw error;
+    }
+  }
+
+  private async handleSendNotification(
+    data: string | copyTrade,
+  ): Promise<void> {
+    let details: copyTrade;
+    try {
+      details = typeof data === 'string' ? await JSON.parse(data) : data;
+
+      await this.tradeService.sendNotificationJob(details);
     } catch (error) {
       console.error('Error processing Trade job:', error);
       throw error;
