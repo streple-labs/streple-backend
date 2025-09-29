@@ -96,11 +96,14 @@ export class AuthService {
       throw new BadRequestException('Access denied users only');
     }
 
+    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
+      user;
+
     if (user.isTfaEnabled) {
       return {
         status: 'TFA_REQUIRED',
         message: 'Enter your 2FA code',
-        email: user.email,
+        email: sanitizedUser,
       };
     }
 
@@ -110,8 +113,7 @@ export class AuthService {
       role: user.role,
       roleLevel: user.roleLevel,
     };
-    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
-      user;
+
     const access = await this.generateTokens(payload, '1h');
     const refresh = await this.generateTokens(payload, '2h');
     return {
@@ -137,11 +139,14 @@ export class AuthService {
       throw new BadRequestException('Access denied');
     }
 
+    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
+      user;
+
     if (user.isTfaEnabled) {
       return {
         status: 'TFA_REQUIRED',
         message: 'Enter your 2FA code',
-        email: user.email,
+        data: sanitizedUser,
       };
     }
 
@@ -152,8 +157,6 @@ export class AuthService {
       roleLevel: user.roleLevel,
     };
 
-    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
-      user;
     const access = await this.generateTokens(payload, '1h');
     const refresh = await this.generateTokens(payload, '2h');
     return {
