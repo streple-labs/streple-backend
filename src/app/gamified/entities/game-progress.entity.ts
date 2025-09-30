@@ -17,7 +17,7 @@ export class GameProgress implements gameProgress {
   @Column()
   userId: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   user: User;
 
   @Column({ type: 'enum', enum: Phase, nullable: false })

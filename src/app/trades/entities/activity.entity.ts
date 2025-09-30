@@ -14,7 +14,7 @@ export class TradeActivityFeeds implements ActivityFeed {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (u) => u.id)
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   user: User;
 
   @Column({ type: 'uuid', nullable: false })

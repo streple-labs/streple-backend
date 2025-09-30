@@ -28,7 +28,11 @@ export class RoleModel implements Roles {
   @Column({ default: 1 })
   roleLevel: number;
 
-  @OneToMany(() => Privileges, (priv) => priv.role, { cascade: true })
+  @OneToMany(() => Privileges, (priv) => priv.role, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
   privileges: Privileges[];
 
   @OneToMany(() => User, (user) => user.roles)
@@ -48,6 +52,7 @@ export class Privileges implements privileges {
 
   @ManyToOne(() => RoleModel, (role) => role.privileges, {
     onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'role_id' })
   role: RoleModel;

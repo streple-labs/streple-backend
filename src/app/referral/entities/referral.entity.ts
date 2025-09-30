@@ -52,14 +52,22 @@ export class Referral implements IReferral {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, {
+    nullable: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
   @JoinColumn({ name: 'indirectReferrerId' })
   indirectReferrer?: User;
 
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, {
+    nullable: true,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
   @JoinColumn({ name: 'directReferrerId' })
   directReferrer: User;
 }

@@ -17,7 +17,7 @@ export class GamingOnboarding implements gameOnboard {
   @Column({ type: 'uuid', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   user: User;
 
   @Column()

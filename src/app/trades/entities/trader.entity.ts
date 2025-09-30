@@ -25,14 +25,14 @@ export class Trades implements ITrades {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (u) => u.id)
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   user: User;
 
   @Index()
   @Column({ type: 'uuid', nullable: false })
   userId: string;
 
-  @ManyToOne(() => User, (u) => u.id)
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   creator: User;
 
   @Index()

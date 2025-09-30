@@ -100,7 +100,10 @@ export class User implements IUser {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => RoleModel, (role) => role.users)
+  @ManyToOne(() => RoleModel, (role) => role.users, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
   @JoinColumn({ name: 'role_id' })
   roles: RoleModel;
 

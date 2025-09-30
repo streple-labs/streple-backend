@@ -105,9 +105,9 @@ export class AuthController {
   googleAuthRedirect(@Req() req: AuthRequest, @Res() res: Response) {
     const { user } = req.user;
 
-    if (user.isTfaEnabled) {
-      return res.redirect(`http://localhost:5173?email=${user.email}`);
-    }
+    // if (user.isTfaEnabled) {
+    //   return res.redirect(`http://localhost:5173?email=${user.email}`);
+    // }
 
     const authUser = {
       sub: user.id,
