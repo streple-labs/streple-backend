@@ -48,6 +48,7 @@ export type AuthUser = {
   id: string;
   email: string;
   role: Role;
+  username: string;
   roleLevel: number;
 };
 

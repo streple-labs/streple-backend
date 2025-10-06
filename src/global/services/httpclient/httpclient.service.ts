@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { AxiosError, AxiosResponse } from 'axios';
 import { catchError, firstValueFrom, map, retry, timeout, timer } from 'rxjs';
+import { fetchParameter, postParameter } from './client.interface';
 
 @Injectable()
 export class HttpClientService {
@@ -11,14 +12,16 @@ export class HttpClientService {
   onApplicationBootstrap() {
     this.httpService.axiosRef.defaults.timeout = 30_000;
   }
+
   public fetchData = async <T extends object | object[]>(
-    uri: string,
-    header?: Record<string, string>,
+    input: fetchParameter,
   ) => {
+    const { uri, params, headers } = input;
     const response = await firstValueFrom(
       this.httpService
         .get<T>(uri, {
-          headers: header,
+          params,
+          headers,
         })
         .pipe(
           retry({
@@ -42,13 +45,10 @@ export class HttpClientService {
     return response;
   };
 
-  async postData<T = unknown>(
-    url: string,
-    body: unknown,
-    headers?: Record<string, string>,
-  ): Promise<T> {
+  async postData<T = unknown>(input: postParameter): Promise<T> {
+    const { uri, body, headers } = input;
     return firstValueFrom(
-      this.httpService.post<T>(url, body, { headers }).pipe(
+      this.httpService.post<T>(uri, body, headers).pipe(
         retry({
           count: 3,
           delay: (err: AxiosError, retryCount) => {
@@ -56,7 +56,7 @@ export class HttpClientService {
             if (!canRetry) throw err;
 
             this.logger.warn(
-              `POST ${url} – retry ${retryCount}/3 after ${err.message}`,
+              `POST ${uri} – retry ${retryCount}/3 after ${err.message}`,
             );
             return timer(retryCount * 2000); // linear backoff
           },
@@ -67,7 +67,7 @@ export class HttpClientService {
           const code = err.response?.status || 0;
           const payload = err.response?.data;
           this.logger.error(
-            `POST ${url} failed after retries – ${code} ${JSON.stringify(payload)}`,
+            `POST ${uri} failed after retries – ${code} ${JSON.stringify(payload)}`,
           );
           throw new ForbiddenException(`${err.message}`);
         }),

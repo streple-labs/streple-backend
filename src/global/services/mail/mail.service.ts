@@ -26,15 +26,15 @@ export class MailService {
       const compiledTemplate = handlebars.compile(templateHtml);
       const html = compiledTemplate(context);
 
-      const response = await this.httpClientService.postData(
-        'http://localhost:5001/send-mail',
-        {
+      const response = await this.httpClientService.postData({
+        uri: 'https://streple-mailer.vercel.app/send-mail',
+        body: {
           email,
           subject,
           context: html,
           withReply,
         },
-      );
+      });
       console.log(response);
     } catch (error) {
       console.error('Error sending email:', error);

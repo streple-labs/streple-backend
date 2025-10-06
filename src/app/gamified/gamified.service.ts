@@ -1,13 +1,7 @@
-import { BalanceService } from '@app/balance/balance.service';
-import {
-  BalanceMode,
-  BalanceType,
-  Source,
-  TransactionStatus,
-  TransactionType,
-} from '@app/balance/interface';
 import { AuthUser, DocumentResult } from '@app/common';
-import { buildFindManyQuery, FindManyWrapper, Slug } from '@app/helpers';
+import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
+import { transactionType, walletSymbol } from '@app/wallets/input';
+import { WalletsService } from '@app/wallets/wallets.service';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -34,7 +28,7 @@ export class GamifiedService {
     private readonly userBadge: Repository<UserBadge>,
     @InjectRepository(Badge)
     private readonly badgeRepo: Repository<Badge>,
-    private readonly balanceService: BalanceService,
+    private readonly walletService: WalletsService,
   ) {}
 
   async create(create: gameOnboard, user: AuthUser): Promise<GamingOnboarding> {
@@ -50,14 +44,13 @@ export class GamifiedService {
     });
     const data = await this.onboarding.save(question);
 
-    // void this.fundUser(
-    //   {
-    //     amount: 250,
-    //     des: 'Welcome Bonus',
-    //     key: `welcome ${user.id}`,
-    //   },
-    //   user,
-    // );
+    void this.fundUser(
+      {
+        amount: 250,
+        key: `welcome_${user.id}`,
+      },
+      user,
+    );
 
     return data;
   }
@@ -81,8 +74,7 @@ export class GamifiedService {
     void this.fundUser(
       {
         amount: earnedAmount,
-        des: `Commission upon completing ${create.level} of ${create.phase} in gamified`,
-        key: `${create.phase} ${create.level} ${user.id}`,
+        key: `${create.phase}_${create.level}_${user.id}`,
       },
       user,
     );
@@ -243,22 +235,11 @@ export class GamifiedService {
     return EARNINGS_MAP;
   }
 
-  private fundUser(
-    data: { amount: number; des: string; key: string },
-    user: AuthUser,
-  ) {
-    return this.balanceService.transactionOnDemo(
-      {
-        amount: data.amount,
-        description: data.des,
-        mode: BalanceMode.demo,
-        type: BalanceType.funding,
-        source: Source.gamified,
-        transactionType: TransactionType.deposit,
-        status: TransactionStatus.successful,
-        idempotencyKey: Slug(data.key),
-      },
-      user,
-    );
+  private fundUser(data: { amount: number; key: string }, user: AuthUser) {
+    return this.walletService.adjustWallet(user, transactionType.dep, {
+      amount: data.amount,
+      idempotency: data.key,
+      currency: walletSymbol.stp,
+    });
   }
 }

@@ -1,4 +1,3 @@
-import { BalanceModule } from '@app/balance/module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -12,14 +11,15 @@ import { BlogManagerModule } from './app/blog-manager/blog-manager.module';
 import { EmailCenterModule } from './app/email-center/email-center.module';
 import { GamifiedModule } from './app/gamified/gamified.module';
 import { LearninghubModule } from './app/learninghub/learninghub.module';
+import { ReferralModule } from './app/referral/referral.module';
+import { SubscriptionModule } from './app/subscription/subscription.module';
 import { TradesModule } from './app/trades/trades.module';
 import { UsersModule } from './app/users/users.module';
+import { WalletsModule } from './app/wallets/wallets.module';
 import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
-import { ReferralModule } from './app/referral/referral.module';
-import { SubscriptionModule } from './app/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -46,9 +46,9 @@ import { SubscriptionModule } from './app/subscription/subscription.module';
     GamifiedModule,
     SeederModule,
     TradesModule,
-    BalanceModule,
     ReferralModule,
     SubscriptionModule,
+    WalletsModule,
   ],
   controllers: [AppController],
   providers: [

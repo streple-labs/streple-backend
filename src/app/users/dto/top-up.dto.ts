@@ -74,6 +74,14 @@ export class FindManyUser extends FindMany implements findManyUser {
   @Transform(({ value }: transform) =>
     typeof value === 'string' ? [value] : value,
   )
+  username?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiProperty({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
   privilege?: string[];
 }
 
@@ -90,6 +98,18 @@ export class FindOneUser extends FindOne implements findOneUser {
   @ApiPropertyOptional({ type: String })
   @Transform(({ value }: { value: string }) => (value ? value.trim() : null))
   email?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  @Transform(({ value }: { value: string }) => (value ? value.trim() : null))
+  username: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  @Transform(({ value }: { value: string }) => (value ? value.trim() : null))
+  refercode?: string;
 }
 
 export class UpdateProfile implements updateProfile {
@@ -126,6 +146,11 @@ export class UpdateProfile implements updateProfile {
     if (value === 'false' || value === false) return false;
   })
   hasAnswer: boolean;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ type: String })
+  username?: string;
 }
 
 export class CreateUser implements createUser {

@@ -1,4 +1,4 @@
-import { BalanceSharedModule } from '@app/balance/module';
+import { WalletsModule } from '@app/wallets/wallets.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Badge, GameProgress, GamingOnboarding, UserBadge } from './entities';
@@ -13,7 +13,7 @@ import { GamifiedService } from './gamified.service';
       UserBadge,
       Badge,
     ]),
-    BalanceSharedModule,
+    WalletsModule,
   ],
   controllers: [GamifiedController],
   providers: [GamifiedService],

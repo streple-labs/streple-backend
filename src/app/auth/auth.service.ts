@@ -63,7 +63,7 @@ export class AuthService {
     }
 
     const data = await this.users.createUser(dto);
-    referDetails.userId = data.id;
+    if (data) referDetails.userId = data.id;
     void this.referralService.create(referDetails);
     return data;
   }
@@ -112,6 +112,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       roleLevel: user.roleLevel,
+      username: user.username,
     };
 
     const access = await this.generateTokens(payload, '1h');
@@ -155,6 +156,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       roleLevel: user.roleLevel,
+      username: user.username,
     };
 
     const access = await this.generateTokens(payload, '1h');
@@ -188,6 +190,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       roleLevel: user.roleLevel,
+      username: user.username,
     };
 
     const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =

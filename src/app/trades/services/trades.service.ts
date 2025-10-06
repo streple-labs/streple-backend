@@ -237,23 +237,23 @@ export class TradesService {
   }
 
   async getTokenNames() {
-    const { data } = await this.httpClient.fetchData(
-      'https://api.coingecko.com/api/v3/coins/list',
-    );
+    const { data } = await this.httpClient.fetchData({
+      uri: 'https://api.coingecko.com/api/v3/coins/list',
+    });
     return data;
   }
 
   async fetchPrice(data: tokenPrice): Promise<tokenPriceResponse[]> {
     // https://api.coingecko.com/api/v3/simple/price
     const params = this.toUrlParams(data);
-    const url = `https://api.coingecko.com/api/v3/coins/markets?${params.toString()}`;
+    const uri = `https://api.coingecko.com/api/v3/coins/markets?${params.toString()}`;
     const options = {
       accept: 'application/json',
       'x-cg-demo-api-key': this.configService.get('COINGECKO_DEMO_API_KEY'),
     };
     const { data: response } = await this.httpClient.fetchData<
       tokenPriceResponse[]
-    >(url, options);
+    >({ uri, headers: options });
     return response;
   }
 

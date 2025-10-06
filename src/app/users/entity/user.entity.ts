@@ -1,4 +1,5 @@
 import { Subscription } from '@app/subscription/entities';
+import { Wallets } from '@app/wallets/entities';
 import * as bcrypt from 'bcrypt';
 import {
   Column,
@@ -24,6 +25,9 @@ import { RoleModel } from './roles.entity';
 export class User implements IUser {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ unique: true, nullable: true })
+  username: string;
 
   @Column()
   fullName: string;
@@ -106,6 +110,9 @@ export class User implements IUser {
   })
   @JoinColumn({ name: 'role_id' })
   roles: RoleModel;
+
+  @OneToMany(() => Wallets, (wallet) => wallet.user)
+  wallets: Wallets[];
 
   /* helpers */
   async validatePassword(pw: string): Promise<boolean> {

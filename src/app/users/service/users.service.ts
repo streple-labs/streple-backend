@@ -32,6 +32,8 @@ import {
   updateProfile,
   userType,
 } from '../interface';
+import { customAlphabet } from 'nanoid';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -43,37 +45,43 @@ export class UsersService {
 
   /* ---------------- registration / lookup ------------------ */
   async createUser(dto: SignupDto) {
-    const user = this.repo.create({ ...dto, email: dto.email.toLowerCase() });
-    user.password = await bcrypt.hash(dto.password, 10);
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otp = otp;
-    user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    try {
+      const user = this.repo.create({ ...dto, email: dto.email.toLowerCase() });
+      user.password = await bcrypt.hash(dto.password, 10);
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.otp = otp;
+      user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-    const role = await this.roleModel.findOne({
-      where: { name: Role.follower },
-    });
+      const role = await this.roleModel.findOne({
+        where: { name: Role.follower },
+      });
 
-    if (role) user.roles = role;
+      if (role) user.roles = role;
 
-    const data = await this.repo.save({
-      ...user,
-      auth_type: authType.email,
-      type: userType.external,
-      roleLevel: 1,
-      refercode: this.generateReferralCode(),
-    });
-    void this.mailer.sendMail(
-      user.email,
-      template.reg,
-      'Verify Your Email Address to Complete Registration',
-      { otp, username: user.fullName, currentYear: new Date().getFullYear() },
-    ); //Service.sendOtpEmail(user.email, otp, 'verify');
+      const data = await this.repo.save({
+        ...user,
+        auth_type: authType.email,
+        type: userType.external,
+        roleLevel: 1,
+        refercode: this.generateReferralCode(),
+      });
+      void this.mailer.sendMail(
+        user.email,
+        template.reg,
+        'Verify Your Email Address to Complete Registration',
+        { otp, username: user.fullName, currentYear: new Date().getFullYear() },
+      ); //Service.sendOtpEmail(user.email, otp, 'verify');
 
-    return {
-      message: 'OTP sent to your email',
-      email: user.email,
-      id: data.id,
-    };
+      return {
+        message: 'OTP sent to your email',
+        email: user.email,
+        id: data.id,
+      };
+    } catch (error) {
+      if (error.code !== '23505') {
+        throw new BadRequestException('duplicate information detected');
+      }
+    }
   }
 
   async createUserWithGoogle(dto: SignupDto): Promise<User> {
@@ -96,39 +104,45 @@ export class UsersService {
   }
 
   async createAdmin(dto: createUser) {
-    const adminExists = await this.findByEmail(dto.email.toLowerCase());
-    if (adminExists) throw new BadRequestException('Admin already exists');
+    try {
+      const adminExists = await this.findByEmail(dto.email.toLowerCase());
+      if (adminExists) throw new BadRequestException('Admin already exists');
 
-    const pass = this.generatePassword(10);
-    const password = await bcrypt.hash(pass, 10);
-    const role = await this.roleModel.findOne({ where: { name: dto.role } });
-    if (role) {
-      dto.roles = role;
+      const pass = this.generatePassword(10);
+      const password = await bcrypt.hash(pass, 10);
+      const role = await this.roleModel.findOne({ where: { name: dto.role } });
+      if (role) {
+        dto.roles = role;
+      }
+
+      const admin = this.repo.create({
+        ...dto,
+        isVerified: true,
+        otpVerified: true,
+        password,
+        auth_type: authType.email,
+        type: userType.internal,
+      });
+
+      await this.repo.save(admin);
+      await this.mailer.sendMail(
+        dto.email,
+        template.admin,
+        `Welcome dear ${dto.role?.toLowerCase()}`,
+        {
+          username: dto.fullName,
+          email: dto.email,
+          password: pass,
+          login_url: '',
+          currentYear: new Date().getFullYear(),
+        },
+      );
+      return { message: 'Admin account created successfully' };
+    } catch (error) {
+      if (error.code !== '23505') {
+        throw new BadRequestException('duplicate information detected');
+      }
     }
-
-    const admin = this.repo.create({
-      ...dto,
-      isVerified: true,
-      otpVerified: true,
-      password,
-      auth_type: authType.email,
-      type: userType.internal,
-    });
-
-    await this.repo.save(admin);
-    await this.mailer.sendMail(
-      dto.email,
-      template.admin,
-      `Welcome dear ${dto.role?.toLowerCase()}`,
-      {
-        username: dto.fullName,
-        email: dto.email,
-        password: pass,
-        login_url: '',
-        currentYear: new Date().getFullYear(),
-      },
-    );
-    return { message: 'Admin account created successfully' };
   }
 
   async login(email: string) {
@@ -319,15 +333,24 @@ export class UsersService {
     });
   }
 
-  async updateProfile(data: updateProfile, user: AuthUser): Promise<IUser> {
-    const findUser = await this.repo.findOne({ where: { id: user.id } });
-    if (!findUser) {
-      throw new ForbiddenException('User not found');
+  async updateProfile(
+    data: updateProfile,
+    user: AuthUser,
+  ): Promise<IUser | undefined> {
+    try {
+      const findUser = await this.repo.findOne({ where: { id: user.id } });
+      if (!findUser) {
+        throw new ForbiddenException('User not found');
+      }
+
+      await this.repo.update({ id: user.id }, { ...data });
+
+      return findUser;
+    } catch (error) {
+      if (error.code !== '23505') {
+        throw new BadRequestException('username already taken');
+      }
     }
-
-    await this.repo.update({ id: user.id }, { ...data });
-
-    return findUser;
   }
 
   /* ---------------- dashboard ------------------------------ */
@@ -366,6 +389,10 @@ export class UsersService {
 
     if (query.roleName) {
       where['role'] = query.roleName;
+    }
+
+    if (query.username) {
+      where['username'] = query.username;
     }
 
     return where;
@@ -408,5 +435,13 @@ export class UsersService {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
+  }
+
+  private generate_uid(length: number): string {
+    const generator = customAlphabet(
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      length,
+    );
+    return generator();
   }
 }

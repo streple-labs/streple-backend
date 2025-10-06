@@ -4,20 +4,20 @@ import {
   GamingOnboarding,
   UserBadge,
 } from '@app/gamified/entities';
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
-import { EmailCenter, WaitList } from 'src/app/email-center/entities';
-import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
-import { User } from '@app/users/entity/user.entity';
-import { Privileges, RoleModel } from '@app/users/entity';
-import { Balance, Transactions } from '@app/balance/entities';
+import { Referral, ReferralRewardSetting } from '@app/referral/entities';
+import { Subscription, SubscriptionHistory } from '@app/subscription/entities';
 import {
   FollowTraders,
   TradeActivityFeeds,
   Trades,
 } from '@app/trades/entities';
-import { Referral, ReferralRewardSetting } from '@app/referral/entities';
-import { Subscription, SubscriptionHistory } from '@app/subscription/entities';
+import { Privileges, RoleModel } from '@app/users/entity';
+import { User } from '@app/users/entity/user.entity';
+import { Account, Transaction, Wallets } from '@app/wallets/entities';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
+import { EmailCenter, WaitList } from 'src/app/email-center/entities';
+import { LearningHub } from 'src/app/learninghub/entities/learninghub.entity';
 
 export default (): TypeOrmModuleOptions => ({
   type: process.env.DB_TYPE as 'postgres',
@@ -42,8 +42,9 @@ export default (): TypeOrmModuleOptions => ({
     Trades,
     TradeActivityFeeds,
     FollowTraders,
-    Balance,
-    Transactions,
+    Transaction,
+    Wallets,
+    Account,
     Referral,
     ReferralRewardSetting,
     Subscription,

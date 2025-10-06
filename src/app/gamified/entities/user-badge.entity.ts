@@ -18,13 +18,13 @@ export class UserBadge implements IUserBadge {
   @Column()
   userId: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   user: User;
 
   @Column({ type: 'uuid', nullable: false })
   badgeId: string;
 
-  @ManyToOne(() => Badge, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @ManyToOne(() => Badge, { onDelete: 'CASCADE' })
   badge: Badge;
 
   @Column({ type: 'timestamp' })

@@ -1,5 +1,6 @@
 import { findMany, findOne } from '@app/common';
 import { Roles } from './roles.interface';
+import { IWallets } from '@app/wallets/input';
 
 export enum Role {
   follower = 'FOLLOWER',
@@ -34,6 +35,7 @@ export enum userType {
 export interface IUser {
   id: string;
   fullName: string;
+  username: string;
   email: string;
   password: string;
   isVerified: boolean;
@@ -53,6 +55,7 @@ export interface IUser {
   tfaSecret?: string;
   roleLevel: number;
   roles: Roles;
+  wallets: IWallets[];
   refercode?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -76,12 +79,14 @@ export interface findManyUser extends findMany {
   roleName?: string[];
   privilege?: string[];
   type?: string[];
+  username?: string[];
 }
 
 export interface findOneUser extends findOne {
   fullName?: string;
   email?: string;
   refercode?: string;
+  username?: string;
 }
 
 export interface createUser

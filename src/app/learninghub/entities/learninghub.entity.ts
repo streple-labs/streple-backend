@@ -47,7 +47,7 @@ export class LearningHub implements ILearningHub {
   @Column({ type: 'enum', enum: hubStatus, default: hubStatus.draft })
   status: hubStatus;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   creator: User;
 
   @Column({ type: 'uuid', nullable: true })
