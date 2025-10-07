@@ -27,6 +27,7 @@ import {
   Slug,
 } from 'src/global/helpers';
 import { BlogJobWorker, UploadService } from 'src/global/services';
+import { Role } from '@app/users/interface';
 
 @Injectable()
 export class BlogManagerService {
@@ -182,11 +183,18 @@ export class BlogManagerService {
     return blog;
   }
 
-  async remove(param: paramSearch) {
+  async remove(param: paramSearch, user: AuthUser) {
     const blog = await this.blog.findOne({ where: { id: param.id } });
 
     if (!blog) {
       throw new ForbiddenException('Blog post not found');
+    }
+
+    if (
+      blog.creatorId !== user.id &&
+      ![Role.admin, Role.superAdmin].includes(user.role)
+    ) {
+      throw new ForbiddenException('You are not the creator of this blog');
     }
 
     return this.blog.delete(param.id);

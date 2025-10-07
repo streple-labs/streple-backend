@@ -107,8 +107,8 @@ export class BlogManagerController {
   @Abilities('BLOG_DELETE')
   @ApiParam({ name: 'id', required: true, type: ParamSearch })
   @ApiOperation({ summary: 'Delete One Blog' })
-  remove(@Param() param: ParamSearch) {
-    return this.blogManagerService.remove(param);
+  remove(@Param() param: ParamSearch, @SessionUser() user: AuthUser) {
+    return this.blogManagerService.remove(param, user);
   }
 
   private validateDocuments(document: Express.Multer.File): void {

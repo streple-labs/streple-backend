@@ -112,7 +112,7 @@ export class SeederService {
             'LEARNINGHUB_READ',
             'LEARNINGHUB_UPDATE',
             'BLOG_CREATE',
-            'BLOG_EDIT',
+            'BLOG_READ',
             'BLOG_UPDATE',
           ];
 
@@ -147,7 +147,7 @@ export class SeederService {
             'LEARNINGHUB_READ',
             'LEARNINGHUB_UPDATE',
             'BLOG_CREATE',
-            'BLOG_EDIT',
+            'BLOG_READ',
             'BLOG_UPDATE',
           ];
 
