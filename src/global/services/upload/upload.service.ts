@@ -19,7 +19,7 @@ export class UploadService {
 
   public async uploadDocument(
     file: Express.Multer.File,
-    folderPath: 'images' | 'documents' = 'images',
+    folderPath: 'images' | 'documents' | 'video' = 'images',
   ): Promise<string> {
     // eslint-disable-next-line no-useless-catch
     try {
@@ -37,7 +37,8 @@ export class UploadService {
 
       await this.s3Client.send(new PutObjectCommand(s3Params));
 
-      return `https://${bucketName}.s3.${this.configService.getOrThrow('AWS_REGION')}.amazonaws.com/${s3Key}`;
+      // return `https://${bucketName}.s3.${this.configService.getOrThrow('AWS_REGION')}.amazonaws.com/${s3Key}`;
+      return `https://d38slanwovjv7z.cloudfront.net/${s3Key}`;
     } catch (error) {
       throw error;
     }

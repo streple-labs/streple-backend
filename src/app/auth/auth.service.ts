@@ -8,7 +8,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
 import { jwtConstants } from './constants';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -225,19 +225,26 @@ export class AuthService {
   }
 
   async refreshToken(token: string) {
-    const payload: JwtPayload = await this.jwtService.verifyAsync(token, {
-      secret: jwtConstants.secret,
-    });
+    try {
+      const payload: JwtPayload = await this.jwtService.verifyAsync(token, {
+        secret: jwtConstants.secret,
+      });
 
-    if (!payload) {
-      throw new UnauthorizedException('Invalid or expired token');
+      if (!payload) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
+
+      const { iat, exp, ...rest } = payload;
+      const access = await this.generateTokens(rest, '1h');
+      const refresh = await this.generateTokens(rest, '2h');
+
+      return { streple_access_token: access, streple_refresh_token: refresh };
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
     }
-
-    const { iat, exp, ...rest } = payload;
-    const access = await this.generateTokens(rest, '1h');
-    const refresh = await this.generateTokens(rest, '2h');
-
-    return { streple_access_token: access, streple_refresh_token: refresh };
   }
 
   private generateTokens(user: AuthUser, expiresIn: string) {

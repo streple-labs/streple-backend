@@ -57,6 +57,7 @@ export interface IUser {
   roles: Roles;
   wallets: IWallets[];
   refercode?: string;
+  transactionPin?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,4 +113,13 @@ export interface ManageTfa {
 export interface verifyTfaEnabling {
   secret: string;
   code: string;
+}
+
+export interface ctp {
+  pin: string;
+}
+
+export interface changePin {
+  oldPin: string;
+  newPin: string;
 }

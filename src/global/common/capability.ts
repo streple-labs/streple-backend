@@ -38,4 +38,5 @@ export const CAPABILITIES = [
 
   // user
   'MANAGE_USER',
+  'MANAGE_PRO_TRADER_USER',
 ];

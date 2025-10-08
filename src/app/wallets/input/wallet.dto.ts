@@ -4,14 +4,17 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 import {
   baseCurrency,
   convert,
   findManyTransaction,
   findOneTransaction,
+  internalTransfer,
   transactionStatus,
   transactionType,
+  walletSymbol,
 } from './wallet.interface';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -201,4 +204,66 @@ export class FindOneTransaction extends FindOne implements findOneTransaction {
     required: false,
   })
   amount?: number;
+}
+
+export class InternalTransfer implements internalTransfer {
+  @IsNumber()
+  @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
+  @ApiProperty({
+    type: Number,
+    example: 100,
+    description: 'Amount to transfer',
+  })
+  amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    type: String,
+    example: 'johndoe',
+    description: 'Recipient username',
+  })
+  username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(Object.values(walletSymbol))
+  @ApiProperty({
+    type: String,
+    example: walletSymbol.naira,
+    enum: Object.values(walletSymbol),
+    description: 'Sender currency',
+  })
+  senderCurrency: walletSymbol;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(Object.values(walletSymbol))
+  @ApiProperty({
+    type: String,
+    example: walletSymbol.naira,
+    enum: Object.values(walletSymbol),
+    description: 'Recipient currency',
+  })
+  recipientCurrency: walletSymbol;
+
+  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    type: String,
+    example: 'uuid',
+    description: 'Idempotency key for the transaction',
+  })
+  idempotency: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    type: String,
+    example: 1234,
+    description: 'transaction pin number',
+  })
+  transactionPin: string;
 }

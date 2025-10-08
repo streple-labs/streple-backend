@@ -4,6 +4,7 @@ import { IUser } from '@app/users/interface';
 export enum walletSymbol {
   naira = 'NGN',
   usdc = 'USDC',
+  dollar = 'USD',
   btc = 'BTC',
   eth = 'ETH',
   stp = 'STP',
@@ -79,8 +80,10 @@ export interface IAccount {
 export interface internalTransfer {
   amount: number;
   username: string;
-  currency: walletSymbol;
+  senderCurrency: walletSymbol;
+  recipientCurrency: walletSymbol;
   idempotency: string;
+  transactionPin: string;
 }
 
 export interface funding {

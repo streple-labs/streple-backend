@@ -19,7 +19,9 @@ import {
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ToggleRoleDto } from '../dto/toggle-role.dto';
 import {
+  ChangePin,
   CreateUser,
+  CTP,
   FindManyUser,
   FindOneUser,
   UpdateProfile,
@@ -91,6 +93,21 @@ export class UsersController {
   @ApiOperation({ summary: 'Find One User' })
   async FindOneUser(@Query() query: FindOneUser) {
     return this.users.findOne(query);
+  }
+
+  @Post('transaction-pin')
+  @ApiBody({ type: CTP })
+  async createTransactionPin(@Body() body: CTP, @SessionUser() user: AuthUser) {
+    return this.users.createTransactionPin(body, user);
+  }
+
+  @Post('change-transaction-pin')
+  @ApiBody({ type: ChangePin })
+  async ChangeTransactionPin(
+    @Body() body: ChangePin,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.users.changeTransactionPin(body, user);
   }
 
   @Post('change-password')

@@ -10,14 +10,17 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
 } from 'class-validator';
 import {
+  changePin,
   createUser,
+  ctp,
   findManyUser,
   findOneUser,
-  updateProfile,
   Role,
+  updateProfile,
   userType,
 } from '../interface';
 
@@ -186,4 +189,26 @@ export class TwoFaToken {
   @IsNotEmpty()
   @ApiProperty({ type: String })
   token: string;
+}
+
+export class CTP implements ctp {
+  @IsString()
+  @MaxLength(4)
+  @IsNotEmpty()
+  @ApiProperty({ type: 'string' })
+  pin: string;
+}
+
+export class ChangePin implements changePin {
+  @IsString()
+  @MaxLength(4)
+  @IsNotEmpty()
+  @ApiProperty({ type: 'string', example: 1234 })
+  oldPin: string;
+
+  @IsString()
+  @MaxLength(4)
+  @IsNotEmpty()
+  @ApiProperty({ type: 'string', example: 1234 })
+  newPin: string;
 }

@@ -11,7 +11,7 @@ import {
   TradeActivityFeeds,
   Trades,
 } from '@app/trades/entities';
-import { Privileges, RoleModel } from '@app/users/entity';
+import { Privileges, Protrader, RoleModel } from '@app/users/entity';
 import { User } from '@app/users/entity/user.entity';
 import { Account, Transaction, Wallets } from '@app/wallets/entities';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -32,6 +32,7 @@ export default (): TypeOrmModuleOptions => ({
     EmailCenter,
     LearningHub,
     User,
+    Protrader,
     GameProgress,
     GamingOnboarding,
     WaitList,

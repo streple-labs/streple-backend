@@ -44,6 +44,7 @@ import {
   walletStatus,
   walletSymbol,
 } from './input';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class WalletsService {
@@ -125,6 +126,26 @@ export class WalletsService {
 
   async internalTransfer(dto: internalTransfer, user: AuthUser) {
     return this.dataSource.manager.transaction(async (manager) => {
+      // check user password
+      const findUser = await manager
+        .createQueryBuilder(User, 'user')
+        .addSelect('user.transactionPin')
+        .where('user.email = :email', { email: user.email.toLowerCase() })
+        .getOne();
+
+      if (!findUser || !findUser.transactionPin) {
+        throw new ForbiddenException('transaction pin not set');
+      }
+
+      const isMatch = await bcrypt.compare(
+        dto.transactionPin,
+        findUser.transactionPin,
+      );
+
+      if (!isMatch) {
+        throw new ForbiddenException('Incorrect transaction pin');
+      }
+
       // Idempotency: prevent double processing
       const existingTx = await this.checkIdempotency(dto.idempotency, manager);
       if (existingTx) {
@@ -140,7 +161,7 @@ export class WalletsService {
       // Fetch & lock sender wallet
       const senderWallet = await this.lockAndFetchWallet(
         user.id,
-        dto.currency,
+        dto.senderCurrency,
         manager,
         true,
       );
@@ -171,14 +192,31 @@ export class WalletsService {
       // Credit recipient
       let recipientWallet = await this.lockAndFetchWallet(
         recipient.id,
-        dto.currency,
+        dto.recipientCurrency,
         manager,
         false,
       );
       const recipientPrevBal = recipientWallet ? recipientWallet.balance : 0;
+
+      const senderAmount = dto.amount;
+
+      if (dto.senderCurrency !== dto.recipientCurrency) {
+        // Convert amount based on cached rates
+        const rates = await this.getCachedRates();
+        const conversion = this.convertFromRates(
+          {
+            amount: dto.amount,
+            from: dto.senderCurrency,
+            to: dto.recipientCurrency,
+          },
+          rates,
+        );
+        dto.amount = conversion.converted;
+      }
+
       if (!recipientWallet) {
         recipientWallet = manager.create(Wallets, {
-          currency: dto.currency,
+          currency: dto.recipientCurrency,
           user: { id: recipient.id },
           balance: dto.amount,
         });
@@ -188,10 +226,10 @@ export class WalletsService {
       }
 
       // Log histories
-      const transferDesc = `Transfer ${dto.amount} ${dto.currency} from ${user.username} to ${recipient.username}`;
+      const transferDesc = `Transfer ${senderAmount} ${dto.senderCurrency} from ${user.username ?? findUser.fullName} to ${recipient.username}`;
       await this.logTransactionHistory(
         {
-          amount: dto.amount,
+          amount: senderAmount,
           userId: user.id,
           type: transactionType.tra,
           wallet: senderWallet,
@@ -216,7 +254,7 @@ export class WalletsService {
           previousBal: recipientPrevBal,
           currentBal: Big(recipientPrevBal).add(dto.amount).toNumber(),
           status: transactionStatus.success,
-          description: `Received ${dto.amount} ${dto.currency} from ${user.username}`,
+          description: `Received ${dto.amount} ${dto.recipientCurrency} from ${user.username ?? findUser.fullName}`,
         },
         manager,
       );
@@ -594,8 +632,6 @@ export class WalletsService {
     if (this.fiatCurrencies.includes(symbol)) {
       return 1 / (fiatRates.rates[symbol] || (symbol === 'USD' ? 1 : 0));
     }
-
-    console.log(symbol);
 
     if (symbol === 'STP') {
       // 1000 STP = 1 USD → 1 STP = 0.001 USD

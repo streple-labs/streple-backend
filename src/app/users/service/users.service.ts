@@ -18,13 +18,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
+import { Repository, TypeORMError } from 'typeorm';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { toggle } from '../dto/toggle-role.dto';
 import { RoleModel, User } from '../entity';
 import {
   authType,
+  changePin,
   createUser,
+  ctp,
   findManyUser,
   findOneUser,
   IUser,
@@ -150,6 +152,7 @@ export class UsersService {
       .createQueryBuilder('user')
       .addSelect('user.password')
       .addSelect('user.tfaSecret')
+      .addSelect('user.transactionPin')
       .where('user.email = :email', { email: email.toLowerCase() })
       .getOne();
   }
@@ -266,6 +269,60 @@ export class UsersService {
     return { message: 'Password changed successfully' };
   }
 
+  async createTransactionPin(
+    dto: ctp,
+    user: AuthUser,
+  ): Promise<{ message: string }> {
+    try {
+      const findUser = await this.login(user.email);
+      if (!findUser) {
+        throw new ForbiddenException('User account not found');
+      }
+
+      if (findUser.transactionPin) {
+        throw new ForbiddenException(
+          'Transaction pin already created for this account',
+        );
+      }
+
+      const hashPin = await bcrypt.hash(dto.pin, 10);
+      findUser.transactionPin = hashPin;
+      await this.repo.save(findUser);
+      return { message: 'Pin set successfully' };
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async changeTransactionPin(
+    dto: changePin,
+    user: AuthUser,
+  ): Promise<{ message: string }> {
+    try {
+      const findUser = await this.login(user.email);
+      if (!findUser) throw new ForbiddenException('Account not found');
+
+      if (!findUser.transactionPin) {
+        throw new ForbiddenException('Incorrect password');
+      }
+
+      const isMatch = await bcrypt.compare(dto.oldPin, findUser.transactionPin);
+      if (!isMatch) throw new ForbiddenException('Incorrect password');
+
+      findUser.transactionPin = await bcrypt.hash(dto.newPin, 10);
+      await this.repo.save(findUser);
+      return { message: 'Pin change successfully' };
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
   /* ---------------- role toggle ---------------------------- */
   async toggleRole(id: string, dto: toggle) {
     const user = await this.findById(id);
@@ -343,6 +400,14 @@ export class UsersService {
         throw new ForbiddenException('User not found');
       }
 
+      if (data.username) {
+        const existing = await this.repo.findOne({
+          where: { username: data.username },
+        });
+        if (existing) {
+          throw new ForbiddenException('Username already taken');
+        }
+      }
       await this.repo.update({ id: user.id }, { ...data });
 
       return findUser;

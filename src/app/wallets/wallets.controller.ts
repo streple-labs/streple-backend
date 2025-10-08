@@ -14,6 +14,7 @@ import {
   FindManyTransaction,
   FindOneTransaction,
   transactionType,
+  InternalTransfer,
 } from './input';
 import { WalletsService } from './wallets.service';
 
@@ -29,6 +30,16 @@ export class WalletsController {
   @ApiOperation({ summary: 'Create Virtual Naira Account' })
   async createAccount(@SessionUser() user: AuthUser) {
     return this.walletsService.createVirtualAccount(user);
+  }
+
+  @Post('internal-transfer')
+  @ApiOperation({ summary: 'Internal Transfer' })
+  @ApiBody({ type: InternalTransfer })
+  async internalTransfer(
+    @Body() body: InternalTransfer,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.walletsService.internalTransfer(body, user);
   }
 
   @Post('convert')
@@ -47,13 +58,27 @@ export class WalletsController {
   @Get('recent-transactions')
   @ApiOperation({ summary: 'Get User Recent Transactions' })
   async recentTransactions(@SessionUser() user: AuthUser) {
-    return this.walletsService.findManyTransaction({
+    const response = await this.walletsService.findManyTransaction({
       userId: [user.id],
       type: transactionType.tra,
       include: ['recipient'],
       sort: ['createdAt'],
-      limit: 5,
+      limit: 50,
     });
+
+    // Filter to get only the latest transaction per recipient
+    const seen = new Set();
+    const uniqueRecipients = [];
+    for (const tx of response.data) {
+      const recipientId = tx.recipient?.id;
+      if (recipientId && !seen.has(recipientId)) {
+        seen.add(recipientId);
+        uniqueRecipients.push(tx);
+        if (uniqueRecipients.length === 5) break;
+      }
+    }
+
+    return uniqueRecipients;
   }
 
   @Get('transaction')
