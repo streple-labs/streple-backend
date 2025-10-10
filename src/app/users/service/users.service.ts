@@ -287,6 +287,7 @@ export class UsersService {
 
       const hashPin = await bcrypt.hash(dto.pin, 10);
       findUser.transactionPin = hashPin;
+      findUser.hasTransactionPin = true;
       await this.repo.save(findUser);
       return { message: 'Pin set successfully' };
     } catch (error) {

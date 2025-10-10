@@ -30,7 +30,6 @@ export class FollowTraders implements FollowTrader {
   @ManyToOne(() => User, {
     eager: true,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'followerId' })
   follower?: User;
@@ -38,7 +37,6 @@ export class FollowTraders implements FollowTrader {
   @ManyToOne(() => User, {
     eager: true,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'followingId' })
   following?: User;

@@ -41,6 +41,9 @@ export class User implements IUser {
   @Column({ select: false, nullable: true })
   transactionPin?: string;
 
+  @Column({ nullable: false, default: false })
+  hasTransactionPin: boolean;
+
   @Column({ default: false })
   isVerified: boolean;
 

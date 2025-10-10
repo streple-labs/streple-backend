@@ -96,8 +96,14 @@ export class AuthService {
       throw new BadRequestException('Access denied users only');
     }
 
-    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
-      user;
+    const {
+      password,
+      createdAt,
+      updatedAt,
+      tfaSecret,
+      transactionPin,
+      ...sanitizedUser
+    } = user;
 
     if (user.isTfaEnabled) {
       return {
@@ -140,8 +146,14 @@ export class AuthService {
       throw new BadRequestException('Access denied');
     }
 
-    const { password, createdAt, updatedAt, tfaSecret, ...sanitizedUser } =
-      user;
+    const {
+      password,
+      createdAt,
+      updatedAt,
+      tfaSecret,
+      transactionPin,
+      ...sanitizedUser
+    } = user;
 
     if (user.isTfaEnabled) {
       return {

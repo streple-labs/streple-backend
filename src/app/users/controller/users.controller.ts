@@ -82,14 +82,14 @@ export class UsersController {
   }
 
   @Get('get-users')
-  @Abilities('MANAGE_USER')
+  // @Abilities('MANAGE_USER')
   @ApiOperation({ summary: 'Find Many User' })
   async FindManyUser(@Query() query: FindManyUser) {
     return this.users.findMany(query);
   }
 
   @Get('get-user')
-  @Abilities('MANAGE_USER')
+  // @Abilities('MANAGE_USER')
   @ApiOperation({ summary: 'Find One User' })
   async FindOneUser(@Query() query: FindOneUser) {
     return this.users.findOne(query);

@@ -42,6 +42,7 @@ export function buildFindManyQuery<T extends ObjectLiteral>(
   searchFields: string[] = [],
   relations: string[] = [],
   sort: string[] = ['updatedAt'], //'updatedAt:DESC'
+  castToTextFields: string[] = [],
 ): SelectQueryBuilder<T> {
   let paramCount = 0;
 
@@ -100,9 +101,24 @@ export function buildFindManyQuery<T extends ObjectLiteral>(
     qb.andWhere(
       new Brackets((qb2) => {
         for (const field of searchFields) {
-          qb2.orWhere(`${alias}.${field} ILIKE :search`, {
-            search: `%${search}%`,
-          });
+          let fieldAlias = alias;
+          let column = field;
+
+          // Support dot notation for joined fields
+          if (field.includes('.')) {
+            [fieldAlias, column] = field.split('.');
+          }
+
+          // Check if this field should be cast to text
+          if (castToTextFields.includes(column)) {
+            qb2.orWhere(`CAST(${fieldAlias}.${column} AS TEXT) ILIKE :search`, {
+              search: `%${search}%`,
+            });
+          } else {
+            qb2.orWhere(`${fieldAlias}.${column} ILIKE :search`, {
+              search: `%${search}%`,
+            });
+          }
         }
       }),
     );

@@ -13,7 +13,12 @@ import {
 } from '@app/trades/entities';
 import { Privileges, Protrader, RoleModel } from '@app/users/entity';
 import { User } from '@app/users/entity/user.entity';
-import { Account, Transaction, Wallets } from '@app/wallets/entities';
+import {
+  Account,
+  Beneficiary,
+  Transaction,
+  Wallets,
+} from '@app/wallets/entities';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
 import { EmailCenter, WaitList } from 'src/app/email-center/entities';
@@ -50,6 +55,7 @@ export default (): TypeOrmModuleOptions => ({
     ReferralRewardSetting,
     Subscription,
     SubscriptionHistory,
+    Beneficiary,
   ],
   ssl:
     process.env.NODE_ENV === 'development'

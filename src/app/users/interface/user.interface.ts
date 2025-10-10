@@ -58,6 +58,7 @@ export interface IUser {
   wallets: IWallets[];
   refercode?: string;
   transactionPin?: string;
+  hasTransactionPin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

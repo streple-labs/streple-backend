@@ -10,11 +10,13 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosError } from 'axios';
+import * as bcrypt from 'bcrypt';
 import Big from 'big.js';
 import { nanoid } from 'nanoid';
 import {
@@ -24,18 +26,21 @@ import {
   Repository,
   TypeORMError,
 } from 'typeorm';
-import { Account, Transaction, Wallets } from './entities';
+import { Account, Beneficiary, Transaction, Wallets } from './entities';
 import {
   cache,
   convert,
   convertResponse,
   fetchRatesResponse,
   fiatRatesResponse,
+  findManyBeneficiary,
   findManyTransaction,
+  findOneBeneficiary,
   findOneTransaction,
   funding,
   getEncryptedData,
   internalTransfer,
+  saveBeneficiary,
   transactionStatus,
   transactionType,
   txnHistory,
@@ -44,7 +49,6 @@ import {
   walletStatus,
   walletSymbol,
 } from './input';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class WalletsService {
@@ -69,6 +73,8 @@ export class WalletsService {
     private readonly accountRepo: Repository<Account>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Beneficiary)
+    private readonly beneficiary: Repository<Beneficiary>,
     private readonly dataSource: DataSource,
     private readonly httpClient: HttpClientService,
     private readonly configService: ConfigService,
@@ -225,6 +231,14 @@ export class WalletsService {
         await this.applyWalletDelta(recipientWallet, dto.amount, manager);
       }
 
+      // save as beneficiary
+      if (dto.beneficiary) {
+        await this.saveBeneficiary(
+          { recipient, userId: user.id, internal: true },
+          manager,
+        );
+      }
+
       // Log histories
       const transferDesc = `Transfer ${senderAmount} ${dto.senderCurrency} from ${user.username ?? findUser.fullName} to ${recipient.username}`;
       await this.logTransactionHistory(
@@ -313,8 +327,8 @@ export class WalletsService {
     let totalUsd = 0;
     const walletSummaries = [];
 
-    // Define all wallet types your app supports
-    const supportedCurrencies = ['NGN', 'USD', 'BTC', 'STP', 'ETH', 'USDC'];
+    // Define all wallet types app supports
+    const supportedCurrencies = ['NGN', 'STP', 'USDC'];
 
     try {
       const userWallets = await this.walletRepo.find({
@@ -405,6 +419,58 @@ export class WalletsService {
       const { include, sort, ...filters } = query;
 
       return FindOneWrapper<Transaction>(this.transRepo, {
+        include,
+        sort,
+        filters,
+      });
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async findManyBeneficiary(
+    query: findManyBeneficiary,
+  ): Promise<DocumentResult<Beneficiary>> {
+    try {
+      const where = this.filterBeneficiary(query);
+      const qb = this.beneficiary.createQueryBuilder('beneficiary');
+      buildFindManyQuery(
+        qb,
+        'beneficiary',
+        where,
+        query.search,
+        [
+          'accountName',
+          'bankName',
+          'accountNumber',
+          'recipient.fullName',
+          'recipient.username',
+          'recipient.email',
+        ],
+        query.include,
+        query.sort,
+        ['accountNumber'],
+      );
+
+      return FindManyWrapper(qb, query.page, query.limit);
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async findOneBeneficiary(
+    query: findOneBeneficiary,
+  ): Promise<Document<Beneficiary>> {
+    try {
+      const { include, sort, ...filters } = query;
+
+      return FindOneWrapper<Beneficiary>(this.beneficiary, {
         include,
         sort,
         filters,
@@ -589,6 +655,33 @@ export class WalletsService {
     }
   }
 
+  // save beneficiary
+  private async saveBeneficiary(data: saveBeneficiary, manager: EntityManager) {
+    try {
+      const where: Record<string, any> = {};
+
+      if (data.accountNumber) {
+        where.accountNumber = data.accountNumber;
+      } else if (data.recipient?.id) {
+        where.recipient = { id: data.recipient.id };
+      } else {
+        throw new InternalServerErrorException('No search criteria provided');
+      }
+
+      const findIfExisted = await manager.findOne(Beneficiary, { where });
+
+      if (findIfExisted) return findIfExisted;
+
+      const saved = manager.create(Beneficiary, data);
+      return await manager.save(Beneficiary, saved);
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
   private async getCachedRates(): Promise<fetchRatesResponse> {
     const now = Date.now();
     const cacheValid =
@@ -633,9 +726,14 @@ export class WalletsService {
       return 1 / (fiatRates.rates[symbol] || (symbol === 'USD' ? 1 : 0));
     }
 
+    // if (symbol === 'STP') {
+    //   // 1000 STP = 1 USD → 1 STP = 0.001 USD
+    //   return 0.001;
+    // }
+
     if (symbol === 'STP') {
-      // 1000 STP = 1 USD → 1 STP = 0.001 USD
-      return 0.001;
+      // 1000 STP = 10 USD → 1 STP = 0.01 USD
+      return 0.01;
     }
 
     const cryptoId = this.cryptoMap[symbol];
@@ -647,24 +745,31 @@ export class WalletsService {
   }
 
   private async fetchRates(): Promise<fetchRatesResponse> {
-    const [fiatRes, cryptoRes] = await Promise.all([
-      this.httpClient.fetchData<fiatRatesResponse>({
-        uri: `${this.fiatUrl}/USD`,
-      }),
+    try {
+      const [fiatRes, cryptoRes] = await Promise.all([
+        this.httpClient.fetchData<fiatRatesResponse>({
+          uri: `${this.fiatUrl}/USD`,
+        }),
 
-      this.httpClient.fetchData<usdcResponse>({
-        uri: `${this.coingeckoBase}/simple/price`,
-        params: {
-          ids: Object.values(this.cryptoMap).join(','),
-          vs_currencies: 'usd,ngn',
-        },
-      }),
-    ]);
+        this.httpClient.fetchData<usdcResponse>({
+          uri: `${this.coingeckoBase}/simple/price`,
+          params: {
+            ids: Object.values(this.cryptoMap).join(','),
+            vs_currencies: 'usd,ngn',
+          },
+        }),
+      ]);
 
-    const fiatRates = fiatRes.data;
-    const cryptoRates = cryptoRes.data;
+      const fiatRates = fiatRes.data;
+      const cryptoRates = cryptoRes.data;
 
-    return { fiatRates, cryptoRates };
+      return { fiatRates, cryptoRates };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
   }
 
   private filterTransactions(data: findManyTransaction) {
@@ -676,6 +781,22 @@ export class WalletsService {
     if (data.amount) where['amount'] = data.amount;
     if (data.recipientId) {
       where['recipient'] = { 'recipient.id': data.recipientId };
+    }
+    return where;
+  }
+
+  private filterBeneficiary(data: findManyBeneficiary) {
+    const where: Record<string, any> = {};
+    if (data.accountName) where['accountName'] = data.accountName;
+    if (data.accountNumber) where['accountNumber'] = data.accountNumber;
+    if (data.bankName) where['bankName'] = data.bankName;
+    if (data.userId) where['userId'] = data.userId;
+    if (data.internal !== undefined) where['internal'] = { $eq: data.internal };
+    if (data.fullName) {
+      where['recipient'] = { 'recipient.fullName': data.fullName };
+    }
+    if (data.username) {
+      where['recipient'] = { 'recipient.username': data.username };
     }
     return where;
   }

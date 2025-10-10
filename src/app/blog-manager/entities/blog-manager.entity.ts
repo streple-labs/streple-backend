@@ -41,10 +41,7 @@ export class BlogManager implements IBlogManager {
   @Column({ type: 'int', nullable: false, default: 0 })
   view: number;
 
-  @ManyToOne(() => User, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
   creator: User;
 
   @Column({ type: 'uuid', nullable: true })

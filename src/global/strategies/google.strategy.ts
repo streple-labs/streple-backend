@@ -1,6 +1,7 @@
-// src/auth/strategies/google.strategy.ts
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { UsersService } from '@app/users/service';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { randomBytes } from 'crypto';
 import * as dotenv from 'dotenv';
@@ -19,27 +20,16 @@ interface GoogleUser {
   hd?: string;
 }
 
-if (!process.env.GOOGLE_CLIENT_ID) {
-  throw new Error('Missing GOOGLE_CLIENT_ID in environment variables');
-}
-
-if (!process.env.GOOGLE_CLIENT_SECRET) {
-  throw new Error('Missing GOOGLE_CLIENT_SECRET in environment variables');
-}
-
-if (!process.env.BASE_URL) {
-  throw new Error('Missing BASE_URL in environment variables');
-}
-
-const GOOGLE_CALLBACK_URL = `${process.env.BASE_URL}/auth/google/redirect`;
-
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-  constructor(private users: UsersService) {
+  constructor(
+    private users: UsersService,
+    private configService: ConfigService,
+  ) {
     super({
-      clientID: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      callbackURL: GOOGLE_CALLBACK_URL,
+      clientID: configService.getOrThrow('GOOGLE_CLIENT_ID'),
+      clientSecret: configService.getOrThrow('GOOGLE_CLIENT_SECRET'),
+      callbackURL: `${configService.getOrThrow('BASE_URL')}/auth/google/redirect`,
       scope: ['email', 'profile'],
     });
   }
@@ -76,8 +66,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, tfaSecret, otp, otpExpiresAt, ...sanitizedUser } = user;
+    const {
+      password,
+      tfaSecret,
+      otp,
+      otpExpiresAt,
+      transactionPin,
+      ...sanitizedUser
+    } = user;
 
     return done(null, { user: sanitizedUser });
   }

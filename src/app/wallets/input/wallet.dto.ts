@@ -1,5 +1,7 @@
 import {
+  IsBoolean,
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -16,9 +18,13 @@ import {
   transactionType,
   walletSymbol,
 } from './wallet.interface';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { FindMany, FindOne, transform } from '@app/common';
+import {
+  findManyBeneficiary,
+  findOneBeneficiary,
+} from './beneficiary.interface';
 
 export class Wallet {}
 
@@ -266,4 +272,111 @@ export class InternalTransfer implements internalTransfer {
     description: 'transaction pin number',
   })
   transactionPin: string;
+
+  @IsBoolean()
+  @ApiProperty({
+    type: Boolean,
+    example: true,
+    description: 'save user as beneficiary',
+  })
+  @Transform(({ value }: { value: string | boolean }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
+  beneficiary: boolean;
+}
+
+export class FindManyBeneficiary
+  extends FindMany
+  implements findManyBeneficiary
+{
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  bankName?: string[];
+
+  @IsOptional()
+  @IsInt({ each: true })
+  @ApiPropertyOptional({ type: [String] })
+  @Transform(({ value }: transform) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((v) => parseInt(v, 10));
+    }
+    if (Array.isArray(value)) {
+      return value.map((v) => parseInt(v, 10));
+    }
+    return value;
+  })
+  accountNumber?: number[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  accountName?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  fullName?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ type: [String] })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? [value] : value,
+  )
+  username?: string[];
+
+  // @IsOptional()
+  // @IsString({ each: true })
+  // @ApiPropertyOptional({ type: [String] })
+  // @Transform(({ value }: transform) =>
+  //   typeof value === 'string' ? [value] : value,
+  // )
+  // userId?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ type: Boolean })
+  @Transform(({ value }: { value: string | boolean }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
+  internal?: boolean;
+}
+
+export class FindOneBeneficiary extends FindOne implements findOneBeneficiary {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  bankName?: string;
+
+  @IsInt()
+  @IsOptional()
+  @ApiPropertyOptional({ type: Number })
+  @Transform(({ value }: transform) =>
+    typeof value === 'string' ? parseInt(value, 10) : value,
+  )
+  accountNumber?: number;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  accountName?: string;
+
+  // @IsString()
+  // @IsOptional()
+  // @ApiPropertyOptional({ type: String })
+  // userId?: string;
 }

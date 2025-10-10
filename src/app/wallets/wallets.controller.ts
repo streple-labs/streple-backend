@@ -15,12 +15,12 @@ import {
   FindOneTransaction,
   transactionType,
   InternalTransfer,
+  FindManyBeneficiary,
+  FindOneBeneficiary,
 } from './input';
 import { WalletsService } from './wallets.service';
 
-@Controller({
-  version: VERSION_NEUTRAL,
-})
+@Controller({ version: VERSION_NEUTRAL })
 @ApiBearerAuth()
 @ApiTags('Wallets')
 export class WalletsController {
@@ -91,5 +91,30 @@ export class WalletsController {
   @ApiOperation({ summary: 'Get All Transactions' })
   async getTransactions(@Query() query: FindManyTransaction) {
     return this.walletsService.findManyTransaction(query);
+  }
+
+  @Get('beneficiaries')
+  @ApiOperation({ summary: 'Get user beneficiaries' })
+  async beneficiaries(
+    @Query() query: FindManyBeneficiary,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.walletsService.findManyBeneficiary({
+      ...query,
+      userId: [user.id],
+      include: [...(query.include ?? []), 'recipient'],
+    });
+  }
+
+  @Get('beneficiary')
+  @ApiOperation({ summary: 'Get single user beneficiary' })
+  async beneficiary(
+    @Query() query: FindOneBeneficiary,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.walletsService.findOneBeneficiary({
+      ...query,
+      userId: user.id,
+    });
   }
 }
