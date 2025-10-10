@@ -367,17 +367,25 @@ export class WalletsService {
         }
       }
 
-      // ✅ Sort the wallets in the defined order
+      // Sort the wallets in the defined order
       walletSummaries.sort(
         (a, b) =>
           supportedCurrencies.indexOf(a.currency) -
           supportedCurrencies.indexOf(b.currency),
       );
 
+      // Transform array to object keyed by currency
+      const walletsObj = walletSummaries.reduce(
+        (acc, w) => {
+          acc[w.currency] = { balance: w.balance, usdValue: w.usdValue };
+          return acc;
+        },
+        {} as Record<string, { balance: number; usdValue: number }>,
+      );
+
       return {
-        // userId: user.id,
         totalUsd: Number(totalUsd.toFixed(2)),
-        wallets: walletSummaries,
+        wallets: walletsObj,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {

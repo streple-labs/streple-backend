@@ -44,13 +44,13 @@ export class GamifiedService {
     });
     const data = await this.onboarding.save(question);
 
-    void this.fundUser(
-      {
-        amount: 250,
-        key: `welcome_${user.id}`,
-      },
-      user,
-    );
+    // void this.fundUser(
+    //   {
+    //     amount: 250,
+    //     key: `welcome_${user.id}`,
+    //   },
+    //   user,
+    // );
 
     return data;
   }
