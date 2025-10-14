@@ -170,7 +170,7 @@ export class BlogManagerService {
 
       this.blogJobWorker.scheduleDelayedEmail(param, delay);
       await this.blog.update(param, { ...update });
-      return blog;
+      return { ...blog, ...update };
     }
 
     // // if blog status is schedule and the updated status is still schedule
@@ -182,7 +182,7 @@ export class BlogManagerService {
     // }
     // when any of them is not responding
     await this.blog.update(param, { ...update });
-    return blog;
+    return { ...blog, ...update };
   }
 
   async remove(param: paramSearch, user: AuthUser) {
