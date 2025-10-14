@@ -127,7 +127,7 @@ export class LearningHubService {
     }
 
     await this.learning.update(param, { ...rest });
-    return findCourse;
+    return { ...findCourse, ...update };
   }
 
   async remove(param: paramSearch, user: AuthUser) {
