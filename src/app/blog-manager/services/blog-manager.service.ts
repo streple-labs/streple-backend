@@ -1,9 +1,11 @@
+import { Role } from '@app/users/interface';
 import {
   ForbiddenException,
   forwardRef,
   Inject,
   Injectable,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   AuthUser,
   Document,
@@ -11,23 +13,22 @@ import {
   paramSearch,
 } from 'src/global/common';
 import {
-  blogStatus,
-  createBlog,
-  findManyBlog,
-  findOneBlog,
-  updatedBlog,
-} from './interface';
-import { InjectRepository } from '@nestjs/typeorm';
-import { BlogManager } from './entities/blog-manager.entity';
-import { Repository } from 'typeorm';
-import {
   buildFindManyQuery,
   FindManyWrapper,
   FindOneWrapper,
   Slug,
 } from 'src/global/helpers';
-import { BlogJobWorker, UploadService } from 'src/global/services';
-import { Role } from '@app/users/interface';
+import { UploadService } from 'src/global/services';
+import { Repository } from 'typeorm';
+import { BlogManager } from '../entities/blog-manager.entity';
+import {
+  blogStatus,
+  createBlog,
+  findManyBlog,
+  findOneBlog,
+  updatedBlog,
+} from '../interface';
+import { BlogScheduleService } from './blog-schedule.service';
 
 @Injectable()
 export class BlogManagerService {
@@ -35,10 +36,8 @@ export class BlogManagerService {
     @InjectRepository(BlogManager)
     private readonly blog: Repository<BlogManager>,
 
-    @Inject(forwardRef(() => BlogJobWorker))
-    private readonly blogJobWorker: BlogJobWorker,
-
-    @Inject(forwardRef(() => UploadService))
+    @Inject(forwardRef(() => BlogScheduleService))
+    private readonly blogJobWorker: BlogScheduleService,
     private readonly uploadFile: UploadService,
   ) {}
 
@@ -137,7 +136,10 @@ export class BlogManagerService {
     }
 
     if (user) {
-      if (blog.creatorId !== user.id) {
+      if (
+        blog.creatorId !== user.id &&
+        ![Role.admin, Role.superAdmin].includes(user.role)
+      ) {
         throw new ForbiddenException('You are not the creator of this blog');
       }
     }

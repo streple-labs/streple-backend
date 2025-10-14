@@ -1,11 +1,15 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-import { Injectable } from '@nestjs/common';
+import { JobQueueService, MailService, template } from '@app/services';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { defineWorker, JobStatus, Job as plainJob } from 'plainjob';
 import { EmailJob } from 'src/global/common';
-import { MailService, template } from '../mail';
-import { JobQueueService } from './job.queue.service';
-import { EmailCenterService } from 'src/app/email-center/email-center.service';
-import { EmailStatus } from 'src/app/email-center/interface';
+import { EmailCenterService } from './email-center.service';
+import { EmailStatus } from '../interface';
 
 export type Job = plainJob & {
   data: {
@@ -18,62 +22,26 @@ export type Job = plainJob & {
 };
 
 @Injectable()
-export class EmailJobWorker {
+export class EmailJobWorker implements OnModuleInit, OnModuleDestroy {
   private readonly jobQueueService = new JobQueueService();
   constructor(
     private readonly mailService: MailService,
+
+    @Inject(forwardRef(() => EmailCenterService))
     private readonly emailService: EmailCenterService,
   ) {}
 
-  private readonly worker = defineWorker(
-    'send-email',
-    async (job: Job) => {
-      await this.sendEmail(job.data);
-    },
-    {
-      queue: this.jobQueueService.jobQueue,
-      onCompleted: async (job: Job) => {
-        const data: EmailJob =
-          typeof job.data === 'string' ? await JSON.parse(job.data) : job.data;
-        await this.emailService.update(
-          { id: data.emailId },
-          {
-            status: EmailStatus.sent,
-          },
-        );
-        console.log(`✅ Job ${job.id} completed`);
-      },
-      onFailed: async (job: Job, error) => {
-        const data: EmailJob =
-          typeof job.data === 'string' ? await JSON.parse(job.data) : job.data;
-        await this.emailService.update(
-          { id: data.emailId },
-          {
-            status: EmailStatus.failed,
-            error,
-          },
-        );
-        console.error(`❌ Job ${job.id} failed: ${error}`);
-      },
-      pollIntervall: 5000,
-      logger: {
-        info() {},
-        error(message) {
-          console.error(message);
-        },
-        warn() {},
-        debug() {},
-      },
-    },
-  );
-
-  async start() {
-    await this.worker.start();
+  onModuleInit() {
+    this.emailWorkerStart().catch((err) => {
+      console.log('Email Center schedule not stating: ', err);
+      process.exit(1);
+    });
   }
 
-  async stop() {
-    await this.worker.stop();
-    this.jobQueueService.jobQueue.close();
+  onModuleDestroy() {
+    this.emailWorkerStop().catch(() => {
+      process.exit(1);
+    });
   }
 
   scheduleEmail(data: EmailJob) {
@@ -163,5 +131,49 @@ export class EmailJobWorker {
       console.error('Error processing email job:', error);
       throw error;
     }
+  }
+
+  private async updateEmail(data: string | EmailJob): Promise<void> {
+    const result: EmailJob =
+      typeof data === 'string' ? await JSON.parse(data) : data;
+    await this.emailService.update(
+      { id: result.emailId },
+      {
+        status: EmailStatus.sent,
+      },
+    );
+  }
+
+  private readonly worker = defineWorker(
+    'send-email',
+    async (job: Job) => {
+      await this.sendEmail(job.data);
+    },
+    {
+      queue: this.jobQueueService.jobQueue,
+      onCompleted: (job: Job) => {
+        void this.updateEmail(job.data);
+      },
+      onFailed: (job: Job) => {
+        void this.updateEmail(job.data);
+      },
+      pollIntervall: 5000,
+      logger: {
+        info() {},
+        error(message) {
+          console.error(message);
+        },
+        warn() {},
+        debug() {},
+      },
+    },
+  );
+
+  private async emailWorkerStart() {
+    await this.worker.start();
+  }
+
+  private async emailWorkerStop() {
+    await this.worker.stop();
   }
 }

@@ -1,17 +1,14 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { UploadService } from '@app/services';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { GlobalModule } from 'src/global/global.module';
 import { BlogManagerController } from './blog-manager.controller';
-import { BlogManagerService } from './blog-manager.service';
 import { BlogManager } from './entities/blog-manager.entity';
+import { BlogManagerService, BlogScheduleService } from './services';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([BlogManager]),
-    forwardRef(() => GlobalModule),
-  ],
+  imports: [TypeOrmModule.forFeature([BlogManager])],
   controllers: [BlogManagerController],
-  providers: [BlogManagerService],
+  providers: [BlogManagerService, BlogScheduleService, UploadService],
   exports: [BlogManagerService],
 })
 export class BlogManagerModule {}

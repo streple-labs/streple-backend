@@ -1,3 +1,4 @@
+import { Abilities, Public, SessionUser } from '@app/decorators';
 import {
   Body,
   Controller,
@@ -22,7 +23,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthUser, ParamSearch } from 'src/global/common';
-import { BlogManagerService } from './blog-manager.service';
 import {
   CreateBlog,
   FindManyBlog,
@@ -30,11 +30,9 @@ import {
   UpdateBlog,
   UploadImage,
 } from './dto';
-import { Abilities, Public, SessionUser } from '@app/decorators';
+import { BlogManagerService } from './services';
 
-@Controller({
-  version: VERSION_NEUTRAL,
-})
+@Controller({ version: VERSION_NEUTRAL })
 @ApiTags('Blog Manager')
 @ApiBearerAuth()
 export class BlogManagerController {

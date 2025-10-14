@@ -1,3 +1,4 @@
+import { User } from '@app/users/entity';
 import { Role } from '@app/users/interface/user.interface';
 import {
   ForbiddenException,
@@ -12,11 +13,10 @@ import {
   FindManyWrapper,
   FindOneWrapper,
 } from 'src/global/helpers';
-import { EmailJobWorker, template } from 'src/global/services';
+import { template } from 'src/global/services';
 import { In, Repository } from 'typeorm';
 import { validate as isUuid } from 'uuid';
-import { User } from '../users/entity/user.entity';
-import { EmailCenter, WaitList } from './entities';
+import { EmailCenter, WaitList } from '../entities';
 import {
   createEmail,
   EmailRecipient,
@@ -24,7 +24,9 @@ import {
   findManyEmail,
   findOneEmail,
   updateEmail,
-} from './interface';
+} from '../interface';
+import { EmailJobWorker } from './email-schedule.service';
+
 @Injectable()
 export class EmailCenterService {
   constructor(
@@ -32,6 +34,7 @@ export class EmailCenterService {
     private readonly emailCenter: Repository<EmailCenter>,
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(WaitList) private readonly wistList: Repository<WaitList>,
+
     @Inject(forwardRef(() => EmailJobWorker))
     private readonly emailJobWorker: EmailJobWorker,
   ) {}

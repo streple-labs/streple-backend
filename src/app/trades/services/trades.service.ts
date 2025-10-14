@@ -8,12 +8,7 @@ import {
   getAggregateValue,
   sleep,
 } from '@app/helpers';
-import {
-  HttpClientService,
-  MailService,
-  template,
-  TradeJobWorker,
-} from '@app/services';
+import { HttpClientService, MailService, template } from '@app/services';
 import { User } from '@app/users/entity';
 import {
   ForbiddenException,
@@ -53,6 +48,7 @@ import {
 import { PriceCache } from '../price-caches';
 import { ActivityService } from './trade.community.service';
 import { endOfWeek, startOfWeek } from 'date-fns';
+import { TradeJobWorker } from './trade-schedule.service';
 
 @Injectable()
 export class TradesService {
@@ -62,14 +58,14 @@ export class TradesService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(FollowTraders)
     private readonly follower: Repository<FollowTraders>,
+
     @Inject(forwardRef(() => TradeJobWorker))
     private readonly tradeJW: TradeJobWorker,
-    @Inject(forwardRef(() => HttpClientService))
+
     private readonly httpClient: HttpClientService,
     private readonly configService: ConfigService,
     private readonly priceCache: PriceCache,
     private readonly activityFeed: ActivityService,
-    @Inject(forwardRef(() => MailService))
     private readonly mailService: MailService,
   ) {}
 

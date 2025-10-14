@@ -1,24 +1,48 @@
-import { Injectable } from '@nestjs/common';
+import { JobQueueService } from '@app/services';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { defineWorker, Job as plainJob } from 'plainjob';
-import { JobQueueService } from './job.queue.service';
-import { BlogManagerService } from 'src/app/blog-manager/blog-manager.service';
-import { blogStatus } from 'src/app/blog-manager/interface';
+import { BlogManagerService } from './blog-manager.service';
+import { blogStatus } from '../interface';
 
 interface post {
   id: string;
 }
 
 type Job = plainJob & {
-  data: {
-    id: string;
-  };
+  data: post;
 };
 const jobType = 'post-blog';
 
 @Injectable()
-export class BlogJobWorker {
+export class BlogScheduleService implements OnModuleInit, OnModuleDestroy {
   private readonly jobQueueService = new JobQueueService();
-  constructor(private readonly blogService: BlogManagerService) {}
+  constructor(
+    @Inject(forwardRef(() => BlogManagerService))
+    private readonly blogService: BlogManagerService,
+  ) {}
+
+  onModuleInit() {
+    this.blogWorkerStart().catch((err) => {
+      console.error('Blog worker not start:', err);
+      process.exit(1);
+    });
+  }
+
+  onModuleDestroy() {
+    this.blogWorkerStop().catch(() => {
+      process.exit(1);
+    });
+  }
+
+  scheduleDelayedEmail(data: post, delayMs: number) {
+    this.jobQueueService.jobQueue.add(jobType, data, { delay: delayMs });
+  }
 
   private readonly worker = defineWorker(
     jobType,
@@ -42,19 +66,6 @@ export class BlogJobWorker {
     },
   );
 
-  async start() {
-    await this.worker.start();
-  }
-
-  async stop() {
-    await this.worker.stop();
-    this.jobQueueService.jobQueue.close();
-  }
-
-  scheduleDelayedEmail(data: post, delayMs: number) {
-    this.jobQueueService.jobQueue.add(jobType, data, { delay: delayMs });
-  }
-
   private async postBlog(data: string | post): Promise<void> {
     let blog: post;
 
@@ -66,5 +77,14 @@ export class BlogJobWorker {
       console.error('Error processing email job:', error);
       throw error;
     }
+  }
+
+  private async blogWorkerStart() {
+    await this.worker.start();
+  }
+
+  private async blogWorkerStop() {
+    await this.worker.stop();
+    this.jobQueueService.jobQueue.close();
   }
 }

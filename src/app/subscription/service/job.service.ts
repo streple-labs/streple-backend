@@ -1,4 +1,4 @@
-import { JobQueueService } from '@app/services/scheduler/job.queue.service';
+import { JobQueueService } from '@app/services';
 import {
   forwardRef,
   Inject,
@@ -36,8 +36,7 @@ export class SubscriptionJobService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    this.SubscriptionJobStop().catch((err) => {
-      console.error('Subscription Job on stop:', err);
+    this.SubscriptionJobStop().catch(() => {
       process.exit(1);
     });
   }
@@ -85,10 +84,8 @@ export class SubscriptionJobService implements OnModuleInit, OnModuleDestroy {
     },
     {
       queue: this.jobQueueService.jobQueue,
-      onCompleted: (job) => console.log(`✅ Job ${job.id} completed`),
-      onFailed: (job: Job, error) => {
-        console.log({ error, job });
-      },
+      onCompleted: () => {},
+      onFailed: () => {},
       pollIntervall: 5000,
       logger: {
         info() {},

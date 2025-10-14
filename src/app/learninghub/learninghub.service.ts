@@ -21,6 +21,7 @@ import {
   Slug,
 } from 'src/global/helpers';
 import { FileProcessorService, UploadService } from 'src/global/services';
+import { Role } from '@app/users/interface';
 @Injectable()
 export class LearningHubService {
   constructor(
@@ -103,8 +104,11 @@ export class LearningHubService {
       throw new ForbiddenException('Course not found');
     }
 
-    if (findCourse.creatorId !== user.id) {
-      throw new ForbiddenException('Access denied');
+    if (
+      findCourse.creatorId !== user.id &&
+      ![Role.admin, Role.superAdmin].includes(user.role)
+    ) {
+      throw new ForbiddenException('You are not the creator of this blog');
     }
 
     if (file) {

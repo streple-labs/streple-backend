@@ -1,3 +1,4 @@
+import { Abilities } from '@app/decorators';
 import {
   Body,
   Controller,
@@ -24,12 +25,9 @@ import {
   FindOneEmail,
   UpdateEmailCenterDto,
 } from './dto/email-center.dto';
-import { EmailCenterService } from './email-center.service';
-import { Abilities } from '@app/decorators';
+import { EmailCenterService } from './services';
 
-@Controller({
-  version: VERSION_NEUTRAL,
-})
+@Controller({ version: VERSION_NEUTRAL })
 @ApiTags('Email Center')
 @ApiBearerAuth()
 export class EmailCenterController {
