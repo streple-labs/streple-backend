@@ -1,4 +1,3 @@
-import { Job } from 'bull';
 import { findMany, findOne } from 'src/global/common';
 
 export enum EmailStatus {
@@ -67,12 +66,4 @@ export interface findManyEmail extends findMany {
   clickRate?: number[];
   recipient?: EmailRecipient[];
   scheduleDate?: Date[];
-}
-
-export interface Jobs extends Job {
-  data: {
-    user: { email: string; name?: string };
-    subject: string;
-    body: string;
-  };
 }

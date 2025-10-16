@@ -92,7 +92,7 @@ export class CreateLearning implements createLearning {
 
   @IsArray()
   @IsOptional()
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @Type(() => Questions)
   @ApiPropertyOptional({ type: [Questions] })
   questions: question[];

@@ -26,8 +26,8 @@ export class LearningHub implements ILearningHub {
   @Column()
   description: string;
 
-  @Column({ type: 'json', nullable: true })
-  contents: string[];
+  @Column({ type: 'text', nullable: true })
+  contents: string;
 
   @Column({ nullable: true })
   thumbnail: string;

@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 import { IAccount } from '../input';
 
-@Entity('accounts')
-export class Account implements IAccount {
+@Entity('fiat-accounts')
+export class FiatAccount implements IAccount {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

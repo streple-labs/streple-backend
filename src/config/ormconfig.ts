@@ -14,10 +14,12 @@ import {
 import { Privileges, Protrader, RoleModel } from '@app/users/entity';
 import { User } from '@app/users/entity/user.entity';
 import {
-  Account,
   Beneficiary,
+  CryptoAccounts,
+  FiatAccount,
   Transaction,
   Wallets,
+  WalletSet,
 } from '@app/wallets/entities';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
@@ -50,12 +52,14 @@ export default (): TypeOrmModuleOptions => ({
     FollowTraders,
     Transaction,
     Wallets,
-    Account,
+    FiatAccount,
+    CryptoAccounts,
     Referral,
     ReferralRewardSetting,
     Subscription,
     SubscriptionHistory,
     Beneficiary,
+    WalletSet,
   ],
   ssl:
     process.env.NODE_ENV === 'development'

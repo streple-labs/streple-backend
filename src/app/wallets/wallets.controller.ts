@@ -11,20 +11,24 @@ import {
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   Convert,
-  FindManyTransaction,
-  FindOneTransaction,
-  transactionType,
-  InternalTransfer,
   FindManyBeneficiary,
+  FindManyTransaction,
   FindOneBeneficiary,
+  FindOneTransaction,
+  InternalTransfer,
+  transactionType,
+  TransferCoin,
 } from './input';
-import { WalletsService } from './wallets.service';
+import { USDCService, WalletsService } from './service';
 
 @Controller({ version: VERSION_NEUTRAL })
 @ApiBearerAuth()
 @ApiTags('Wallets')
 export class WalletsController {
-  constructor(private readonly walletsService: WalletsService) {}
+  constructor(
+    private readonly walletsService: WalletsService,
+    private readonly usdcService: USDCService,
+  ) {}
 
   @Get('virtual-account')
   @ApiOperation({ summary: 'Create Virtual Naira Account' })
@@ -116,5 +120,36 @@ export class WalletsController {
       ...query,
       userId: user.id,
     });
+  }
+
+  @Get('generator')
+  async generate() {
+    return this.usdcService.createWalletSet();
+  }
+
+  @Get('create-wallet')
+  async createWalletForUser(
+    @Query('name') name: string,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.usdcService.createWalletForUser(name, user);
+  }
+
+  @Get('user-token-balance')
+  async UserTokenBalance(@SessionUser() user: AuthUser) {
+    return this.usdcService.userWalletBalance(user);
+  }
+
+  @Post('transfer-coin')
+  @ApiBody({ type: TransferCoin })
+  async TransferCoin(
+    @Body() body: TransferCoin,
+    @SessionUser() user: AuthUser,
+  ) {
+    return this.usdcService.createCryptoTransaction(
+      body.amount,
+      body.walletAddress,
+      user,
+    );
   }
 }

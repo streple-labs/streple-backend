@@ -61,3 +61,4 @@ streple_jobs.db-wal
 cg-websocket.js
 cmc.js
 coingecko.js
+recovery_file.dat

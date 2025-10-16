@@ -97,7 +97,6 @@ export class LearningHubService {
     user: AuthUser,
     file: Express.Multer.File,
   ): Promise<LearningHub> {
-    const { content, ...rest } = update;
     const findCourse = await this.learning.findOne({ where: { id: param.id } });
 
     if (!findCourse) {
@@ -113,20 +112,20 @@ export class LearningHubService {
 
     if (file) {
       const thumb = await this.uploadFile.uploadDocument(file);
-      rest.thumbnail = thumb;
+      update.thumbnail = thumb;
     }
 
-    if (rest.title) {
-      const slug = Slug(rest.title);
-      rest.slug = slug;
+    if (update.title) {
+      const slug = Slug(update.title);
+      update.slug = slug;
     }
 
-    if (content && content.trim()) {
-      const result = this.fileProcessor.processCourseContent(content);
-      rest.contents = result;
+    if (update.content && update.content.trim()) {
+      const result = this.fileProcessor.processCourseContent(update.content);
+      update.contents = result;
     }
 
-    await this.learning.update(param, { ...rest });
+    await this.learning.update(param, { ...update });
     return { ...findCourse, ...update };
   }
 

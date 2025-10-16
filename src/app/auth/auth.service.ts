@@ -259,8 +259,8 @@ export class AuthService {
     }
   }
 
-  private generateTokens(user: AuthUser, expiresIn: string) {
-    return this.jwtService.signAsync(user, {
+  private generateTokens(user: AuthUser, expiresIn: '1h' | '2h') {
+    return this.jwtService.signAsync<AuthUser>(user, {
       secret: jwtConstants.secret,
       expiresIn: expiresIn,
     });

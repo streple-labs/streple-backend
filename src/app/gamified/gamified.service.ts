@@ -1,7 +1,7 @@
 import { AuthUser, DocumentResult } from '@app/common';
 import { buildFindManyQuery, FindManyWrapper } from '@app/helpers';
 import { transactionType, walletSymbol } from '@app/wallets/input';
-import { WalletsService } from '@app/wallets/wallets.service';
+import { WalletsService } from '@app/wallets/service/wallets.service';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';

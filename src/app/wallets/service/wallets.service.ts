@@ -26,7 +26,7 @@ import {
   Repository,
   TypeORMError,
 } from 'typeorm';
-import { Account, Beneficiary, Transaction, Wallets } from './entities';
+import { Beneficiary, FiatAccount, Transaction, Wallets } from '../entities';
 import {
   cache,
   convert,
@@ -48,7 +48,7 @@ import {
   virtualAccountResponse,
   walletStatus,
   walletSymbol,
-} from './input';
+} from '../input';
 
 @Injectable()
 export class WalletsService {
@@ -69,8 +69,8 @@ export class WalletsService {
     @InjectRepository(Wallets) private readonly walletRepo: Repository<Wallets>,
     @InjectRepository(Transaction)
     private readonly transRepo: Repository<Transaction>,
-    @InjectRepository(Account)
-    private readonly accountRepo: Repository<Account>,
+    @InjectRepository(FiatAccount)
+    private readonly accountRepo: Repository<FiatAccount>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(Beneficiary)

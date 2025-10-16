@@ -1,7 +1,7 @@
 // src/file-processor/file-processor.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import * as mammoth from 'mammoth';
-import * as pdf from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import { SanitizeService } from './sanitize.service';
 import { HtmlChunkerService } from './html-chunker.service';
 
@@ -33,9 +33,9 @@ export class FileProcessorService {
 
   async extractTextFromPdf(fileBuffer: Buffer): Promise<string> {
     try {
-      const data: pdf.Result = await pdf(fileBuffer);
-
-      return data.text;
+      const data = new PDFParse({ data: fileBuffer });
+      const { text } = await data.getText();
+      return text;
     } catch (error: unknown) {
       // Proper error handling without unsafe returns
       if (error instanceof Error) {
@@ -51,27 +51,30 @@ export class FileProcessorService {
   async processCourseDocument(
     fileBuffer: Buffer,
     originalname: string,
-  ): Promise<string[]> {
+  ): Promise<string> {
     let html: string;
 
     if (originalname.endsWith('.docx')) {
       const result = await mammoth.convertToHtml({ buffer: fileBuffer });
       html = result.value;
     } else if (originalname.endsWith('.pdf')) {
-      const data = await pdf(fileBuffer);
-      html = `<div>${data.text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</div>`;
+      const data = new PDFParse({ data: fileBuffer });
+      const { text } = await data.getText();
+      html = `<div>${text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</div>`;
     } else {
       throw new Error('Unsupported file type');
     }
 
     const sanitized = this.sanitizeService.sanitize(html);
-    return this.htmlChunker.chunkHtml(sanitized);
+    // return this.htmlChunker.chunkHtml(sanitized);
+    return sanitized;
   }
 
-  processCourseContent(content: string): string[] {
+  processCourseContent(content: string): string {
     try {
       const sanitized = this.sanitizeService.sanitize(content);
-      return this.htmlChunker.chunkHtml(sanitized);
+      // return this.htmlChunker.chunkHtml(sanitized);
+      return sanitized;
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Content processing failed:', error.message);

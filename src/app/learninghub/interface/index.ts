@@ -28,7 +28,7 @@ export type ILearningHub = {
   title: string;
   description: string;
   content?: string;
-  contents?: string[];
+  contents?: string;
   document?: string;
   thumbnail?: string;
   slug: string;
