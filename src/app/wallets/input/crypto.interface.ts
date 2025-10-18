@@ -1,4 +1,5 @@
 import { IUser } from '@app/users/interface';
+import { FeeLevel } from '@circle-fin/developer-controlled-wallets';
 
 export interface WalletSets {
   id: string;
@@ -45,4 +46,11 @@ export interface balanceResponse {
   };
   amount: string;
   updateDate: Date;
+}
+
+export interface cryptoTransfer {
+  amount: string;
+  walletAddress: string;
+  feeLevel: FeeLevel;
+  transactionPin: string;
 }

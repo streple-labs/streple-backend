@@ -512,6 +512,24 @@ export class WalletsService {
     }
   }
 
+  //  Unified transaction history logging
+  async logTransactionHistory(data: txnHistory, manager: EntityManager) {
+    // Optionally, pass logger in for audit trail
+    try {
+      const history = manager.create(Transaction, {
+        ...data,
+        wallet: { id: data?.wallet?.id },
+      });
+      return await manager.save(Transaction, history);
+    } catch (error) {
+      this.logger.error('Error logging transaction history', error.stack);
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
   // Deposit funds into user's wallet.
   private async fundWallet(
     user: AuthUser,
@@ -640,27 +658,6 @@ export class WalletsService {
     await manager.update(Wallets, { id: wallet.id }, { balance: newBal });
     wallet.balance = newBal;
     return newBal;
-  }
-
-  //  Unified transaction history logging
-  private async logTransactionHistory(
-    data: txnHistory,
-    manager: EntityManager,
-  ) {
-    // Optionally, pass logger in for audit trail
-    try {
-      const history = manager.create(Transaction, {
-        ...data,
-        wallet: { id: data.wallet.id },
-      });
-      return await manager.save(Transaction, history);
-    } catch (error) {
-      this.logger.error('Error logging transaction history', error.stack);
-      if (error instanceof TypeORMError) {
-        throw new BadRequestException(error.message);
-      }
-      throw error;
-    }
   }
 
   // save beneficiary

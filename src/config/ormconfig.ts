@@ -21,6 +21,7 @@ import {
   Wallets,
   WalletSet,
 } from '@app/wallets/entities';
+import { WebHookLog } from '@app/webhooks/entity';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { BlogManager } from 'src/app/blog-manager/entities/blog-manager.entity';
 import { EmailCenter, WaitList } from 'src/app/email-center/entities';
@@ -60,6 +61,7 @@ export default (): TypeOrmModuleOptions => ({
     SubscriptionHistory,
     Beneficiary,
     WalletSet,
+    WebHookLog,
   ],
   ssl:
     process.env.NODE_ENV === 'development'

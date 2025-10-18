@@ -146,10 +146,6 @@ export class WalletsController {
     @Body() body: TransferCoin,
     @SessionUser() user: AuthUser,
   ) {
-    return this.usdcService.createCryptoTransaction(
-      body.amount,
-      body.walletAddress,
-      user,
-    );
+    return this.usdcService.createCryptoTransaction(body, user);
   }
 }

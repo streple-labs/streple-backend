@@ -5,14 +5,19 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 dotenv.config();
 import * as cookieParser from 'cookie-parser';
-import { json, urlencoded } from 'express';
+import { json, raw, urlencoded } from 'express';
 
 if (!process.env.PORT) {
   throw new Error('Missing PORT in environment variables');
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
+
+  // Configure webhook routes to use raw body
+  app.use('/webhooks/circle', raw({ type: 'application/json' }));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true }));

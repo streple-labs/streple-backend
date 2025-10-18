@@ -25,9 +25,15 @@ export enum walletStatus {
 }
 
 export enum transactionStatus {
-  success = 'Successful',
-  pending = 'Pending',
-  fail = 'Failed',
+  success = 'SUCCESSFUL',
+  pending = 'PROCESSING',
+  fail = 'FAILED',
+  initial = 'INITIATED',
+  send = 'SENT',
+  complete = 'COMPLETE',
+  queued = 'QUEUED',
+  cleared = 'CLEARED',
+  confirmed = 'CONFIRMED',
 }
 
 export interface IWallets {
@@ -43,7 +49,7 @@ export interface IWallets {
 
 export interface ITransaction {
   id: string;
-  wallet: IWallets;
+  wallet?: IWallets;
   type: transactionType;
   userId: string;
   amount: number;
@@ -54,6 +60,11 @@ export interface ITransaction {
   description: string;
   previousBal: number;
   currentBal: number;
+  externalRef?: string;
+  txHash?: string;
+  userOpHash?: string;
+  errorDetails?: string;
+  networkFee?: string;
   status: transactionStatus;
   createdAt: Date;
   updatedAt: Date;

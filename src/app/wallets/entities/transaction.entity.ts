@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -22,8 +23,10 @@ export class Transaction implements ITransaction {
 
   @ManyToOne(() => Wallets, (wallet) => wallet.transactions, {
     onDelete: 'CASCADE',
+    nullable: true,
   })
-  wallet: IWallets;
+  @JoinColumn({ name: 'walletId' })
+  wallet?: IWallets;
 
   @Column({ type: 'enum', enum: Object.values(transactionType) })
   type: transactionType;
@@ -56,6 +59,21 @@ export class Transaction implements ITransaction {
 
   @Column({ nullable: true })
   description: string;
+
+  @Column({ nullable: true })
+  externalRef?: string;
+
+  @Column({ nullable: true })
+  txHash?: string;
+
+  @Column({ nullable: true })
+  userOpHash?: string;
+
+  @Column({ nullable: true })
+  errorDetails?: string;
+
+  @Column({ nullable: true })
+  networkFee?: string;
 
   @Column({
     type: 'enum',

@@ -20,6 +20,7 @@ import ormConfig from './config/ormconfig';
 import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
+import { WebhooksModule } from './app/webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { SeederModule } from './seeders/seeder.module';
     ReferralModule,
     SubscriptionModule,
     WalletsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [
