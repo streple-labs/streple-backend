@@ -49,6 +49,7 @@ import {
   walletStatus,
   walletSymbol,
 } from '../input';
+import { USDCService } from './usdc.service';
 
 @Injectable()
 export class WalletsService {
@@ -78,6 +79,7 @@ export class WalletsService {
     private readonly dataSource: DataSource,
     private readonly httpClient: HttpClientService,
     private readonly configService: ConfigService,
+    private readonly cryptoService: USDCService,
   ) {}
 
   async createVirtualAccount(user: AuthUser) {
@@ -334,6 +336,21 @@ export class WalletsService {
       const userWallets = await this.walletRepo.find({
         where: { user: { id: user.id } },
       });
+
+      const { balances, wallet } =
+        await this.cryptoService.userWalletBalance(user);
+      if (balances?.length) {
+        userWallets.push({
+          balance: Big(balances[0].amount).toNumber(),
+          currency: walletSymbol.usdc,
+          user: wallet.user,
+          id: wallet.id,
+          transactions: [],
+          status: walletStatus.active,
+          createdAt: wallet.createDate,
+          updatedAt: wallet.updateDate,
+        });
+      }
 
       // ✅ Fetch cached rates once
       const rates = await this.getCachedRates();

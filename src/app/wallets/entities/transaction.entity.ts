@@ -78,7 +78,6 @@ export class Transaction implements ITransaction {
   @Column({
     type: 'enum',
     enum: Object.values(transactionStatus),
-    default: transactionStatus.pending,
   })
   status: transactionStatus;
 

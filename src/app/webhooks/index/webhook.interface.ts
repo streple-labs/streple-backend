@@ -1,3 +1,4 @@
+import { findMany, findOne } from '@app/common';
 import { transactionStatus } from '@app/wallets/input';
 
 export interface PublicKeyResponse {
@@ -42,4 +43,15 @@ export interface TransactionBound {
   notification: notification;
   timestamp: Date;
   version: number;
+}
+
+export interface findManyEvent extends findMany {
+  id?: string[];
+  version?: number;
+  notificationType?: notificationType;
+}
+
+export interface findOneEvent extends findOne {
+  version?: number;
+  notificationType?: notificationType;
 }

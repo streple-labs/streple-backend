@@ -122,22 +122,12 @@ export class WalletsController {
     });
   }
 
-  @Get('generator')
-  async generate() {
-    return this.usdcService.createWalletSet();
-  }
-
   @Get('create-wallet')
   async createWalletForUser(
     @Query('name') name: string,
     @SessionUser() user: AuthUser,
   ) {
     return this.usdcService.createWalletForUser(name, user);
-  }
-
-  @Get('user-token-balance')
-  async UserTokenBalance(@SessionUser() user: AuthUser) {
-    return this.usdcService.userWalletBalance(user);
   }
 
   @Post('transfer-coin')

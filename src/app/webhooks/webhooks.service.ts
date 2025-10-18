@@ -1,3 +1,9 @@
+import { Document, DocumentResult } from '@app/common';
+import {
+  buildFindManyQuery,
+  FindManyWrapper,
+  FindOneWrapper,
+} from '@app/helpers';
 import {
   BadRequestException,
   Injectable,
@@ -8,8 +14,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosError } from 'axios';
 import * as crypto from 'crypto';
+import { Repository, TypeORMError } from 'typeorm';
 import { WebHookLog } from './entity';
-import { Repository } from 'typeorm';
+import { findManyEvent, findOneEvent } from './index';
 
 @Injectable()
 export class WebhooksService {
@@ -67,6 +74,46 @@ export class WebhooksService {
     }
   }
 
+  async findManyEvent(
+    query: findManyEvent,
+  ): Promise<DocumentResult<WebHookLog>> {
+    try {
+      const where = this.filterEvent(query);
+      const qb = this.webhookLog.createQueryBuilder('webhook');
+      buildFindManyQuery(
+        qb,
+        'webhook',
+        where,
+        query.search,
+        [],
+        query.include,
+        query.sort,
+      );
+      return FindManyWrapper(qb, query.page, query.limit);
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async findOneEvent(query: findOneEvent): Promise<Document<WebHookLog>> {
+    try {
+      const { include, sort, ...filters } = query;
+      return FindOneWrapper<WebHookLog>(this.webhookLog, {
+        include,
+        sort,
+        filters,
+      });
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
   private verifyCircleSignature(payload: string, signature: string): boolean {
     // Load the public key from the base64 encoded string
     // Note: The public key is static for a given publicKeyId, therefore we recommend you to cache it
@@ -96,11 +143,16 @@ export class WebhooksService {
     if (!isSignatureValid) return false;
     return true;
   }
-}
 
-// data: {
-//   id: '879dc113-5ca4-4ff7-a6b7-54652083fcf8',
-//   algorithm: 'ECDSA_SHA_256',
-//   publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAESl76SZPBJemW0mJNN4KTvYkLT8bOT4UGhFhzNk3fJqf6iuPlLQLq533FelXwczJbjg2U1PHTvQTK7qOQnDL2Tg==',
-//   createDate: '2023-06-28T21:47:35.107250Z'
-// }
+  private filterEvent(query: findManyEvent) {
+    const where: Record<string, any> = {};
+
+    if (query.notificationType) {
+      where['notificationType'] = { $eq: query.notificationType };
+    }
+    if (query.version) where['version'] = { $eq: query.version };
+    if (query.id) where['id'] = query.id;
+
+    return where;
+  }
+}
