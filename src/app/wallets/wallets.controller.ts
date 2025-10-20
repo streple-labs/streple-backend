@@ -122,13 +122,15 @@ export class WalletsController {
     });
   }
 
-  @Get('create-wallet')
-  async createWalletForUser(
-    @Query('name') name: string,
-    @SessionUser() user: AuthUser,
-  ) {
-    return this.usdcService.createWalletForUser(name, user);
+  @Get('create-crypto-address')
+  async createWalletForUser(@SessionUser() user: AuthUser) {
+    return this.usdcService.createWalletForUser('testing', user);
   }
+
+  // @Get('coin-wallet')
+  // async coinWallet(@SessionUser() user: AuthUser) {
+  //   return this.usdcService.userWalletBalance(user);
+  // }
 
   @Post('transfer-coin')
   @ApiBody({ type: TransferCoin })

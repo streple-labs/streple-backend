@@ -133,6 +133,12 @@ export class WalletsService {
   }
 
   async internalTransfer(dto: internalTransfer, user: AuthUser) {
+    if (
+      dto.recipientCurrency === walletSymbol.usdc ||
+      dto.senderCurrency === walletSymbol.usdc
+    ) {
+      throw new BadRequestException('USDC is not supported at the moment');
+    }
     return this.dataSource.manager.transaction(async (manager) => {
       // check user password
       const findUser = await manager
@@ -339,7 +345,7 @@ export class WalletsService {
 
       const { balances, wallet } =
         await this.cryptoService.userWalletBalance(user);
-      if (balances?.length) {
+      if (balances?.length && wallet) {
         userWallets.push({
           balance: Big(balances[0].amount).toNumber(),
           currency: walletSymbol.usdc,

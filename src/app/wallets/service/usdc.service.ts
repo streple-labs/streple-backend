@@ -141,9 +141,7 @@ export class USDCService {
       });
 
       if (!userWallet) {
-        throw new NotFoundException(
-          'User wallet not found or Wallet has not be created yet',
-        );
+        return { balances: [] };
       }
       const client = this.initiateDeveloper();
       const response = await client.getWalletTokenBalance({
@@ -166,7 +164,7 @@ export class USDCService {
       const { amount, walletAddress, feeLevel, transactionPin } = dto;
 
       const { balances, wallet } = await this.userWalletBalance(user);
-      if (!balances || !balances.length) {
+      if (!balances || !balances.length || !wallet) {
         throw new ForbiddenException('User balance not found');
       }
 
