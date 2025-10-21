@@ -1,13 +1,15 @@
 import { WaitList } from '@app/email-center/entities';
 import { Badge } from '@app/gamified/entities';
 import { IBadge, Phase } from '@app/gamified/interface';
-import { Privileges, RoleModel } from '@app/users/entity';
+import { Privileges, RoleModel, User } from '@app/users/entity';
 import { Role, Roles, userType } from '@app/users/interface';
 import { UsersService } from '@app/users/service';
+import { CryptoAccounts } from '@app/wallets/entities';
+import { USDCService } from '@app/wallets/service';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, TypeORMError } from 'typeorm';
 
 @Injectable()
 export class SeederService {
@@ -18,6 +20,10 @@ export class SeederService {
     private readonly privilegesRepo: Repository<Privileges>,
     @InjectRepository(WaitList) private readonly wait: Repository<WaitList>,
     @InjectRepository(Badge) private readonly badge: Repository<Badge>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(CryptoAccounts)
+    private readonly cryptoRepo: Repository<CryptoAccounts>,
+    private readonly usdcService: USDCService,
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
   ) {}
@@ -470,26 +476,53 @@ export class SeederService {
     }
   }
 
+  async seedWalletForUser() {
+    try {
+      const users = await this.userRepo.find({ where: { isVerified: true } });
+      if (!users.length) return console.log('no users');
+
+      for (const user of users) {
+        await this.usdcService.createWalletForUser('testing', {
+          id: user.id,
+          email: user.email,
+          role: Role.follower,
+          roleLevel: user.roleLevel,
+          username: user.username,
+        });
+
+        console.log(`Wallet created for ${user.fullName}`);
+        return;
+      }
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        return console.log(error);
+      }
+      throw error;
+    }
+  }
+
   async seedAll() {
     console.log('Starting database seeding...');
 
-    await this.seedRoles();
-    console.log('Roles seeded successfully');
+    await this.seedWalletForUser();
 
-    await this.seedSuperAdminPermission();
-    await this.seedJunior();
-    await this.seedSenior();
-    await this.seedUsers();
-    console.log('Default Permission seeded successfully');
+    // await this.seedRoles();
+    // console.log('Roles seeded successfully');
 
-    await this.seedWailList();
-    console.log('wait list created successfully');
+    // await this.seedSuperAdminPermission();
+    // await this.seedJunior();
+    // await this.seedSenior();
+    // await this.seedUsers();
+    // console.log('Default Permission seeded successfully');
 
-    await this.seedSuperAdmin();
-    console.log('Super Admin seeded successfully');
+    // await this.seedWailList();
+    // console.log('wait list created successfully');
 
-    await this.seedBadge();
-    console.log('Seed badges successfully');
+    // await this.seedSuperAdmin();
+    // console.log('Super Admin seeded successfully');
+
+    // await this.seedBadge();
+    // console.log('Seed badges successfully');
 
     process.exit();
   }

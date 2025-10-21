@@ -132,6 +132,11 @@ export class WalletsController {
   //   return this.usdcService.userWalletBalance(user);
   // }
 
+  // @Get('set-wallet')
+  // async SetWallet() {
+  //   return this.usdcService.createWalletSet();
+  // }
+
   @Post('transfer-coin')
   @ApiBody({ type: TransferCoin })
   async TransferCoin(
