@@ -239,14 +239,7 @@ export class SeederService {
             relations: ['role'],
           });
 
-          const wanted = [
-            'COPYTRADE_READ',
-            'COPYTRADE_CREATE',
-            'COPYTRADE_UPDATE',
-            'GAMIFIED_READ',
-            'GAMIFIED_CREATE',
-            'GAMIFIED_UPDATE',
-          ];
+          const wanted = ['COPYTRADE_READ', 'GAMIFIED_READ'];
 
           if (!priv) {
             priv = this.privilegesRepo.create({
@@ -482,7 +475,7 @@ export class SeederService {
       if (!users.length) return console.log('no users');
 
       for (const user of users) {
-        await this.usdcService.createWalletForUser('testing', {
+        await this.usdcService.createWalletForUser({
           id: user.id,
           email: user.email,
           role: Role.follower,

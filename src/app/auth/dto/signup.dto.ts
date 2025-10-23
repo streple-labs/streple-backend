@@ -22,13 +22,19 @@ export class SignupDto {
   @ApiProperty({ example: 'P@ssw0rd' })
   @IsNotEmpty()
   @IsString()
-  @IsStrongPassword({
-    minLength: 8,
-    minLowercase: 1,
-    minNumbers: 1,
-    minSymbols: 1,
-    minUppercase: 1,
-  })
+  @IsStrongPassword(
+    {
+      minLength: 8,
+      minLowercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+      minUppercase: 1,
+    },
+    {
+      message:
+        'Atleast 8+ character, 1 upper, 1 lower, 1 digit, 1 special letter.',
+    },
+  )
   password: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
@@ -40,4 +46,8 @@ export class SignupDto {
   @IsString()
   @IsOptional()
   referral?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  username: string;
 }

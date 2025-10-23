@@ -20,7 +20,11 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { AuthRequest, LoginDto, RefreshToken } from './dto/login.dto';
 import { ResendOtpDto, VerifyOtpDto } from './dto/otp.dto';
-import { ResetPasswordDto, VerifyTfaLogin } from './dto/reset-password.dto';
+import {
+  PartnerShip,
+  ResetPasswordDto,
+  VerifyTfaLogin,
+} from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
 
 @ApiTags('Auth')
@@ -163,5 +167,17 @@ export class AuthController {
   @Post('verify-tfa')
   async VerifyTFA(@Body() dto: VerifyTfaLogin) {
     return this.auth.verifyTfaLogin(dto.email, dto.code);
+  }
+
+  @Post('partnership')
+  @ApiOperation({ summary: 'Submit request for partnership' })
+  async PartnerShip(@Body() payload: PartnerShip) {
+    return this.auth.partnership(payload);
+  }
+
+  @Post('support')
+  @ApiOperation({ summary: 'Submit complain for support' })
+  async Support(@Body() payload: PartnerShip) {
+    return this.auth.partnership(payload);
   }
 }

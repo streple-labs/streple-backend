@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import {
   createLearning,
   findManyLearning,
@@ -13,7 +17,7 @@ import {
 } from 'src/global/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LearningHub } from './entities/learninghub.entity';
-import { Repository } from 'typeorm';
+import { Repository, TypeORMError } from 'typeorm';
 import {
   buildFindManyQuery,
   FindManyWrapper,
@@ -30,6 +34,7 @@ export class LearningHubService {
     private readonly uploadFile: UploadService,
     private readonly fileProcessor: FileProcessorService,
   ) {}
+
   async create(
     create: createLearning,
     document: Express.Multer.File | undefined,
@@ -97,36 +102,45 @@ export class LearningHubService {
     user: AuthUser,
     file: Express.Multer.File,
   ): Promise<LearningHub> {
-    const findCourse = await this.learning.findOne({ where: { id: param.id } });
+    try {
+      const findCourse = await this.learning.findOne({
+        where: { id: param.id },
+      });
 
-    if (!findCourse) {
-      throw new ForbiddenException('Course not found');
+      if (!findCourse) {
+        throw new ForbiddenException('Course not found');
+      }
+
+      if (
+        findCourse.creatorId !== user.id &&
+        ![Role.admin, Role.superAdmin].includes(user.role)
+      ) {
+        throw new ForbiddenException('You are not the creator of this blog');
+      }
+
+      if (file) {
+        const thumb = await this.uploadFile.uploadDocument(file);
+        update.thumbnail = thumb;
+      }
+
+      if (update.title) {
+        const slug = Slug(update.title);
+        update.slug = slug;
+      }
+
+      if (update.content && update.content.trim()) {
+        const result = this.fileProcessor.processCourseContent(update.content);
+        update.contents = result;
+      }
+
+      await this.learning.update(param, { ...update });
+      return { ...findCourse, ...update };
+    } catch (error) {
+      if (error instanceof TypeORMError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
     }
-
-    if (
-      findCourse.creatorId !== user.id &&
-      ![Role.admin, Role.superAdmin].includes(user.role)
-    ) {
-      throw new ForbiddenException('You are not the creator of this blog');
-    }
-
-    if (file) {
-      const thumb = await this.uploadFile.uploadDocument(file);
-      update.thumbnail = thumb;
-    }
-
-    if (update.title) {
-      const slug = Slug(update.title);
-      update.slug = slug;
-    }
-
-    if (update.content && update.content.trim()) {
-      const result = this.fileProcessor.processCourseContent(update.content);
-      update.contents = result;
-    }
-
-    await this.learning.update(param, { ...update });
-    return { ...findCourse, ...update };
   }
 
   async remove(param: paramSearch, user: AuthUser) {

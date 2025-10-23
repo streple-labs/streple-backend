@@ -35,6 +35,7 @@ import {
   userType,
 } from '../interface';
 import { customAlphabet } from 'nanoid';
+import { UserScheduleService } from './user-schdule.service';
 
 @Injectable()
 export class UsersService {
@@ -43,6 +44,7 @@ export class UsersService {
     @InjectRepository(RoleModel)
     private readonly roleModel: Repository<RoleModel>,
     private readonly mailer: MailService,
+    private readonly walletJob: UserScheduleService,
   ) {}
 
   /* ---------------- registration / lookup ------------------ */
@@ -170,18 +172,22 @@ export class UsersService {
   async verifyEmail(dto: VerifyOtpDto) {
     const user = await this.findByEmail(dto.email);
     if (!user) throw new NotFoundException('User not found');
-    if (user.isVerified)
+    if (user.isVerified) {
       throw new BadRequestException('Email already verified');
-    if (!user.otp || dto.otp !== user.otp)
+    }
+    if (!user.otp || dto.otp !== user.otp) {
       throw new BadRequestException('Invalid OTP');
-    if (!user.otpExpiresAt || user.otpExpiresAt < new Date())
+    }
+    if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
       throw new BadRequestException('OTP expired');
+    }
 
     user.isVerified = true;
     user.otp = null;
     user.otpExpiresAt = null;
     await this.repo.save(user);
-
+    const delay = new Date(new Date().setTime(5000)).getTime();
+    this.walletJob.createCryptoAccount(user, delay);
     return { message: 'Email verified successfully' };
   }
 

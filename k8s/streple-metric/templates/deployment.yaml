@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: streple-metric
+  name: streple-metric
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streple-metric
+  template:
+    metadata:
+      labels:
+        app: streple-metric
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "3000"
+    spec:
+      hostNetwork: true # This allows access to host services
+      containers:
+      - image: yaunitechnologies/streple-metric
+        name: streple-metric
+        # imagePullPolicy: Always
+        # envFrom:
+        # - configMapRef:
+        #     name: app-config
+        env:
+        - name: DB_HOST
+          value: "10.172.241.58"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USER
+          value: "yauni"
+        - name: DB_NAME
+          value: "streple_db"
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_PASS
+        ports:
+        - containerPort: 3000
+

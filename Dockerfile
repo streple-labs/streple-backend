@@ -1,21 +1,39 @@
-# Use exact Node version
-FROM node:22.15.0
+# ====================================
+# Development Stage (for local/grafana)
+# ====================================
+FROM node:22.15.0 AS development
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm install
 
-# Upgrade to NPM 11 and install dependencies
-RUN npm install -g npm@11 && npm install
-
-# Copy the rest of the app
 COPY . .
 
-# Optional: Build step if you're using TypeScript or need to build assets
+RUN npm run build
+# Development entry point (adjust as needed)
+# CMD ["npm", "run", "start:dev"]
+
+
+# ===================
+# Production Stage
+# ===================
+FROM node:22.15.0 AS production
+
+
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+RUN npm install -g npm@11 && npm install
+
+COPY . .
+
+COPY --from=development /app/dist ./dist
+# Optional: Build step for TypeScript etc.
 # RUN npm run build
 
-# Start your app
-CMD ["npm", "start"]
-
+CMD ["npm", "run", "start:prod"]

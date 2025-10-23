@@ -6,4 +6,8 @@ export enum template {
   reset = 'reset',
   resend = 'resend',
   tradeNote = 'trade-note',
+  infoPartner = 'partner',
+  infoSupport = 'support',
+  customer = 'customer',
+  partnership = 'partnership',
 }

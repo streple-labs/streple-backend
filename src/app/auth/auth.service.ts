@@ -13,11 +13,13 @@ import { ResendOtpDto, VerifyOtpDto } from 'src/app/auth/dto/otp.dto';
 import { jwtConstants } from './constants';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
+import { PartnerShip, ResetPasswordDto } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
 import { ReferralService } from '@app/referral/referral.service';
 import { SecurityService } from '@app/helpers';
 import { TwoFAService } from '@app/users/service/twofa.service';
+import { AxiosError } from 'axios';
+import { MailService, template } from '@app/services';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +29,7 @@ export class AuthService {
     private readonly referralService: ReferralService,
     private readonly security: SecurityService,
     private readonly twoFAService: TwoFAService,
+    private readonly mailService: MailService,
   ) {}
 
   async register(dto: SignupDto) {
@@ -60,6 +63,11 @@ export class AuthService {
       }
 
       referDetails.directReferrerId = referral.data.id;
+    }
+
+    if (dto.username) {
+      const { data } = await this.users.findOne({ username: dto.username });
+      if (data) throw new ForbiddenException('username already taken');
     }
 
     const data = await this.users.createUser(dto);
@@ -254,6 +262,66 @@ export class AuthService {
     } catch (error) {
       if (error instanceof JsonWebTokenError) {
         throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async partnership(payload: PartnerShip) {
+    try {
+      await Promise.all([
+        this.mailService.sendMail(
+          'partnership@streple.com',
+          template.infoPartner,
+          'New Partnership Request – Action Required',
+          {},
+        ),
+        this.mailService.sendMail(
+          payload.email,
+          template.partnership,
+          'Partnership request received',
+          {
+            email: payload.email,
+            fullName: payload.fullName,
+            message: payload.message,
+          },
+        ),
+      ]);
+
+      return { message: 'Request receive successfully' };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new BadRequestException(error.response?.data);
+      }
+      throw error;
+    }
+  }
+
+  async support(payload: PartnerShip) {
+    try {
+      await Promise.all([
+        this.mailService.sendMail(
+          'support@streple.com',
+          template.infoSupport,
+          'New Partnership Request – Action Required',
+          {},
+        ),
+        this.mailService.sendMail(
+          payload.email,
+          template.customer,
+          'Partnership request received',
+          {
+            email: payload.email,
+            fullName: payload.fullName,
+            message: payload.message,
+          },
+        ),
+      ]);
+
+      return { message: 'Your request has been log successfully' };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new BadRequestException(error.response?.data);
       }
       throw error;
     }

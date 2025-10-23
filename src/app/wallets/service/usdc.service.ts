@@ -12,6 +12,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -44,9 +45,14 @@ export class USDCService {
     return this.generateEnSecreteAndRegister();
   }
 
-  async createWalletForUser(name: string, user: AuthUser): Promise<string> {
+  async createWalletForUser(
+    data: string | AuthUser,
+  ): Promise<{ message: string }> {
     try {
-      const findWalletSet = await this.walletSetRepo.findOneBy({ name });
+      const user: AuthUser =
+        typeof data === 'string' ? (JSON.parse(data) as AuthUser) : data;
+
+      const findWalletSet = await this.createWalletSet();
       if (!findWalletSet) throw new NotFoundException('WalletSet not found');
 
       // check if user have crypto wallet before
@@ -54,11 +60,7 @@ export class USDCService {
         userId: user.id,
       });
 
-      if (hasCryptoWallet) {
-        throw new ForbiddenException(
-          'A crypto wallet already assign to this user',
-        );
-      }
+      if (hasCryptoWallet) return { message: 'Wallet exist' };
 
       const client = this.initiateDeveloper();
       const response = await client.createWallets({
@@ -88,7 +90,7 @@ export class USDCService {
           }),
         );
       }
-      return 'Crypto Wallet created Successfully';
+      return { message: 'Crypto Wallet created Successfully' };
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);
@@ -97,35 +99,57 @@ export class USDCService {
     }
   }
 
-  async createWalletSet(walletName: string = 'testing'): Promise<string> {
+  async createWalletSet(): Promise<WalletSet> {
     try {
-      const findWallet = await this.walletSetRepo.findOneBy({
-        name: walletName,
+      const name = `STP-${nanoid(10)}`;
+
+      //  1. Look for the currently active wallet-set
+      const activeWallet = await this.walletSetRepo.findOneBy({
+        isActive: true,
       });
-      if (findWallet) {
-        throw new ForbiddenException('Wallet Name already existed');
+
+      //  2. Decide what to do with it
+      if (activeWallet) {
+        const walletCount = await this.cryptoRepo.countBy({
+          name: activeWallet.name,
+        });
+
+        if (walletCount < 10_000) {
+          return activeWallet;
+        }
+
+        // rule-2 : hit the limit → force retire this set
+        activeWallet.isActive = false;
+        await this.walletSetRepo.save(activeWallet);
       }
 
+      /* ---------------------------------------------------------
+       * 3. We reach here when
+       *    – there was no active wallet-set at all (rule-1), or
+       *    – the previous one was just retired (rule-2)
+       *    → create a brand-new wallet-set
+       * --------------------------------------------------------- */
       const client = this.initiateDeveloper();
       const response = await client.createWalletSet({
-        name: walletName,
+        name,
         idempotencyKey: uuidV4(),
       });
 
-      if (response.data?.walletSet) {
-        const { walletSet } = response.data;
-        await this.walletSetRepo.save(
-          this.walletSetRepo.create({
-            walletId: walletSet.id,
-            name: walletName,
-            custodyType: 'DEVELOPER',
-            createDate: walletSet.createDate,
-            updateDate: walletSet.updateDate,
-          }),
-        );
+      if (!response.data?.walletSet) {
+        throw new InternalServerErrorException('Wallet set not created');
       }
 
-      return 'walletSet created successfully';
+      const { walletSet } = response.data;
+      return this.walletSetRepo.save(
+        this.walletSetRepo.create({
+          walletId: walletSet.id,
+          name,
+          custodyType: 'DEVELOPER',
+          createDate: walletSet.createDate,
+          updateDate: walletSet.updateDate,
+          isActive: true,
+        }),
+      );
     } catch (error) {
       if (error instanceof Error) {
         throw new BadRequestException(error.message);

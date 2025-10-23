@@ -6,6 +6,7 @@ export interface WalletSets {
   walletId: string;
   custodyType: string;
   name: string;
+  isActive: boolean;
   updateDate: Date;
   createDate: Date;
 }

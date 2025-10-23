@@ -1,7 +1,7 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -21,9 +21,15 @@ import { GlobalModule } from './global/global.module';
 import { JwtAuthGuard, PermissionsGuard } from './global/guards';
 import { SeederModule } from './seeders/seeder.module';
 import { WebhooksModule } from './app/webhooks/webhooks.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { LoggingInterceptor } from '@app/middleware';
+import { PromethController } from './prometh.controller';
 
 @Module({
   imports: [
+    PrometheusModule.register({
+      controller: PromethController,
+    }),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({ useFactory: ormConfig }),
     UsersModule,
@@ -54,14 +60,9 @@ import { WebhooksModule } from './app/webhooks/webhooks.module';
   ],
   controllers: [AppController],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: PermissionsGuard,
-    },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     AppService,
   ],
 })

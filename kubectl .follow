@@ -1,0 +1,44 @@
+docker build -t yaunitechnologies/streple-metric . 
+docker push yaunitechnologies/streple-metric
+helm create streple-metric
+kubectl create deployment streple-metric --image=yaunitechnologies/streple-metric --port=3000 --dry-run=client -o yaml | tee deployment.yaml
+helm dependency update
+helm install streple-metric .
+kubectl get pods
+kubectl logs streple-metric-grafana-58679dc4c6-fd677 --follow
+
+#reason it fail
+ kubectl logs streple-metric-6c54cf654-tw6tp 
+
+docker build -t yaunitechnologies/streple-metric:latest .
+kind load docker-image yaunitechnologies/streple-metric:latest
+kubectl rollout restart deployment streple-metric
+kubectl get pods
+
+# Create ConfigMap from your .env file
+kubectl create configmap app-config --from-env-file=.env
+
+# Or create it manually
+kubectl create configmap app-config \
+  --from-literal=DB_HOST=your-database-host \
+  --from-literal=DB_PORT=5432 \
+  --from-literal=DB_USERNAME=your-username \
+  --from-literal=DB_NAME=your-database-name
+
+
+  # Create secret for database password
+kubectl create secret generic db-secret \
+  --from-literal=DB_PASSWORD=your-password
+
+
+  # Delete ConfigMap
+kubectl delete configmap app-config
+
+# Delete Secret
+kubectl delete secret db-secret
+
+
+kubectl rollout restart deployment/streple-metric
+
+# Check logs
+kubectl logs -f deployment/streple-metric

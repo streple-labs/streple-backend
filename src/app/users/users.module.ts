@@ -1,20 +1,25 @@
+import { SecurityService } from '@app/helpers';
+import { WalletsModule } from '@app/wallets/wallets.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entity/user.entity';
 import { JwtStrategy } from 'src/global/strategies/jwt.strategy';
-import { Privileges, Protrader, RoleModel } from './entity';
-import { ProTraderService, RoleService, UsersService } from './service';
 import {
   ProtraderController,
   RoleController,
   UsersController,
 } from './controller';
 import { TwoFaController } from './controller/tfa.controller';
+import { Privileges, Protrader, RoleModel } from './entity';
+import { User } from './entity/user.entity';
+import { ProTraderService, RoleService, UsersService } from './service';
 import { TwoFAService } from './service/twofa.service';
-import { SecurityService } from '@app/helpers';
+import { UserScheduleService } from './service/user-schdule.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, RoleModel, Privileges, Protrader])],
+  imports: [
+    TypeOrmModule.forFeature([User, RoleModel, Privileges, Protrader]),
+    WalletsModule,
+  ],
   providers: [
     UsersService,
     RoleService,
@@ -22,6 +27,7 @@ import { SecurityService } from '@app/helpers';
     TwoFAService,
     SecurityService,
     ProTraderService,
+    UserScheduleService,
   ],
   controllers: [
     UsersController,

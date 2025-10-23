@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { randomBytes } from 'crypto';
 import * as dotenv from 'dotenv';
+import { nanoid } from 'nanoid';
 import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 dotenv.config();
 
@@ -63,6 +64,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         email,
         avatarUrl,
         password: randomBytes(32).toString('base64url'),
+        username: `STP-${nanoid(10)}`,
       });
     }
 

@@ -1,11 +1,12 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsStrongPassword,
   MinLength,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ResetPasswordDto {
   @ApiProperty({ example: 'alice@streple.com' })
@@ -31,4 +32,22 @@ export class VerifyTfaLogin {
   @IsNotEmpty()
   @IsString()
   code: string;
+}
+
+export class PartnerShip {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  fullName: string;
+
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ type: String })
+  email: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ type: String })
+  message?: string;
 }

@@ -124,7 +124,7 @@ export class WalletsController {
 
   @Get('create-crypto-address')
   async createWalletForUser(@SessionUser() user: AuthUser) {
-    return this.usdcService.createWalletForUser('testing', user);
+    return this.usdcService.createWalletForUser(user);
   }
 
   // @Get('coin-wallet')

@@ -15,6 +15,9 @@ export class WalletSet implements WalletSets {
   @Column({ unique: true })
   name: string;
 
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
   @Column({ type: 'timestamp' })
   updateDate: Date;
 
